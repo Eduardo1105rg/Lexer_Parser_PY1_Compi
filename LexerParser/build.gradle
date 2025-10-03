@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 group = 'org.example'
@@ -10,10 +11,46 @@ repositories {
 }
 
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    // JFlex y CUP
+    implementation files('libs/java-cup-11b-runtime.jar')
+    implementation files('libs/jflex-full-1.9.1.jar')
 }
 
-test {
-    useJUnitPlatform()
+application {
+    mainClass = 'App'
+}
+
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
+//generación de lexer y parser
+task generateLexer(type: Exec) {
+    workingDir '.'
+    commandLine 'java', '-jar', 'libs/jflex-full-1.9.1.jar', 
+                '-d', 'src/main/java/lexer', 
+                'src/main/resources/lexer.flex'
+}
+
+task generateParser(type: Exec) {
+    workingDir '.'
+    commandLine 'java', '-jar', 'libs/java-cup-11b.jar', 
+                '-destdir', 'src/main/java/parser',
+                '-symbols', 'TokenType',
+                'src/main/resources/parser.cup'
+}
+
+compileJava.dependsOn generateLexer, generateParser
+
+task createDirs {
+    doLast {
+        file('src/main/java/lexer').mkdirs()
+        file('src/main/java/parser').mkdirs()
+        file('src/main/java/symbols').mkdirs()
+        file('src/main/java/errors').mkdirs()
+        file('src/main/java/utils').mkdirs()
+        file('src/main/resources').mkdirs()
+        file('src/test/resources/test-programs').mkdirs()
+        file('output').mkdirs()
+        file('docs').mkdirs()
+    }
 }
