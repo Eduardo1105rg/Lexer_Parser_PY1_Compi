@@ -1,0 +1,236 @@
+<saltoLinea> ::= "\n"
+# Números, variables y asignaciones:
+<espacio> ::= " " | "\t"
+<espacio> ::= <saltoLinea>
+<espaciosEnBlanco> ::= <espacio>* 
+# -- Definir los tipos
+<flotante> ::= (0.0) |-?0\ . [0-9]* [1-9]+|-?[1-9][0-9]* . ([0-9]*[1-9]+|0)
+
+<entero> ::=  -? [1 - 9] [0 - 9]* | 0
+
+<enteroPositivo> ::= [1 - 9] [0 - 9]* | 0
+
+#-- Las comillas son para indicar que es un simbolo literal terminal.
+<booleano> ::=  "true" | "false"    
+
+#-- En teoria esto: '[^']'     Significa, cualquier caracter menos la comilla ()')
+<char> ::= "'" <caracterSimple> "'"  # --"'" [^'] "'"
+
+<caracterSimple> ::= [^'\n\r\t] # -- Se definen los caracteres validos.
+
+# -- Es un caracter cero o mas veces, tambien puede ser caracteres especiales como tabulaciones y saltos de linea.
+<string> ::= "\"" (<caracterString> | <caracterEscape>)* "\"" 
+
+<stringSimple> ::= [^"\n\r\t\\] # -- Se definen los caracteres validos
+
+<StringEscape> ::= "\\n" | "\\t" | "\\r" # -- Se definen los caracteres especiales validos.
+
+
+
+<operadorAritmetico> ::= <operadorAritmeticoBase> | <operadorAritmeticoMDM> | <operadorAritmeticoPotencia> #(\+|\-|\*|\/|\/\/|%|\^)  #--[+\ | - | *\ | / | //]
+
+<operadorAritmeticoBase> ::= (\+|\-)
+
+<operadorAritmeticoMDM> ::= (\*|\/|\/\/|%)
+
+<operadorAritmeticoPotencia> ::= (\^) 
+
+<operadorLogicoBinario> ::= (@|~)
+<operadorLogicoUnario> ::= (Σ) 
+
+<operadorRelacional> ::= <operadorRelacionalMayores> | <operadorRelacionalIgualdad>
+
+<operadorRelacionalMayores> ::= ("<="|">="|"<"|">")
+
+<operadorRelacionalIgualdad> ::= ("=="|"!=")
+
+<cAsignacion> ::= \=
+
+<id> ::= [a-z A-Z ] [a-z A-Z 0-9 _]*
+
+<delimitador> ::= $
+
+<tipoVar> ::= "int" | "float" | "boolean" | "char" | "string" 
+
+<tipoInput> ::= "int" | "float"
+
+<tipoFuncion> ::= "int" | "float" | "boolean"
+
+# -- Tipos de datos para definir listas.
+<tipoLista> ::=  <tipoListaBase> | <tipoListaTamaño>
+
+<tipoListaBase> ::= "int" "[" "]" | "char" "[" "]"
+
+<tipoListaTamaño> ::= "int" "[" <entero> "]" | "char" "[" <entero> "]"
+
+# -- Definir variables.
+<var> ::= "let" <tipoVar> <id> ( <cAsignacion> <expresion> )? <delimitador>
+
+<varAsignacion> ::= <id> <cAsignacion> <expresion> <delimitador>
+
+<varCyAsignacion> ::= "let" <tipoVar> <id> <cAsignacion> <expresion> <delimitador>
+
+
+
+# -- Las exresiones para una variables puden ser: nada mas numeros o caracteres, una operacion aritmetica o de union de caracteres, 
+# -- tambien puede ser entrada de teclado o tambien se podria hacer una condicional para saber asignar un valor booleano.
+<expresion> ::= <expresionLogica> | <expresionAritmetica> | <expresionChar> | <expresionString>
+
+#-- Def de expresiones basicos.
+<expresionNumerica> ::= <entero> | <flotante> | <id> | <obtenerElementoLista> | <funcionLlamada> | <input> | <booleano>
+
+<expresionChar> ::= <char> | <id> | <obtenerElementoLista>
+
+<expresionString> ::= <string> | <id>
+
+<expresionBooleana> ::= <booleano> | <id>
+
+
+# -- Def de operaciones de expresiones, Construccion con orden de precedencia.
+#<expresionAritmetica> ::= <expresionNumerica> | \( <expresionAritmetica> \) | <expresionAritmetica> <operadorAritmetico> <expresionAritmetica>
+
+# -- La expresion aritmetica base.
+<expresionAritmetica> ::= <expresionSuma>
+
+# -- La base se puede formar por una operacion base o por una de prodcutos.
+<expresionSuma> ::= <expresionSuma> <operadorAritmeticoBase> <expresionProducto>
+                 | <expresionProducto>
+
+# -- La de prodcuto esta conformada por la de productos o la de potencia.
+<expresionProducto> ::= <expresionProducto> <operadorAritmeticoMDM> <expresionPotencia> #("*" | "/" | "//" | "%")
+                      | <expresionPotencia>
+
+# -- La de potencia esta formada por potencia o una de factor.
+<expresionPotencia> ::= <expresionFactor> <operadorAritmeticoPotencia> <expresionPotencia>
+                      | <expresionFactor>
+
+# -- La de factor es el termino base para cualquier expresio aritmetia 
+<expresionFactor> ::= "є" <expresionAritmetica> "э"
+                    | <expresionNumerica>
+                    | <expresionAritmeticaUnaria>
+                    | <expresionAritmeticaUnariaNegativa>
+
+
+# --Posfija
+<expresionAritmeticaUnaria> ::= <id> "++" | <id> "--"
+
+# -- Esto es basicamente para volver un valor negativo, por ejemplo: - 5 | - 3.34 | - x
+<expresionAritmeticaUnariaNegativa> ::= "-" <expresionNumerica>
+
+
+#<expresionLiteral> ::= <expresionLiteral> \+ <expresionLiteral> # Esto no deberia de poder hacerse.
+
+
+# -- (@|~|Σ)
+<expresionLogica> ::= <expresionLogica> <operadorLogicoBinario> <expresionLogica>
+                    | <operadorLogicoUnario> <expresionLogica>
+                    | "є" <expresionLogica> "э"
+                    | <expresionRelacional>
+                    | <expresionBooleana>
+
+# -- (==|!=|<=|>=|<|>)
+<expresionRelacional> ::= <expresionAritmetica> <operadorRelacional> <expresionAritmetica> 
+                        | <expresionBooleana> <operadorRelacionalIgualdad> <expresionBooleana> 
+                        | <expresionChar> <operadorRelacional> <expresionChar> 
+                        | "є" <expresionRelacional> "э"
+                        #-- | <expresionChar> <operadorRelacional> <expresionChar> 
+                        #-- | <expresionString> <operadorRelacional> <expresionString>
+
+
+# Funciones con estructuras de control, bloques y sentencias:
+<funciones> ::= <funcion> | <funciones> <funcion>
+
+<funcion> ::= <tipoFuncion> <id> "є" <params> "э" <bloque> | <tipoFuncion> <id> "є" "э" <bloque>
+
+<params> ::= <param> | <params> , <param>
+
+<param> ::= <tipoVar> <id>
+
+<bloque> ::= ¿ <sentencias> \?
+
+<sentencias> ::= <sentencias>
+
+<sentencias> ::= <sentencia> | <sentencias> <sentencia>
+
+<sentencia> ::= <var> | <varAsignacion> | <estructruraControl> | <funcionLlamada> | <return> | <break> | <output> | <modificarElementoLista> | <lista> | <varGlobal>
+
+<estructruraControl> ::= <decide> | <loop> | <for> # luego se definen abajo
+
+# Decide es de la forma decide of (condicion -> bloque)+ (else -> bloque)? end decide opcional
+<decide> ::= "decide" <espacio> "of" ( <condicion> "->" <bloque>)+ ("else" <bloque> )? "end" "decide" <delimitador>
+
+<condicion> ::= "є" <expresion> "э"
+
+# Loop es de la forma loop instrucciones... exit wgen condicion$ end loop$
+<loop> ::= "loop" <sentencias> <break>? "exit when" <condicion> <delimitador> "end" "loop" <delimitador>
+
+# For es de la forma for <id> step <entero> to/downto <expresion> do bloque
+<for> ::= "for" <id> "step" <entero> ("to" | "downto") <expresion> "do" <bloque> <delimitador>
+
+<funcionLlamada> ::= <id> "є" ( <argumentos> )? "э" <delimitador>
+
+<argumentos> ::= <expresion> | <argumentos> "," <expresion>
+
+<return> ::= "return" ( <expresion> )? <delimitador>
+
+<break> ::= "break" <delimitador>
+
+# El output puede ser de la forma output є expresion э o output є expresion э << output para multiples outputs en una linea.
+<output> ::= <output> <delimitador>
+<output> ::= <output_inline> | <output> "<<" <output_inline>
+
+<output_inline> ::= "output" "є" <expresion> "э"
+
+# Input puede ser de la forma input є tipo э
+<input> ::= "input" "є" <tipoInput> "э" 
+
+
+# Variables globales:
+<varGlobal> ::= "global" <tipoVar> <id> ( <cAsignacion> <expresion> )? <delimitador>
+
+# Tipos de variables enteras, flotantes, booleanas, caracteres, cadenas de caracteres y arreglos:
+
+# >>> Arreglos tipo char y entero; get y update de elementos, ser usados en expresiones y permitir creacion con asignacion:
+
+# Declarar listas
+
+<lista> ::= <declaracionLista> | <creacionYAsignacionLista>
+
+# -- Declarar listas de forma basica
+<declaracionLista> ::= "let" <tipoLista> <id> <delimitador>
+
+# -- Esto es para crear una lista con asignacion: let int[] = ¿12,34?
+<creacionYAsignacionLista> ::= "let" <tipoLista> <id> <cAsignacion> "¿" <elementos> "?" <delimitador> #<elementoLista> ("," <elementoLista>)*
+
+#<elementos> ::= <elementoLista>
+
+<elementos> ::= <elementoLista> ("," <elementoLista>)* #<elementos> "," <elementoLista>  
+
+# -- Tipos de datos que puede tener una lista.
+<elementoLista> ::= <entero> | <char>
+
+# -- Modificar los elementos de una lista: lista[4] = 23$
+<modificarElementoLista> ::= <id> "[" <expresion> "]" <cAsignacion> <elementoLista> <delimitador>
+
+# -- Obtener los elementos de una lista: lista[4]    -> Esto puede ser usado en otras expresiones por lo que no lleva delimitador
+<obtenerElementoLista> ::= <id> "[" <expresion> "]"
+
+
+# Definición de unicamente un procedimiento main (principal) tipo void sin parametros:
+
+# -- Def de main, puede cambiarse 
+<principal> ::= "void" "principal" "є" <expresion> "э" <bloque>
+
+#-- Def de un programa.
+<programa> ::= <comentarios>? (<varGlobal>*)? <comentarios>? <funciones>? <comentarios>? <principal> <comentarios>?
+
+# Comentarios en una linea o en multiples lineas:
+# -- Estas reglas se mueven al analizador léxico (JFlex)
+# -- y se eliminan del parser (CUP)
+# <comentarios> ::= <comentario> | <comentarios> <comentario>
+# <comentario> ::= <comentarioLinea> | <comentarioBloque>
+# <comentarioLinea> ::= \|[^\n\r]*
+# <comentarioBloque> ::= ¡[\s\S]*?!
+
+
+
