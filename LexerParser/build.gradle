@@ -49,7 +49,6 @@ task createDirs {
         file('src/main/java/errors').mkdirs()
         file('src/main/java/utils').mkdirs()
         file('src/main/resources').mkdirs()
-        file('src/test/resources/test-programs').mkdirs()
         file('output').mkdirs()
         file('docs').mkdirs()
     }
