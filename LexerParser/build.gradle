@@ -6,14 +6,20 @@ plugins {
 group = 'org.example'
 version = '1.0-SNAPSHOT'
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    // JFlex y CUP
-    implementation files('libs/java-cup-11b-runtime.jar')
-    implementation files('libs/jflex-full-1.9.1.jar')
+    implementation files('lib/java-cup-11b-runtime.jar')
+    implementation files('lib/jflex-full-1.9.1.jar')
+    testImplementation 'junit:junit:4.13.2'
 }
 
 application {
@@ -23,23 +29,29 @@ application {
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
 
-//generación de lexer y parser
-task generateLexer(type: Exec) {
-    workingDir '.'
-    commandLine 'java', '-jar', 'libs/jflex-full-1.9.1.jar', 
-                '-d', 'src/main/java/lexer', 
-                'src/main/resources/lexer.flex'
-}
-
 task generateParser(type: Exec) {
+    doFirst {
+        file('src/main/java/parser').mkdirs()
+    }
     workingDir '.'
-    commandLine 'java', '-jar', 'libs/java-cup-11b.jar', 
+    commandLine 'java', '-jar', 'lib/java-cup-11b.jar', 
                 '-destdir', 'src/main/java/parser',
-                '-symbols', 'TokenType',
+                '-symbols', 'sym',
                 'src/main/resources/parser.cup'
 }
 
-compileJava.dependsOn generateLexer, generateParser
+task generateLexer(type: Exec) {
+    doFirst {
+        file('src/main/java/lexer').mkdirs()
+    }
+    workingDir '.'
+    commandLine 'java', '-jar', 'lib/jflex-full-1.9.1.jar', 
+                '-d', 'src/main/java', 
+                'src/main/resources/lexer.flex'
+}
+
+generateLexer.dependsOn generateParser
+compileJava.dependsOn generateLexer
 
 task createDirs {
     doLast {
@@ -49,7 +61,38 @@ task createDirs {
         file('src/main/java/errors').mkdirs()
         file('src/main/java/utils').mkdirs()
         file('src/main/resources').mkdirs()
+        file('src/test/resources/test-programs').mkdirs()
         file('output').mkdirs()
         file('docs').mkdirs()
     }
 }
+
+// Limpiar archivos generados
+task cleanGenerated(type: Delete) {
+    delete 'src/main/java/lexer'
+    delete 'src/main/java/parser'
+}
+
+clean.dependsOn cleanGenerated
+
+task verifyLibs {
+    doLast {
+        def cupJar = file('lib/java-cup-11b.jar')
+        def jflexJar = file('lib/jflex-full-1.9.1.jar')
+        def runtimeJar = file('lib/java-cup-11b-runtime.jar')
+
+        if (!cupJar.exists()) {
+            throw new GradleException("Falta: lib/java-cup-11b.jar")
+        }
+        if (!jflexJar.exists()) {
+            throw new GradleException("Falta: lib/jflex-full-1.9.1.jar")
+        }
+        if (!runtimeJar.exists()) {
+            throw new GradleException("Falta: lib/java-cup-11b-runtime.jar")
+        }
+        
+        println "✅ Todas las librerías están presentes"
+    }
+}
+
+generateParser.dependsOn verifyLibs
