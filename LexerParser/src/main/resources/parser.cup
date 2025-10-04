@@ -1,0 +1,79 @@
+/* Definicion del pasers con CUP para el analisis de la gramatica. */
+
+/* Imports que se ocupan */
+package parser;
+
+import java_cup.runtime.*;
+import lexer.*;
+import java.io.*;
+
+/* Parsers */
+parser code {:
+
+    // Iniciar.
+    public static void main(String[] args) throws Exception {
+        if (args.length == 0) {
+        System.err.println("Uso: java parser <archivo_fuente>");
+        System.exit(1);
+        }
+
+        // Cargar el lexer.
+        java.io.FileReader file = new java.io.FileReader(args[0]);
+        Lexer lexer = new Lexer(file);
+        parser p = new parser(lexer);
+
+        // Revisar si se puede cargar o no.
+        try {
+            p.parse();
+            System.out.println("El archivo fue reconocido por la gramatica.");
+        } catch (Exception e) {
+            System.err.println("Error durante el analisis sintactico: " + e.getMessage());
+        }
+    }
+:};
+
+/* Definición de terminales (tokens) */
+// Son las palabras reservadas
+terminal LET, GLOBAL, VOID, PRINCIPAL, DECIDE, OF, ELSE, END, LOOP, EXIT,;
+terminal  WHEN, FOR, STEP, TO, DOWNTO, DO, RETURN, BREAK, OUTPUT;
+
+
+// Tipos de datos
+terminal INT, FLOAT, BOOLEAN, CHAR, STRING;
+
+// Literales de los tipos de datos, esta es la representacion en string.
+terminal Integer INT_LITERAL;
+terminal Double FLOAT_LITERAL;
+terminal String STRING_LITERAL;
+terminal Character CHAR_LITERAL;
+terminal Boolean TRUE, FALSE;
+
+// Identificadores.
+terminal IDENTIFICADOR;
+
+// Operadores aritmeticos
+terminal MAS, MEOS, MULTIPLICACION, DIVISION, DIVISION_ENTERA, MODULO, POTENCIA;
+terminal INCREMENTO, DECREMENTO;
+
+// Operadores relacionales
+terminal IGUAL, DIFERENTE, MENOR_IGUAL, MAYOR_IGUAL, MENOR, MAYOR;
+
+// Operadores logicos
+terminal AND, OR, NOT;
+
+// Asignacion
+terminal ASIGNACION;
+
+// Delimitadores y separadores
+terminal DELIMITADOR, COMA;
+terminal PAREN_I, PAREN_D,CORCHETE_I, CORCHETE_D, LLAVE_I, LLAVE_D;
+
+// La flecha para los if y el concatenador de los prints.
+terminal FLECHA, CONCATENACION_OUTPUT;
+
+// Terminar para la deficion de errores lexicos.
+terminal ERROR;
+
+
+
+

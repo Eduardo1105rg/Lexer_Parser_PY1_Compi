@@ -87,8 +87,8 @@ StringSimple = [^\\"\\\n\r]+ /* Este da problemas hay que cambiar la definicion.
 <YYINITIAL> "break"              { return symbol(sym.BREAK); }
 <YYINITIAL> "output"             { return symbol(sym.OUTPUT); }
 <YYINITIAL> "input"              { return symbol(sym.INPUT); }
-<YYINITIAL> "true"               { return symbol(sym.TRUE); } /*  { return symbol(sym.TRUE, Boolean.TRUE); } <- Con esta deinicion se le puede llevar el valo true como objeto */
-<YYINITIAL> "false"              { return symbol(sym.FALSE); } /* { return symbol(sym.FALSE, Boolean.FALSE); } */
+<YYINITIAL> "true"               { return symbol(sym.TRUE, Boolean.TRUE); } /* { return symbol(sym.TRUE); }  Nota: La version corregida fue agregada<- Con esta deinicion se le puede llevar el valo true como objeto */
+<YYINITIAL> "false"              { return symbol(sym.FALSE, Boolean.FALSE); } /* { return symbol(sym.FALSE); }  */
 
 /* Tipos de datos */
 <YYINITIAL> "int"                { return symbol(sym.INT); }
@@ -101,7 +101,7 @@ StringSimple = [^\\"\\\n\r]+ /* Este da problemas hay que cambiar la definicion.
     /* Literales */
     {Flotante}                   { return symbol(sym.FLOAT_LITERAL, Double.parseDouble(yytext())); }
     {Entero}                     { return symbol(sym.INT_LITERAL, Integer.parseInt(yytext())); }
-    {Identificador}                 { return symbol(sym.IDENTIFIER, yytext()); }
+    {Identificador}                 { return symbol(sym.IDENTIFICADOR, yytext()); }
     
     /* Strings */
     \"                           { string.setLength(0); yybegin(STRING); }
