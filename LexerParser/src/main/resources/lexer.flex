@@ -193,4 +193,4 @@ StringSimple = [^\\"\\\n\r]+ /* Este da problemas hay que cambiar la definicion.
 
 
 /* Manejo de errores: Me parece que esta lo que hace es revisar cualquier caracter que no esta registrado o que quede suelto. */
-[^] { reportError("Caracter ilegal: '" + yytext() + "'"); return symbol(sym.ERROR, yytext()); } /* Aqui se reporta el error, captura el token y deja que se continue el proceso. */
+[^] { reportError("Caracter ilegal: '" + yytext() + "'"); } /* Aqui se reporta el error, captura el token y deja que se continue el proceso. */

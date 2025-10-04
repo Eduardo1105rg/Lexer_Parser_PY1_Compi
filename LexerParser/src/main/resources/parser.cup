@@ -72,7 +72,7 @@ terminal PAREN_I, PAREN_D,CORCHETE_I, CORCHETE_D, LLAVE_I, LLAVE_D;
 terminal FLECHA, CONCATENACION_OUTPUT;
 
 // Terminar para la deficion de errores lexicos.
-terminal ERROR;
+// terminal ERROR;
 
 
 
@@ -81,6 +81,9 @@ terminal ERROR;
 
 /* >> Estructura general*/
 non terminal programa, principal, funciones, funcion, params, param;
+
+/* >> Tipos de datos */
+non terminal tipoDatoFuncion, tipoDatoVariable
 
 /* >> Sentencias y bloques */
 non terminal bloque, sentencias, sentencia;
@@ -139,11 +142,65 @@ precedence left INCREMENTO, DECREMENTO;
 
 
 /* Precedencia para resolver conflictos */
-precedence left COMMA;
-precedence right ASSIGN;
+precedence left COMA;
+precedence right ASIGNACION;
 
 
 
 
 /* Esta es la que dice como se inicia todo. */
 start with programa;
+
+/* Producciones generales */
+programa ::= varGlobal programa
+            | funciones programa
+            | principal
+            | error {: System.err.println("Error de sintaxis en el programa"); :};
+
+principal ::= VOID PRINCIPAL PAREN_I PAREN_D bloque
+            | error PRINCIPAL {: System.err.println("Error: principal debe ser 'void principal є э bloque'");  :};
+
+tipoDatoFuncion ::= INT
+                  | FLOAT
+                  | BOOLEAN
+                  | error {: System.err.println("Error: tipo de función debe ser int, float o boolean"); :};
+
+tipoDatoVariable ::= INT
+                   | FLOAT
+                   | BOOLEAN
+                   | CHAR
+                   | STRING
+                   | error {: System.err.println("Error: tipo de variable debe ser int, float, boolean, char o string"); :};
+
+funciones ::= funcion
+            | funciones funcion;
+
+funcion ::= tipoDatoFuncion IDENTIFICADOR PAREN_I params PAREN_D bloque
+          | tipoDatoFuncion IDENTIFICADOR PAREN_I PAREN_D bloque
+          | error IDENTIFICADOR PAREN_I params PAREN_D bloque {: System.err.println("Error en la definición de la función"); :};
+
+params ::= param
+         | params COMA param;
+
+param ::= tipoDatoVariable IDENTIFICADOR;
+
+/* Producciones de sentencias y bloques */
+bloque ::= LLAVE_I sentencias LLAVE_D
+         | LLAVE_I LLAVE_D
+         | error LLAVE_I sentencias LLAVE_D {: System.err.println("Error en la definición del bloque"); :};
+
+sentencias ::= sentencia
+             | sentencias sentencia;
+
+sentencia ::= var
+            | varAsignacion
+            | varCyAsignacion
+            | lista
+            | estructruraControl
+            | funcionLlamada
+            | return
+            | break
+            | input
+            | output
+            | output_inline
+            | error {: System.err.println("Error en la definición de la sentencia"); :};
