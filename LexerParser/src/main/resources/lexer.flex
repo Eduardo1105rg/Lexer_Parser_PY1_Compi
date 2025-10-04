@@ -111,7 +111,7 @@ StringSimple = [^\\"\\\n\r]+ /* Este da problemas hay que cambiar la definicion.
     
     /* Operadores aritmeticos */
     "+"                          { return symbol(sym.MAS); }
-    "-"                          { return symbol(sym.MEOS); }
+    "-"                          { return symbol(sym.MENOS); }
     "*"                          { return symbol(sym.MULTIPLICACION); }
     "/"                          { return symbol(sym.DIVISION); }
     "//"                         { return symbol(sym.DIVISION_ENTERA); }

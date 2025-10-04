@@ -52,7 +52,7 @@ terminal Boolean TRUE, FALSE;
 terminal IDENTIFICADOR;
 
 // Operadores aritmeticos
-terminal MAS, MEOS, MULTIPLICACION, DIVISION, DIVISION_ENTERA, MODULO, POTENCIA;
+terminal MAS, MENOS, MULTIPLICACION, DIVISION, DIVISION_ENTERA, MODULO, POTENCIA;
 terminal INCREMENTO, DECREMENTO;
 
 // Operadores relacionales
@@ -118,3 +118,32 @@ non terminal lista, declaracionLista, creacionYAsignacionLista, elementos, eleme
 
 
 
+/* Precedencia de operadores (de menor a mayor precedencia) */
+
+// Operadores binarios
+precedence left OR;
+precedence left AND;
+precedence right NOT;
+
+/* Operadores booleanos y relacionales */
+precedence left IGUAL, DIFERENTE;
+precedence left MENOR, MAYOR, MENOR_IGUAL, MAYOR_IGUAL;
+
+/* Operadores aritmeticos */
+precedence left MAS, MENOS;
+precedence left MULTIPLICACION, DIVISION, DIVISION_ENTERA, MODULO;
+precedence right POTENCIA;
+
+// Operadores unarios
+precedence left INCREMENTO, DECREMENTO;
+
+
+/* Precedencia para resolver conflictos */
+precedence left COMMA;
+precedence right ASSIGN;
+
+
+
+
+/* Esta es la que dice como se inicia todo. */
+start with programa;
