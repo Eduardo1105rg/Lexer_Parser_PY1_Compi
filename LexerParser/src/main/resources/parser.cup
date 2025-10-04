@@ -35,7 +35,7 @@ parser code {:
 /* Definición de terminales (tokens) */
 // Son las palabras reservadas
 terminal LET, GLOBAL, VOID, PRINCIPAL, DECIDE, OF, ELSE, END, LOOP, EXIT;
-terminal  WHEN, FOR, STEP, TO, DOWNTO, DO, RETURN, BREAK, OUTPUT;
+terminal  WHEN, FOR, STEP, TO, DOWNTO, DO, RETURN, BREAK, OUTPUT, INPUT;
 
 
 // Tipos de datos
@@ -52,7 +52,7 @@ terminal Boolean TRUE, FALSE;
 terminal IDENTIFICADOR;
 
 // Operadores aritmeticos
-terminal MAS, MEOS, MULTIPLICACION, DIVISION, DIVISION_ENTERA, MODULO, POTENCIA;
+terminal MAS, MENOS, MULTIPLICACION, DIVISION, DIVISION_ENTERA, MODULO, POTENCIA;
 terminal INCREMENTO, DECREMENTO;
 
 // Operadores relacionales
