@@ -35,8 +35,7 @@ import java.io.*;
     
     // Errores lexicos
     public void reportError(String message) {
-        System.err.println("Error léxico en línea " + (yyline + 1) + 
-                          ", columna " + (yycolumn + 1) + ": " + message);
+        System.err.println("Error lexico en linea " + (yyline + 1) + ", columna " + (yycolumn + 1) + ": " + message);
     }
 %}
 
@@ -47,8 +46,8 @@ InputCharacter = [^\r\n]
 WhiteSpace     = {LineTerminator} | [ \t\f]
 
 /* comentarios */
-CommentLine    = "|" {InputCharacter}* {LineTerminator}?
-CommentBlock   = "¡" [^!]* "!"
+ComentarioLinea    = \|[^\n\r]*  /* "|" {InputCharacter}* {LineTerminator}?     ---   Con la nueva version se supone que va mejor, ya que incluye todo lo que esta hacia adelante en ese punto*/
+ComentarioBloque   = ¡([^¡]|\n|\r)*?! /* "¡" [^!]* "!"   --  Estabmos haciendo una mezcla de BNF y EBNF rarisima, con la nueva deficion va mejor ya que es solo reguex */
 
 /* Definicion de numeros (hacer algunas correcciones por que creo que definimos mal en el original.) */
 Entero = 0 | [-]?[1-9][0-9]*
@@ -56,11 +55,11 @@ EnteroPositivo = [1-9][0-9]* | 0
 Flotante = (0\.0) | [-]?0\.[0-9]*[1-9]+ | [-]?[1-9][0-9]*\.([0-9]*[1-9]+|0)
 
 /* Identificadores */
-Identifier = [a-zA-Z][a-zA-Z0-9_]*
+Identificador = [a-zA-Z][a-zA-Z0-9_]*
 
 /* Caracteres especiales para strings y chars */
 CaracterSimple = [^'\n\r\t]
-StringSimple = [^"\n\r\t\\]
+StringSimple = [^\\"\\\n\r]+ /* Este da problemas hay que cambiar la definicion.[^"\n\r\t\\] : ya se hizo un cambio temporal */
 
 %state STRING
 %state CHAR
@@ -88,8 +87,8 @@ StringSimple = [^"\n\r\t\\]
 <YYINITIAL> "break"              { return symbol(sym.BREAK); }
 <YYINITIAL> "output"             { return symbol(sym.OUTPUT); }
 <YYINITIAL> "input"              { return symbol(sym.INPUT); }
-<YYINITIAL> "true"               { return symbol(sym.TRUE); }
-<YYINITIAL> "false"              { return symbol(sym.FALSE); }
+<YYINITIAL> "true"               { return symbol(sym.TRUE); } /*  { return symbol(sym.TRUE, Boolean.TRUE); } <- Con esta deinicion se le puede llevar el valo true como objeto */
+<YYINITIAL> "false"              { return symbol(sym.FALSE); } /* { return symbol(sym.FALSE, Boolean.FALSE); } */
 
 /* Tipos de datos */
 <YYINITIAL> "int"                { return symbol(sym.INT); }
@@ -102,7 +101,7 @@ StringSimple = [^"\n\r\t\\]
     /* Literales */
     {Flotante}                   { return symbol(sym.FLOAT_LITERAL, Double.parseDouble(yytext())); }
     {Entero}                     { return symbol(sym.INT_LITERAL, Integer.parseInt(yytext())); }
-    {Identifier}                 { return symbol(sym.IDENTIFIER, yytext()); }
+    {Identificador}                 { return symbol(sym.IDENTIFIER, yytext()); }
     
     /* Strings */
     \"                           { string.setLength(0); yybegin(STRING); }
@@ -111,23 +110,23 @@ StringSimple = [^"\n\r\t\\]
     \'                           { yybegin(CHAR); }
     
     /* Operadores aritmeticos */
-    "+"                          { return symbol(sym.PLUS); }
-    "-"                          { return symbol(sym.MINUS); }
-    "*"                          { return symbol(sym.MULTIPLY); }
-    "/"                          { return symbol(sym.DIVIDE); }
-    "//"                         { return symbol(sym.INT_DIVIDE); }
+    "+"                          { return symbol(sym.MAS); }
+    "-"                          { return symbol(sym.MEOS); }
+    "*"                          { return symbol(sym.MULTIPLICACION); }
+    "/"                          { return symbol(sym.DIVISION); }
+    "//"                         { return symbol(sym.DIVISION_ENTERA); }
     "%"                          { return symbol(sym.MODULO); }
-    "^"                          { return symbol(sym.POWER); }
-    "++"                         { return symbol(sym.INCREMENT); }
-    "--"                         { return symbol(sym.DECREMENT); }
+    "^"                          { return symbol(sym.POTENCIA); }
+    "++"                         { return symbol(sym.INCREMENTO); }
+    "--"                         { return symbol(sym.DECREMENTO); }
     
     /* Operadores relacionales */
-    "=="                         { return symbol(sym.EQUAL); }
-    "!="                         { return symbol(sym.NOT_EQUAL); }
-    "<="                         { return symbol(sym.LESS_EQUAL); }
-    ">="                         { return symbol(sym.GREATER_EQUAL); }
-    "<"                          { return symbol(sym.LESS); }
-    ">"                          { return symbol(sym.GREATER); }
+    "=="                         { return symbol(sym.IGUAL); }
+    "!="                         { return symbol(sym.DIFERENTE); }
+    "<="                         { return symbol(sym.MENOR_IGUAL); }
+    ">="                         { return symbol(sym.MAYOR_IGUAL); }
+    "<"                          { return symbol(sym.MENOR); }
+    ">"                          { return symbol(sym.MAYOR); }
     
     /* Operadores logicos */
     "@"                          { return symbol(sym.AND); }
@@ -135,32 +134,36 @@ StringSimple = [^"\n\r\t\\]
     "Σ"                          { return symbol(sym.NOT); }
     
     /* Asignacion */
-    "="                          { return symbol(sym.ASSIGN); }
+    "="                          { return symbol(sym.ASIGNACION); }
     
     /* Delimitadores y separadores */
-    "$"                          { return symbol(sym.DELIMITER); }
-    ","                          { return symbol(sym.COMMA); }
-    ";"                          { return symbol(sym.SEMICOLON); }
+    "$"                          { return symbol(sym.DELIMITADOR); }
+    ","                          { return symbol(sym.COMA); } 
+    /* ";"                          { return symbol(sym.SEMICOLON); } Me parece que no esta definido en la gramatica original.*/
     
     /* Parentesis especiales para operaciones () */
-    "є"                          { return symbol(sym.LPAREN); }
-    "э"                          { return symbol(sym.RPAREN); }
+    "є"                          { return symbol(sym.PAREN_I); }
+    "э"                          { return symbol(sym.PAREN_D); }
     
-    /* Los que seria para abrir y cerrar ploques o sentencias. */
-    /* "["                          { return symbol(sym.LBRACKET); } */
-    /* "]"                          { return symbol(sym.RBRACKET); } */
-    "¿"                          { return symbol(sym.LBRACE); }
-    "?"                          { return symbol(sym.RBRACE); }
+    /* Estos son los que se usan para el manejo de listas */
+    "["                          { return symbol(sym.CORCHETE_I); } /* Estos son los de las listas*/
+    "]"                          { return symbol(sym.CORCHETE_D); } 
+
+    /* Los que seria para abrir y cerrar bloques o sentencias. */
+    "¿"                          { return symbol(sym.LLAVE_I); }
+    "?"                          { return symbol(sym.LLAVE_D); }
     
     /* Flecha para condiciones */
-    "->"                         { return symbol(sym.ARROW); }
+    "->"                         { return symbol(sym.FLECHA); }
     
-    /* Output concatenation */
-    "<<"                         { return symbol(sym.OUTPUT_CONCAT); }
+    /* Output concatenaCion */
+    "<<"                         { return symbol(sym.CONCATENACION_OUTPUT); }
     
+
+    /* Esta parte de aqui es de la seccion original, creo que se tiene que borrar o revisar */
     /* Comentarios */
-    {CommentLine}                { /* ignorar */ }
-    {CommentBlock}               { /* ignorar */ }
+    {ComentarioLinea}                { /* ignorar */ }
+    {ComentarioBloque}               { /* ignorar */ }
     
     /* Espacios en blanco */
     {WhiteSpace}                 { /* ignorar */ }
@@ -168,29 +171,26 @@ StringSimple = [^"\n\r\t\\]
 
 /* manejo de strings */
 <STRING> {
-    \"                           { yybegin(YYINITIAL); 
-                                  return symbol(sym.STRING_LITERAL, string.toString()); }
-    {StringSimple}+              { string.append(yytext()); }
+    \"                           { yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, string.toString()); } // Esta es la que devuleve el contenido cuando el string se cirra.
+    [^\"\\\n\r]+                 { string.append(yytext()); }
     "\\n"                        { string.append('\n'); }
     "\\t"                        { string.append('\t'); }
     "\\r"                        { string.append('\r'); }
     "\\\\"                       { string.append('\\'); }
     "\\\""                       { string.append('\"'); }
-    {LineTerminator}             { reportError("String sin cerrar"); 
-                                  yybegin(YYINITIAL); }
+    {LineTerminator}             { reportError("String sin cerrar"); yybegin(YYINITIAL); }
 }
 
 /* Manejo de caracteres */
 <CHAR> {
-    {CaracterSimple}\'           { yybegin(YYINITIAL); 
-                                  return symbol(sym.CHAR_LITERAL, yytext().charAt(0)); }
-    \'                           { reportError("Caracter vacío"); 
-                                  yybegin(YYINITIAL); }
-    {LineTerminator}             { reportError("Caracter sin cerrar"); 
-                                  yybegin(YYINITIAL); }
+    {CaracterSimple}\'           { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, yytext().charAt(0)); }
+
+    \'                           { reportError("Caracter vacaio");  yybegin(YYINITIAL); }
+
+    {LineTerminator}             { reportError("Caracter sin cerrar");  yybegin(YYINITIAL); }
 }
 
-/* Manejo de errores */
-[^]                              { 
-                                  reportError("Caracter ilegal: '" + yytext() + "'"); 
-                                }
+
+
+/* Manejo de errores: Me parece que esta lo que hace es revisar cualquier caracter que no esta registrado o que quede suelto. */
+[^] { reportError("Caracter ilegal: '" + yytext() + "'"); return symbol(sym.ERROR, yytext()); } /* Aqui se reporta el error, captura el token y deja que se continue el proceso. */

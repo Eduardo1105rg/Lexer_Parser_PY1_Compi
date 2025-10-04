@@ -46,7 +46,7 @@ task generateLexer(type: Exec) {
     }
     workingDir '.'
     commandLine 'java', '-jar', 'lib/jflex-full-1.9.1.jar', 
-                '-d', 'src/main/java', 
+                '-d', 'src/main/java/lexer', 
                 'src/main/resources/lexer.flex'
 }
 
@@ -91,7 +91,7 @@ task verifyLibs {
             throw new GradleException("Falta: lib/java-cup-11b-runtime.jar")
         }
         
-        println "✅ Todas las librerías están presentes"
+        println "Todas las librerias estan presentes"
     }
 }
 
