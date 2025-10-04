@@ -34,7 +34,7 @@ parser code {:
 
 /* Definición de terminales (tokens) */
 // Son las palabras reservadas
-terminal LET, GLOBAL, VOID, PRINCIPAL, DECIDE, OF, ELSE, END, LOOP, EXIT,;
+terminal LET, GLOBAL, VOID, PRINCIPAL, DECIDE, OF, ELSE, END, LOOP, EXIT;
 terminal  WHEN, FOR, STEP, TO, DOWNTO, DO, RETURN, BREAK, OUTPUT;
 
 
@@ -74,6 +74,47 @@ terminal FLECHA, CONCATENACION_OUTPUT;
 // Terminar para la deficion de errores lexicos.
 terminal ERROR;
 
+
+
+
+/* -------------->>>> Seccion para los no terminales */
+
+/* >> Estructura general*/
+non terminal programa, principal, funciones, funcion, params, param;
+
+/* >> Sentencias y bloques */
+non terminal bloque, sentencias, sentencia;
+
+/* >> Declaraciones y variables */
+non terminal var, varAsignacion, varCyAsignacion, varGlobal;
+
+/* >> Expresiones  */
+
+non terminal expresion;
+
+/* > Numericas */
+non terminal expresionNumerica, expresionSuma, expresionProducto, expresionPotencia, expresionFactor, expresionAritmeticaUnaria, expresionAritmeticaUnariaNegativa;
+
+/* > Boolenas  */
+non terminal expresionBooleana;
+
+/* > Literales */
+non terminal  expresionChar, expresionString;
+
+/* > Expresiones compuestas */
+non terminal expresionAritmetica, expresionLogica, expresionRelacional;
+
+/* >> Control de flujo */
+non terminal estructruraControl, decide, condicion, loop, for;
+
+/* >> Funciones y sus llamadas  */
+non terminal funcionLlamada, argumentos, return, break;
+
+/* >> Input y ouput */
+non terminal input, output, output_inline;
+
+/* >> Listas */
+non terminal lista, declaracionLista, creacionYAsignacionLista, elementos, elementoLista, modificarElementoLista, obtenerElementoLista;
 
 
 
