@@ -136,14 +136,104 @@ precedence right POTENCIA;
 
 // Operadores unarios
 precedence left INCREMENTO, DECREMENTO;
+precedence right MEOS; /* Pasar a negativo: Revisar la gramatica original para una posible correccion. */
 
 
 /* Precedencia para resolver conflictos */
-precedence left COMMA;
-precedence right ASSIGN;
+precedence left COMA;
+precedence right ASIGNACION;
 
 
 
 
 /* Esta es la que dice como se inicia todo. */
 start with programa;
+
+
+/* -------------------------  >> Definicion << -------------------------------------------------------------------  */
+
+
+
+
+
+
+
+
+
+
+/* ##### Seccion para las expresiones ######*/
+expresion ::= expresionAritmetica
+            | expresionLogica
+            | expresionChar
+            | expresionString;
+
+
+expresionLogica ::= expresionLogica AND expresionLogica
+                  | expresionLogica OR expresionLogica
+                  | NOT expresionLogica
+                  | PAREN_I expresionLogica PAREN_D
+                  | expresionRelacional
+                  | expresionBooleana;
+                 
+expresionRelacional ::= expresionAritmetica IGUAL expresionAritmetica
+                      | expresionAritmetica DIFERENTE expresionAritmetica
+                      | expresionAritmetica MENOR expresionAritmetica
+                      | expresionAritmetica MAYOR expresionAritmetica
+                      | expresionAritmetica MENOR_IGUAL expresionAritmetica
+                      | expresionAritmetica MAYOR_IGUAL expresionAritmetica
+                      | expresionBooleana IGUAL expresionBooleana
+                      | expresionChar IGUAL expresionChar
+                      | PAREN_I expresionRelacional PAREN_D;
+
+                  
+
+expresionChar ::= CHAR_LITERAL
+                | IDENTIFICADOR
+                | obtenerElementoLista;
+
+expresionString ::= STRING_LITERAL
+                  | IDENTIFICADOR;
+
+expresionBooleana ::= TRUE
+                    | FALSE
+                    | IDENTIFICADOR;
+
+
+
+
+/* >> Expresiones aritmeticas */
+
+expresionAritmetica ::= expresionSuma;
+
+
+expresionSuma ::= expresionSuma MAS expresionProducto
+                | expresionSuma MENOS expresionProducto
+                | expresionProducto;
+
+expresionProducto ::= expresionProducto MULTIPLICACION expresionPotencia
+                    | expresionProducto DIVISION expresionPotencia
+                    | expresionProducto DIVISION_ENTERA expresionPotencia
+                    | expresionProducto MODULO expresionPotencia
+                    | expresionPotencia;
+          
+expresionPotencia ::= expresionFactor POTENCIA expresionPotencia
+                    | expresionFactor;
+
+
+expresionFactor ::= PAREN_I expresionAritmetica PAREN_D
+                  | expresionNumerica
+                  | expresionAritmeticaUnaria
+                  | expresionAritmeticaUnariaNegativa;
+
+expresionNumerica ::= INT_LITERAL
+                    | FLOAT_LITERAL
+                    | IDENTIFICADOR
+                    | obtenerElementoLista
+                    | funcionLlamada /* Esta psoiblemente se tenga que separar en los dos tipos de llamada */
+                    | input;
+
+expresionAritmeticaUnaria ::= IDENTIFICADOR INCREMENTO
+                            | IDENTIFICADOR DECREMENTO;
+
+expresionAritmeticaUnariaNegativa ::= MEOS expresionNumerica;
+
