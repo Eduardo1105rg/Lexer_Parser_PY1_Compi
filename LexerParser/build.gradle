@@ -35,7 +35,7 @@ task generateParser(type: Exec) {
     }
     workingDir '.'
     commandLine 'java', '-jar', 'lib/java-cup-11b.jar', 
-                '-expect', '6',
+                '-expect', '12',
                 '-destdir', 'src/main/java/parser',
                 '-symbols', 'sym',
                 'src/main/resources/parser.cup'
