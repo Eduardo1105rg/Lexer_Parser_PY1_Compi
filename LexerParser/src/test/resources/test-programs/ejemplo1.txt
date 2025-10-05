@@ -1,3 +1,28 @@
-int suma(int a, int b) {
-    return a + b;
-}
+global int contador = 0$
+
+int suma є int a, int b э ¿
+    return a + b$
+?
+
+float multiplicar є float x, float y э ¿
+    return x * y$
+?
+
+void principal є э ¿
+    let int resultado = suma є 5, 3 э$
+    output є resultado э$
+    
+    let float producto = multiplicar є 2.5, 4.0 э$
+    output є producto э$
+    
+    let boolean activo = true$
+    
+    decide of
+        є resultado == 8 э -> ¿
+            output є "Correcto" э$
+        ?
+        є resultado != 8 э -> ¿
+            output є "Incorrecto" э$
+        ?
+    end decide$
+?
