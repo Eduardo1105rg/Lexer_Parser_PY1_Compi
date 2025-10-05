@@ -126,7 +126,7 @@ non terminal lista, declaracionLista, creacionYAsignacionLista, elementos, eleme
 // Operadores binarios
 precedence left OR;
 precedence left AND;
-precedence right NOT;
+precedence right NOT; 
 
 /* Operadores booleanos y relacionales */
 precedence left IGUAL, DIFERENTE;
