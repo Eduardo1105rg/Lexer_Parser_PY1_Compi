@@ -106,4 +106,4 @@ generateParser.dependsOn verifyLibs
 
 // Compilar todo: ./gradlew compileJava
 
-// Ejecutar con un archivo de prueba: ./gradlew run --args="src/test/resources/test-programs/ejemplo.txt"
+// Ejecutar con un archivo de prueba: ./gradlew run --args="src/test/resources/test-programs/ejemplo1.txt"

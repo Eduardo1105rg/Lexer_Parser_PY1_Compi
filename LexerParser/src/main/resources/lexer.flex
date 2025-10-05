@@ -13,6 +13,7 @@ import parser.sym;
 
 
 %class Lexer
+%public
 %unicode
 %cup
 %line   /* Estos de aqui son los que nos ayudan a la hora de saber en que posicion esta un token. */

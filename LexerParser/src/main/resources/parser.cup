@@ -6,32 +6,11 @@ package parser;
 import java_cup.runtime.*;
 import lexer.*;
 import java.io.*;
+import lexer.Lexer;
 
 /* Parsers */
 parser code {:
-
-    import lexer.Lexer;
-
-    // Iniciar.
-    public static void main(String[] args) throws Exception {
-        if (args.length == 0) {
-        System.err.println("Uso: java parser <archivo_fuente>");
-        System.exit(1);
-        }
-
-        // Cargar el lexer.
-        java.io.FileReader file = new java.io.FileReader(args[0]);
-        Lexer lexer = new Lexer(file);
-        parser p = new parser(lexer);
-
-        // Revisar si se puede cargar o no.
-        try {
-            p.parse();
-            System.out.println("El archivo fue reconocido por la gramatica.");
-        } catch (Exception e) {
-            System.err.println("Error durante el analisis sintactico: " + e.getMessage());
-        }
-    }
+     
 :};
 
 /* Definición de terminales (tokens) */
