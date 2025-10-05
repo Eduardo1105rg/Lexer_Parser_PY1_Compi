@@ -1,7 +1,10 @@
 
 /* Esta es la seccion de encabezados u configuracion: eso de la directiva cup podria dar problemas. */
+package lexer;
 import java_cup.runtime.*;
 import java.io.*;
+import parser.sym;
+
 
 /**
  * Analizador lexico jflex tomando en cuenta gramatica propia
