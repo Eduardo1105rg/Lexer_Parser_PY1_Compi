@@ -69,42 +69,43 @@ StringSimple = [^\n\r\"\\]+
 
 %%
 
-/* Palabras reservadas definidas */
-<YYINITIAL> "let"                { return symbol(sym.LET); }
-<YYINITIAL> "global"             { return symbol(sym.GLOBAL); }
-<YYINITIAL> "void"               { return symbol(sym.VOID); }
-<YYINITIAL> "principal"          { return symbol(sym.PRINCIPAL); }
-<YYINITIAL> "decide"             { return symbol(sym.DECIDE); }
-<YYINITIAL> "of"                 { return symbol(sym.OF); }
-<YYINITIAL> "else"               { return symbol(sym.ELSE); }
-<YYINITIAL> "end"                { return symbol(sym.END); }
-<YYINITIAL> "loop"               { return symbol(sym.LOOP); }
-<YYINITIAL> "exit"               { return symbol(sym.EXIT); }
-<YYINITIAL> "when"               { return symbol(sym.WHEN); }
-<YYINITIAL> "for"                { return symbol(sym.FOR); }
-<YYINITIAL> "step"               { return symbol(sym.STEP); }
-<YYINITIAL> "to"                 { return symbol(sym.TO); }
-<YYINITIAL> "downto"             { return symbol(sym.DOWNTO); }
-<YYINITIAL> "do"                 { return symbol(sym.DO); }
-<YYINITIAL> "return"             { return symbol(sym.RETURN); }
-<YYINITIAL> "break"              { return symbol(sym.BREAK); }
-<YYINITIAL> "output"             { return symbol(sym.OUTPUT); }
-<YYINITIAL> "input"              { return symbol(sym.INPUT); }
-<YYINITIAL> "true"               { return symbol(sym.TRUE, Boolean.TRUE); } 
-<YYINITIAL> "false"              { return symbol(sym.FALSE, Boolean.FALSE); } 
+/* Palabras reservadas definidas System.out.println("Token: LET, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));*/
+
+<YYINITIAL> "let"                { System.out.println("Token: let, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.LET); }
+<YYINITIAL> "global"             { System.out.println("Token: global, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.GLOBAL); }
+<YYINITIAL> "void"               { System.out.println("Token: void, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.VOID); }
+<YYINITIAL> "principal"          { System.out.println("Token: principal, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.PRINCIPAL); }
+<YYINITIAL> "decide"             { System.out.println("Token: decide, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.DECIDE); }
+<YYINITIAL> "of"                 { System.out.println("Token: of, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.OF); }
+<YYINITIAL> "else"               { System.out.println("Token: else, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.ELSE); }
+<YYINITIAL> "end"                { System.out.println("Token: end, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.END); }
+<YYINITIAL> "loop"               { System.out.println("Token: loop, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.LOOP); }
+<YYINITIAL> "exit"               { System.out.println("Token: exit, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.EXIT); }
+<YYINITIAL> "when"               { System.out.println("Token: when, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.WHEN); }
+<YYINITIAL> "for"                { System.out.println("Token: for, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.FOR); }
+<YYINITIAL> "step"               { System.out.println("Token: step, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.STEP); }
+<YYINITIAL> "to"                 { System.out.println("Token: to, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.TO); }
+<YYINITIAL> "downto"             { System.out.println("Token: downto, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.DOWNTO); }
+<YYINITIAL> "do"                 { System.out.println("Token: do, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.DO); }
+<YYINITIAL> "return"             { System.out.println("Token: return, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.RETURN); }
+<YYINITIAL> "break"              { System.out.println("Token: break, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.BREAK); }
+<YYINITIAL> "output"             { System.out.println("Token: output, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.OUTPUT); }
+<YYINITIAL> "input"              { System.out.println("Token: input, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.INPUT); }
+<YYINITIAL> "true"               { System.out.println("Token: true, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.TRUE, Boolean.TRUE); } 
+<YYINITIAL> "false"              { System.out.println("Token: false, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.FALSE, Boolean.FALSE); } 
 
 /* Tipos de datos */
-<YYINITIAL> "int"                { return symbol(sym.INT); }
-<YYINITIAL> "float"              { return symbol(sym.FLOAT); }
-<YYINITIAL> "boolean"            { return symbol(sym.BOOLEAN); }
-<YYINITIAL> "char"               { return symbol(sym.CHAR); }
-<YYINITIAL> "string"             { return symbol(sym.STRING); }
+<YYINITIAL> "int"                { System.out.println("Token: int, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.INT); }
+<YYINITIAL> "float"              { System.out.println("Token: float, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.FLOAT); }
+<YYINITIAL> "boolean"            { System.out.println("Token: boolean, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.BOOLEAN); }
+<YYINITIAL> "char"               { System.out.println("Token: char, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.CHAR); }
+<YYINITIAL> "string"             { System.out.println("Token: string, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.STRING); }
 
 <YYINITIAL> {
     /* Literales */
-    {Flotante}                   { return symbol(sym.FLOAT_LITERAL, Double.parseDouble(yytext())); }
-    {Entero}                     { return symbol(sym.INT_LITERAL, Integer.parseInt(yytext())); }
-    {Identificador}                 { return symbol(sym.IDENTIFICADOR, yytext()); }
+    {Flotante}                   { System.out.println("Token: FLOAT_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.FLOAT_LITERAL, Double.parseDouble(yytext())); }
+    {Entero}                     { System.out.println("Token: INT_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.INT_LITERAL, Integer.parseInt(yytext())); }
+    {Identificador}              { System.out.println("Token: identificador, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.IDENTIFICADOR, yytext()); }
     
     /* Strings */
     \"                           { string.setLength(0); yybegin(STRING); }
@@ -113,54 +114,54 @@ StringSimple = [^\n\r\"\\]+
     \'                           { yybegin(CHAR); }
     
     /* Operadores aritmeticos */
-    "+"                          { return symbol(sym.MAS); }
-    "-"                          { return symbol(sym.MENOS); }
-    "*"                          { return symbol(sym.MULTIPLICACION); }
-    "/"                          { return symbol(sym.DIVISION); }
-    "//"                         { return symbol(sym.DIVISION_ENTERA); }
-    "%"                          { return symbol(sym.MODULO); }
-    "^"                          { return symbol(sym.POTENCIA); }
-    "++"                         { return symbol(sym.INCREMENTO); }
-    "--"                         { return symbol(sym.DECREMENTO); }
+    "+"                          { System.out.println("Token: MAS, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.MAS); }
+    "-"                          { System.out.println("Token: MENOS, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.MENOS); }
+    "*"                          { System.out.println("Token: MULTIPLICACION, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.MULTIPLICACION); }
+    "/"                          { System.out.println("Token: DIVISION, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.DIVISION); }
+    "//"                         { System.out.println("Token: DIVISION_ENTERA, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.DIVISION_ENTERA); }
+    "%"                          { System.out.println("Token: MODULO, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.MODULO); }
+    "^"                          { System.out.println("Token: POTENCIA, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.POTENCIA); }
+    "++"                         { System.out.println("Token: INCREMENTO, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.INCREMENTO); }
+    "--"                         { System.out.println("Token: DECREMENTO, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.DECREMENTO); }
     
     /* Operadores relacionales */
-    "=="                         { return symbol(sym.IGUAL); }
-    "!="                         { return symbol(sym.DIFERENTE); }
-    "<="                         { return symbol(sym.MENOR_IGUAL); }
-    ">="                         { return symbol(sym.MAYOR_IGUAL); }
-    "<"                          { return symbol(sym.MENOR); }
-    ">"                          { return symbol(sym.MAYOR); }
-    
+    "=="                         { System.out.println("Token: IGUAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.IGUAL); }
+    "!="                         { System.out.println("Token: DIFERENTE, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.DIFERENTE); }
+    "<="                         { System.out.println("Token: MENOR_IGUAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.MENOR_IGUAL); }
+    ">="                         { System.out.println("Token: MAYOR_IGUAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.MAYOR_IGUAL); }
+    "<"                          { System.out.println("Token: MENOR, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.MENOR); }
+    ">"                          { System.out.println("Token: MAYOR, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.MAYOR); }
+
     /* Operadores logicos */
-    "@"                          { return symbol(sym.AND); }
-    "~"                          { return symbol(sym.OR); }
-    "Σ"                          { return symbol(sym.NOT); }
+    "@"                          { System.out.println("Token: AND, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.AND); }
+    "~"                          { System.out.println("Token: OR, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.OR); }
+    "Σ"                          { System.out.println("Token: NOT, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.NOT); }
     
     /* Asignacion */
-    "="                          { return symbol(sym.ASIGNACION); }
+    "="                          { System.out.println("Token: ASIGNACION, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.ASIGNACION); }
     
     /* Delimitadores y separadores */
-    "$"                          { return symbol(sym.DELIMITADOR); }
-    ","                          { return symbol(sym.COMA); } 
+    "$"                          { System.out.println("Token: DELIMITADOR, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.DELIMITADOR); }
+    ","                          { System.out.println("Token: COMA, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.COMA); } 
     /* ";"                          { return symbol(sym.SEMICOLON); } Me parece que no esta definido en la gramatica original.*/
     
     /* Parentesis especiales para operaciones () */
-    "є"                          { return symbol(sym.PAREN_I); }
-    "э"                          { return symbol(sym.PAREN_D); }
+    "є"                          { System.out.println("Token: PAREN_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.PAREN_I); }
+    "э"                          { System.out.println("Token: PAREN_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.PAREN_D); }
     
     /* Estos son los que se usan para el manejo de listas */
-    "["                          { return symbol(sym.CORCHETE_I); } 
-    "]"                          { return symbol(sym.CORCHETE_D); } 
+    "["                          { System.out.println("Token: CORCHETE_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.CORCHETE_I); } 
+    "]"                          { System.out.println("Token: CORCHETE_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.CORCHETE_D); } 
 
     /* Los que seria para abrir y cerrar bloques o sentencias. */
-    "¿"                          { return symbol(sym.LLAVE_I); }
-    "?"                          { return symbol(sym.LLAVE_D); }
+    "¿"                          { System.out.println("Token: LLAVE_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.LLAVE_I); }
+    "?"                          { System.out.println("Token: LLAVE_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.LLAVE_D); }
     
     /* Flecha para condiciones */
-    "->"                         { return symbol(sym.FLECHA); }
+    "->"                         { System.out.println("Token: LET, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.FLECHA); }
     
     /* Output concatenaCion */
-    "<<"                         { return symbol(sym.CONCATENACION_OUTPUT); }
+    "<<"                         { System.out.println("Token: CONCATENACION_OUTPUT, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.CONCATENACION_OUTPUT); }
     
 
     /* Esta parte de aqui es de la seccion original, creo que se tiene que borrar o revisar */
@@ -174,7 +175,7 @@ StringSimple = [^\n\r\"\\]+
 
 /* manejo de strings */
 <STRING> {
-    \"                           { yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, string.toString()); } // Esta es la que devuleve el contenido cuando el string se cirra.
+    \"                           { System.out.println("Token: STRING_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, string.toString()); } // Esta es la que devuleve el contenido cuando el string se cirra.
     [^\"\\\n\r]+                 { string.append(yytext()); }
     "\\n"                        { string.append('\n'); }
     "\\t"                        { string.append('\t'); }
@@ -186,9 +187,9 @@ StringSimple = [^\n\r\"\\]+
 
 /* Manejo de caracteres */
 <CHAR> {
-    {CaracterSimple}\'           { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, yytext().charAt(0)); }
+    {CaracterSimple}\'           { System.out.println("Token: CHAR_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, yytext().charAt(0)); }
 
-    \'                           { reportError("Caracter vacaio");  yybegin(YYINITIAL); }
+    \'                           { reportError("Caracter vacio");  yybegin(YYINITIAL); }
 
     {LineTerminator}             { reportError("Caracter sin cerrar");  yybegin(YYINITIAL); }
 }
