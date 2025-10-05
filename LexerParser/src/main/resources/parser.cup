@@ -83,7 +83,7 @@ terminal FLECHA, CONCATENACION_OUTPUT;
 non terminal programa, principal, funciones, funcion, params, param;
 
 /* >> Tipos de datos */
-non terminal tipoDatoFuncion, tipoDatoVariable
+non terminal tipoDatoFuncion, tipoDatoVariable;
 
 /* >> Sentencias y bloques */
 non terminal bloque, sentencias, sentencia;
@@ -139,7 +139,7 @@ precedence right POTENCIA;
 
 // Operadores unarios
 precedence left INCREMENTO, DECREMENTO;
-precedence right MEOS; /* Pasar a negativo: Revisar la gramatica original para una posible correccion. */
+precedence right MENOS; /* Pasar a negativo: Revisar la gramatica original para una posible correccion. */
 
 
 /* Precedencia para resolver conflictos */
@@ -209,6 +209,53 @@ sentencia ::= var
             | output
             | output_inline
             | error {: System.err.println("Error en la definición de la sentencia"); :};
+
+funcionLlamada ::= IDENTIFICADOR PAREN_I argumentos PAREN_D
+                 | IDENTIFICADOR PAREN_I PAREN_D;
+
+argumentos ::= expresion
+             | argumentos COMA expresion;
+
+return ::= RETURN DELIMITADOR
+         | RETURN expresion DELIMITADOR;
+
+break ::= BREAK DELIMITADOR;
+
+input ::= INPUT PAREN_I tipoDatoInput PAREN_D;
+
+tipoDatoInput ::= INT
+                | FLOAT;
+            
+output ::= output_inline DELIMITADOR
+          | output CONCATENACION_OUTPUT output_inline DELIMITADOR;
+
+/* Estructuras de control */
+estructruraControl ::= decide 
+                     | loop 
+                     | for;
+
+decide ::= DECIDE OF condiciones DELIMITADOR
+         | DECIDE OF condiciones ELSE bloque END DECIDE DELIMITADOR;
+
+condiciones ::= condicion FLECHA bloque
+              | condiciones condicion FLECHA bloque;
+
+condicion ::= PAREN_I expresion PAREN_D;
+
+/*REVISARRRRR: Porque sentencias puede ser solamente bloque*/
+loop ::= LOOP sentencias EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+       | LOOP sentencias break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+
+/* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
+var ::= LET tipoDatoVariable IDENTIFICADOR DELIMITADOR
+      | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
+
+varAsignacion ::= IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
+                 
+varCyAsignacion ::= LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
+
+varGlobal ::= GLOBAL tipoDatoVariable IDENTIFICADOR DELIMITADOR
+            | GLOBAL tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
 
 
 
@@ -286,4 +333,4 @@ expresionNumerica ::= INT_LITERAL
 expresionAritmeticaUnaria ::= IDENTIFICADOR INCREMENTO
                             | IDENTIFICADOR DECREMENTO;
 
-expresionAritmeticaUnariaNegativa ::= MEOS expresionNumerica;
+expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica;
