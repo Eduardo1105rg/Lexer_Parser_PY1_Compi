@@ -1,28 +1,188 @@
-global int contador = 0$
+| Programa completo para probar toda la gramática
+| Este archivo incluye todas las características del lenguaje
 
-int suma є int a, int b э ¿
+| ============ VARIABLES GLOBALES ============
+global int contadorGlobal = 100$
+global float pi = 3.14159$
+global boolean activo = true$
+global char inicial = 'A'$
+global string mensaje = "Hola Mundo"$
+
+| ============ LISTAS GLOBALES ============
+global int[] numeros = ¿1, 2, 3, 4, 5?$
+global char[] caracteres = ¿'a', 'b', 'c'?$
+
+| ============ FUNCIONES ============
+
+| Función que suma dos números
+int sumar є int a, int b э ¿
     return a + b$
 ?
 
-float multiplicar є float x, float y э ¿
-    return x * y$
+| Función que calcula factorial
+int factorial є int n э ¿
+    let int resultado = 1$
+    
+    for i step 1 to n do ¿
+        resultado = resultado * i$
+    ?$
+    
+    return resultado$
 ?
 
+| Función que verifica si un número es par
+boolean esPar є int numero э ¿
+    return numero % 2 == 0$
+?
+
+| Función con operaciones complejas
+float calcularPromedio є int a, int b, int c э ¿
+    let int suma = a + b + c$
+    let float promedio = suma / 3.0$
+    return promedio$
+?
+
+| Función que no retorna nada pero modifica listas
+int procesarLista є int[] lista, int tamaño э ¿
+    let int suma = 0$
+    
+    for i step 1 to tamaño do ¿
+        suma = suma + lista[i]$
+    ?$
+    
+    return suma$
+?
+
+| ============ FUNCIÓN PRINCIPAL ============
 void principal є э ¿
-    let int resultado = suma є 5, 3 э$
-    output є resultado э$
+    | Variables locales de diferentes tipos
+    let int edad = 25$
+    let float altura = 1.75$
+    let boolean estudiante = true$
+    let char grado = 'A'$
+    let string nombre = "Juan Pérez"$
     
-    let float producto = multiplicar є 2.5, 4.0 э$
-    output є producto э$
+    | ============ OPERACIONES ARITMÉTICAS ============
+    let int resultado1 = 10 + 5 * 2$
+    let int resultado2 = (10 + 5) * 2$
+    let float resultado3 = 15.5 / 3.0$
+    let int resultado4 = 17 % 5$
+    let int resultado5 = 2 ^ 3$
     
-    let boolean activo = true$
+    | Operadores unarios
+    let int incremento = 10$
+    incremento++$
+    let int decremento = 5$
+    decremento--$
     
+    | ============ LLAMADAS A FUNCIONES ============
+    let int suma = sumar є 15, 25 э$
+    let int fact = factorial є 5 э$
+    let boolean par = esPar є suma э$
+    let float promedio = calcularPromedio є 10, 20, 30 э$
+    
+    | ============ OPERACIONES CON LISTAS ============
+    let int[] miLista = ¿10, 20, 30, 40, 50?$
+    let char[] miTexto = ¿'H', 'o', 'l', 'a'?$
+    
+    | Modificar elementos de lista
+    miLista[0] = 100$
+    miTexto[1] = 'O'$
+    
+    | Obtener elementos de lista
+    let int primerElemento = miLista[0]$
+    let char segundoChar = miTexto[1]$
+    
+    | ============ ENTRADA Y SALIDA ============
+    output є "Ingrese su edad:" э$
+    let int edadUsuario = input є int э$
+    
+    output є "Ingrese su calificación:" э$
+    let float calificacion = input є float э$
+    
+    | Output concatenado
+    output є "Su nombre es: " э << output є nombre э << output є " y tiene " э << output є edadUsuario э << output є " años" э$
+    
+    | ============ ESTRUCTURA DECIDE ============
     decide of
-        є resultado == 8 э -> ¿
-            output є "Correcto" э$
+        є edadUsuario >= 18 э -> ¿
+            output є "Es mayor de edad" э$
         ?
-        є resultado != 8 э -> ¿
-            output є "Incorrecto" э$
+        є edadUsuario < 18 @ edadUsuario > 0 э -> ¿
+            output є "Es menor de edad" э$
+        ?
+        є edadUsuario <= 0 э -> ¿
+            output є "Edad inválida" э$
+        ?
+    else ¿
+        output є "Caso no contemplado" э$
+    ?
+    end decide$
+    
+    | ============ ESTRUCTURA DECIDE CON OPERACIONES LÓGICAS ============
+    decide of
+        є estudiante @ calificacion >= 90.0 э -> ¿
+            output є "Estudiante excelente" э$
+        ?
+        є estudiante @ calificacion >= 70.0 @ calificacion < 90.0 э -> ¿
+            output є "Estudiante bueno" э$
+        ?
+        є Σ estudiante э -> ¿
+            output є "No es estudiante" э$
         ?
     end decide$
+    
+    | ============ BUCLE FOR ASCENDENTE ============
+    output є "Conteo ascendente:" э$
+    for i step 1 to 5 do ¿
+        output є i э$
+    ?$
+    
+    | ============ BUCLE FOR DESCENDENTE ============
+    output є "Conteo descendente:" э$
+    for j step 1 downto 1 do ¿
+        output є j э$
+    ?$
+    
+    | ============ BUCLE LOOP ============
+    let int contador = 0$
+    loop ¿
+        contador++$
+        output є "Contador: " э << output є contador э$
+        
+        decide of
+            є contador >= 3 э -> ¿
+                break$
+            ?
+        end decide$
+    ? exit when є contador >= 5 э$ end loop$
+    
+    | ============ EXPRESIONES RELACIONALES ============
+    let boolean comparacion1 = edad > 18$
+    let boolean comparacion2 = altura <= 2.0$
+    let boolean comparacion3 = nombre == "Juan Pérez"$
+    let boolean comparacion4 = grado != 'F'$
+    
+    | ============ EXPRESIONES LÓGICAS COMPLEJAS ============
+    let boolean expresionCompleja = є edad >= 18 @ estudiante э ~ є calificacion > 85.0 @ Σ par э$
+    
+    | ============ OPERACIONES CON VARIABLES GLOBALES ============
+    contadorGlobal = contadorGlobal + 50$
+    output є "Contador global: " э << output є contadorGlobal э$
+    
+    | Modificar listas globales
+    numeros[0] = 999$
+    caracteres[2] = 'X'$
+    
+    | ============ LLAMADAS A FUNCIONES CON LISTAS ============
+    let int sumaLista = procesarLista є miLista, 5 э$
+    output є "Suma de la lista: " э << output є sumaLista э$
+    
+    | ============ EXPRESIONES ANIDADAS ============
+    let int expresionCompleja2 = є sumar є 10, 20 э + factorial є 3 э э * 2$
+    let float expresionCompleja3 = є calcularPromedio є 10, 20, 30 э + pi э / 2.0$
+    
+    | ============ MENSAJE FINAL ============
+    output є "Programa ejecutado exitosamente" э$
+    
 ?

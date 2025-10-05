@@ -29,9 +29,9 @@ parser code {:
             
             // Se agrega linea y columna si se pueden obtener
             if (s.left >= 0) {
-                error.append("Línea ").append(s.left + 1);
+                error.append("Línea ").append(s.left);
                 if (s.right >= 0) {
-                    error.append(", columna ").append(s.right + 1);
+                    error.append(", columna ").append(s.right);
                 }
                 error.append(": ");
             }
@@ -45,16 +45,10 @@ parser code {:
         System.err.println(error.toString());
     }
 
-    public void syntax_error_irrecuperable(Symbol cur_token) throws java.lang.Exception {
-      report_error("Error sintáctico irrecuperable", cur_token);
+    public void unrecovered_syntax_error(Symbol cur_token) {
+        report_error("Error sintáctico irrecuperable - continuando análisis", cur_token);
     }
 
-    public void report_fatal_error(String message, Object info) throws java.lang.Exception {
-      report_error(message, info);
-      System.err.println("\nEl análisis sintáctico no puede continuar.");
-      System.err.println("   Total de errores encontrados: " + errorContador);
-      throw new Exception("Análisis sintáctico abortado");
-    }
 :};
 
 /* Definición de terminales (tokens) */
@@ -188,12 +182,15 @@ start with programa;
 
 /* Producciones generales */
 programa ::= varGlobal programa
-            | funciones programa
-            | principal
-            | error {: System.err.println("Error de sintaxis en el programa"); :};
+           | funciones programa  
+           | principal
+           | error:e {: System.err.println("Error en el programa - recuperando"); :} programa
+           | error:e {: System.err.println("Error de sintaxis en el programa"); :};
 
 principal ::= VOID PRINCIPAL PAREN_I PAREN_D bloque
-            | error PRINCIPAL {: System.err.println("Error: principal debe ser 'void principal є э bloque'");  :};
+            | error:e PRINCIPAL PAREN_I PAREN_D bloque {: System.err.println("Error antes de 'principal'"); :}
+            | VOID error:e PAREN_I PAREN_D bloque {: System.err.println("Error: esperaba 'principal'"); :}
+            | VOID PRINCIPAL error:e PAREN_D bloque {: System.err.println("Error: 'principal' no debe tener parámetros"); :};
 
 tipoDatoFuncion ::= INT
                   | FLOAT
@@ -236,18 +233,18 @@ sentencias ::= sentencia
              | sentencias sentencia;
 
 sentencia ::= var
-            | varAsignacion
+            | varAsignacion  
             | varCyAsignacion
             | lista
             | estructruraControl
-            | funcionLlamada
+            | funcionLlamada DELIMITADOR
             | return
             | break
-            | input
+            | input DELIMITADOR
             | output
-            | output_inline
-            | modificarElementoLista /* Esta fue agregada despues para resolver conflictos */
-            | error {: System.err.println("Error en la definición de la sentencia"); :};
+            | output_inline DELIMITADOR
+            | modificarElementoLista
+            | error:e DELIMITADOR {: System.err.println("Error en sentencia - recuperando en '$'"); :};
 
 funcionLlamada ::= IDENTIFICADOR PAREN_I argumentos PAREN_D
                  | IDENTIFICADOR PAREN_I PAREN_D;
@@ -275,20 +272,43 @@ estructruraControl ::= decide
                      | loop 
                      | for;
 
-decide ::= DECIDE OF condiciones DELIMITADOR
-         | DECIDE OF condiciones ELSE bloque END DECIDE DELIMITADOR;
+decide ::= DECIDE OF condiciones END DECIDE DELIMITADOR
+         | DECIDE OF condiciones ELSE bloque END DECIDE DELIMITADOR
+         | DECIDE error:e condiciones END DECIDE DELIMITADOR 
+           {: System.err.println("Error: falta 'of' después de 'decide'"); :}
+         | DECIDE OF error:e END DECIDE DELIMITADOR 
+           {: System.err.println("Error en las condiciones de 'decide'"); :}
+         | DECIDE OF condiciones error:e DELIMITADOR 
+           {: System.err.println("Error: falta 'end decide$' para cerrar"); :}
+         | error:e OF condiciones END DECIDE DELIMITADOR 
+           {: System.err.println("Error: esperaba 'decide'"); :};
 
 condiciones ::= condicion FLECHA bloque
-              | condiciones condicion FLECHA bloque;
+              | condiciones condicion FLECHA bloque
+              | error:e FLECHA bloque 
+                {: System.err.println("Error en condición"); :}
+              | condicion error:e bloque 
+                {: System.err.println("Error: falta '->' entre condición y bloque"); :};
 
-condicion ::= PAREN_I expresion PAREN_D;
-
-/*REVISARRRRR: Porque sentencias puede ser solamente bloque*/
 loop ::= LOOP bloque EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
-       | LOOP bloque break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR;
+       | LOOP bloque break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+       | LOOP bloque error:e WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+         {: 
+            System.err.println("Error: falta 'exit' antes de 'when'"); 
+         :}
+       ;
 
 for ::= FOR IDENTIFICADOR STEP INT_LITERAL TO expresion DO bloque DELIMITADOR
-      | FOR IDENTIFICADOR STEP INT_LITERAL DOWNTO expresion DO bloque DELIMITADOR;
+      | FOR IDENTIFICADOR STEP INT_LITERAL DOWNTO expresion DO bloque DELIMITADOR
+      | FOR error:e STEP INT_LITERAL TO expresion DO bloque DELIMITADOR
+        {: 
+           System.err.println("Error: variable de iteración inválida en 'for'"); 
+        :}
+      | FOR IDENTIFICADOR STEP error:e TO expresion DO bloque DELIMITADOR
+        {: 
+           System.err.println("Error: valor de 'step' debe ser un entero"); 
+        :}
+      ;
 
 /* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
 var ::= LET tipoDatoVariable IDENTIFICADOR DELIMITADOR; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
@@ -308,6 +328,7 @@ expresion ::= expresionAritmetica
             | expresionChar
             | expresionString
             | obtenerElementoLista
+            | funcionLlamada
             | IDENTIFICADOR;
 
 expresionLogica ::= expresionLogica AND expresionLogica
@@ -366,6 +387,7 @@ expresionFactor ::= PAREN_I expresionAritmetica PAREN_D
 
 expresionNumerica ::= INT_LITERAL
                     | FLOAT_LITERAL
+                    | IDENTIFICADOR
                     | funcionLlamada /* Esta psoiblemente se tenga que separar en los dos tipos de llamada */
                     | input;
 
