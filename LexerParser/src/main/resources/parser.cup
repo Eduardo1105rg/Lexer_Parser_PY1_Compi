@@ -114,7 +114,7 @@ non terminal estructruraControl, decide, condicion, loop, for;
 non terminal funcionLlamada, argumentos, return, break;
 
 /* Aqui estoy poniendo los no terminales que estan faltando */
-non terminal  tipoDatoInput, condiciones;
+non terminal  tipoDatoInput, condiciones, listaFunciones;
 
 
 /* >> Input y ouput */
@@ -172,8 +172,7 @@ principal ::= VOID PRINCIPAL PAREN_I PAREN_D bloque
 
 tipoDatoFuncion ::= INT
                   | FLOAT
-                  | BOOLEAN
-                  | error {: System.err.println("Error: tipo de función debe ser int, float o boolean"); :};
+                  | BOOLEAN; /* | error {: System.err.println("Error: tipo de función debe ser int, float o boolean"); :} */
 
 tipoDatoVariable ::= INT
                    | FLOAT
@@ -182,8 +181,17 @@ tipoDatoVariable ::= INT
                    | STRING
                    | error {: System.err.println("Error: tipo de variable debe ser int, float, boolean, char o string"); :};
 
-funciones ::= funcion
-            | funciones funcion;
+/*funciones ::= funcion
+            | funciones funcion;*/
+
+/* Esta modificacion es para intentar resolver el conflicto de funcion */
+funciones ::= listaFunciones;
+
+listaFunciones ::= funcion
+                 | listaFunciones funcion;
+
+
+
 
 funcion ::= tipoDatoFuncion IDENTIFICADOR PAREN_I params PAREN_D bloque
           | tipoDatoFuncion IDENTIFICADOR PAREN_I PAREN_D bloque
@@ -213,6 +221,7 @@ sentencia ::= var
             | input
             | output
             | output_inline
+            | modificarElementoLista /* Esta fue agregada despues para resolver conflictos */
             | error {: System.err.println("Error en la definición de la sentencia"); :};
 
 funcionLlamada ::= IDENTIFICADOR PAREN_I argumentos PAREN_D
@@ -287,8 +296,8 @@ expresionRelacional ::= expresionAritmetica IGUAL expresionAritmetica
                       | expresionBooleana IGUAL expresionBooleana
                       | expresionBooleana DIFERENTE expresionBooleana
                       | expresionChar IGUAL expresionChar
-                      | expresionChar DIFERENTE expresionChar
-                      | PAREN_I expresionRelacional PAREN_D;
+                      | expresionChar DIFERENTE expresionChar;
+                     /* | PAREN_I expresionRelacional PAREN_D;*/
        
 
 expresionChar ::= CHAR_LITERAL;

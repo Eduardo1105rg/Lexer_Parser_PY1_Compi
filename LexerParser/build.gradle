@@ -96,3 +96,13 @@ task verifyLibs {
 }
 
 generateParser.dependsOn verifyLibs
+
+
+// Proceso de compilacion:
+// Generar el parser: ./gradlew generateParser
+
+// Generar el lexer: ./gradlew generateLexer
+
+// Compilar todo: ./gradlew compileJava
+
+// Ejecutar con un archivo de prueba: ./gradlew run --args="src/test/resources/test-programs/ejemplo.txt"
