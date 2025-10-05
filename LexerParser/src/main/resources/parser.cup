@@ -10,7 +10,51 @@ import lexer.Lexer;
 
 /* Parsers */
 parser code {:
-     
+    private int errorContador = 0;
+
+    public int getErrorContador() {
+        return errorContador;
+    }
+
+    public void syntax_error(Symbol cur_token) {
+        errorContador++;
+        report_error("Error de sintaxis", cur_token);
+    }
+
+    public void report_error(String message, Object info) {
+        StringBuilder error = new StringBuilder();
+        
+        if (info instanceof Symbol) {
+            Symbol s = (Symbol) info;
+            
+            // Se agrega linea y columna si se pueden obtener
+            if (s.left >= 0) {
+                error.append("Línea ").append(s.left + 1);
+                if (s.right >= 0) {
+                    error.append(", columna ").append(s.right + 1);
+                }
+                error.append(": ");
+            }
+            
+            error.append(message);
+            
+        } else {
+            error.append(message);
+        }
+        
+        System.err.println(error.toString());
+    }
+
+    public void syntax_error_irrecuperable(Symbol cur_token) throws java.lang.Exception {
+      report_error("Error sintáctico irrecuperable", cur_token);
+    }
+
+    public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+      report_error(message, info);
+      System.err.println("\nEl análisis sintáctico no puede continuar.");
+      System.err.println("   Total de errores encontrados: " + errorContador);
+      throw new Exception("Análisis sintáctico abortado");
+    }
 :};
 
 /* Definición de terminales (tokens) */
@@ -53,7 +97,7 @@ terminal PAREN_I, PAREN_D,CORCHETE_I, CORCHETE_D, LLAVE_I, LLAVE_D;
 terminal FLECHA, CONCATENACION_OUTPUT;
 
 // Terminar para la deficion de errores lexicos.
-// terminal ERROR;
+terminal ERROR;
 
 
 

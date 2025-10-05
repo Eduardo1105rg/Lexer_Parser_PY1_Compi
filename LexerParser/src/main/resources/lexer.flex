@@ -41,6 +41,12 @@ import parser.sym;
     public void reportError(String message) {
         System.err.println("Error lexico en linea " + (yyline + 1) + ", columna " + (yycolumn + 1) + ": " + message);
     }
+
+    // Para reportes especificos de errores
+    private Symbol symbolError(String message) {
+        reportError(message);
+        return new Symbol(sym.ERROR, yyline + 1, yycolumn + 1, message);
+    }
 %}
 
 
@@ -188,12 +194,12 @@ StringSimple = [^\n\r\"\\]+
 <CHAR> {
     {CaracterSimple}\'           { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, yytext().charAt(0)); }
 
-    \'                           { reportError("Caracter vacaio");  yybegin(YYINITIAL); }
+    \'                           {yybegin(YYINITIAL); return symbolError("Caracter vacio");}
 
-    {LineTerminator}             { reportError("Caracter sin cerrar");  yybegin(YYINITIAL); }
+    {LineTerminator}             {yybegin(YYINITIAL); return symbolError("String sin cerrar");}
 }
 
 
 
 /* Manejo de errores: Me parece que esta lo que hace es revisar cualquier caracter que no esta registrado o que quede suelto. */
-[^] { reportError("Caracter ilegal: '" + yytext() + "'"); } /* Aqui se reporta el error, captura el token y deja que se continue el proceso. */
+[^] { symbolError("Caracter ilegal: '" + yytext() + "'"); return symbol(sym.ERROR, yytext()); } /* Aqui se reporta el error, captura el token y deja que se continue el proceso. */
