@@ -35,7 +35,7 @@ parser code {:
 /* Definición de terminales (tokens) */
 // Son las palabras reservadas
 terminal LET, GLOBAL, VOID, PRINCIPAL, DECIDE, OF, ELSE, END, LOOP, EXIT;
-terminal  WHEN,  RETURN, BREAK, INPUT; /* FOR, STEP, TO, DOWNTO, DO, OUTPUT,  */
+terminal  WHEN,  RETURN, BREAK, INPUT, FOR, STEP, TO, DOWNTO, DO, OUTPUT;
  
 
 // Tipos de datos
@@ -243,6 +243,8 @@ tipoDatoInput ::= INT
 output ::= output_inline DELIMITADOR
           | output CONCATENACION_OUTPUT output_inline DELIMITADOR;
 
+output_inline ::= OUTPUT PAREN_I expresion PAREN_D;
+
 /* Estructuras de control */
 estructruraControl ::= decide 
                      | loop 
@@ -257,8 +259,11 @@ condiciones ::= condicion FLECHA bloque
 condicion ::= PAREN_I expresion PAREN_D;
 
 /*REVISARRRRR: Porque sentencias puede ser solamente bloque*/
-loop ::= LOOP sentencias EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
-       | LOOP sentencias break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR;
+loop ::= LOOP bloque EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+       | LOOP bloque break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR;
+
+for ::= FOR IDENTIFICADOR STEP INT_LITERAL TO expresion DO bloque DELIMITADOR
+      | FOR IDENTIFICADOR STEP INT_LITERAL DOWNTO expresion DO bloque DELIMITADOR;
 
 /* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
 var ::= LET tipoDatoVariable IDENTIFICADOR DELIMITADOR; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
