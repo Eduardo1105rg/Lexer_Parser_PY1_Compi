@@ -35,8 +35,8 @@ parser code {:
 /* Definición de terminales (tokens) */
 // Son las palabras reservadas
 terminal LET, GLOBAL, VOID, PRINCIPAL, DECIDE, OF, ELSE, END, LOOP, EXIT;
-terminal  WHEN, FOR, STEP, TO, DOWNTO, DO, RETURN, BREAK, OUTPUT, INPUT;
-
+terminal  WHEN,  RETURN, BREAK, INPUT; /* FOR, STEP, TO, DOWNTO, DO, OUTPUT,  */
+ 
 
 // Tipos de datos
 terminal INT, FLOAT, BOOLEAN, CHAR, STRING;
@@ -113,11 +113,15 @@ non terminal estructruraControl, decide, condicion, loop, for;
 /* >> Funciones y sus llamadas  */
 non terminal funcionLlamada, argumentos, return, break;
 
+/* Aqui estoy poniendo los no terminales que estan faltando */
+non terminal  tipoDatoInput, condiciones;
+
+
 /* >> Input y ouput */
 non terminal input, output, output_inline;
 
 /* >> Listas */
-non terminal lista, declaracionLista, creacionYAsignacionLista, elementos, elementoLista, modificarElementoLista, obtenerElementoLista;
+non terminal lista, declaracionLista, creacionYAsignacionLista, elementos, elementoLista, modificarElementoLista, obtenerElementoLista, tipoLista;
 
 
 
@@ -147,10 +151,11 @@ precedence left COMA;
 precedence right ASIGNACION;
 
 
-
+/* expect 6; Esto es para decirle a cup qie espere hasta 6 congliuctos y que los acepte */
 
 /* Esta es la que dice como se inicia todo. */
 start with programa;
+
 
 
 /* -------------------------  >> Definicion << -------------------------------------------------------------------  */
@@ -244,11 +249,10 @@ condicion ::= PAREN_I expresion PAREN_D;
 
 /*REVISARRRRR: Porque sentencias puede ser solamente bloque*/
 loop ::= LOOP sentencias EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
-       | LOOP sentencias break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+       | LOOP sentencias break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR;
 
 /* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
-var ::= LET tipoDatoVariable IDENTIFICADOR DELIMITADOR
-      | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
+var ::= LET tipoDatoVariable IDENTIFICADOR DELIMITADOR; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
 
 varAsignacion ::= IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
                  
@@ -263,8 +267,9 @@ varGlobal ::= GLOBAL tipoDatoVariable IDENTIFICADOR DELIMITADOR
 expresion ::= expresionAritmetica
             | expresionLogica
             | expresionChar
-            | expresionString;
-
+            | expresionString
+            | obtenerElementoLista
+            | IDENTIFICADOR;
 
 expresionLogica ::= expresionLogica AND expresionLogica
                   | expresionLogica OR expresionLogica
@@ -280,21 +285,18 @@ expresionRelacional ::= expresionAritmetica IGUAL expresionAritmetica
                       | expresionAritmetica MENOR_IGUAL expresionAritmetica
                       | expresionAritmetica MAYOR_IGUAL expresionAritmetica
                       | expresionBooleana IGUAL expresionBooleana
+                      | expresionBooleana DIFERENTE expresionBooleana
                       | expresionChar IGUAL expresionChar
+                      | expresionChar DIFERENTE expresionChar
                       | PAREN_I expresionRelacional PAREN_D;
+       
 
-                  
+expresionChar ::= CHAR_LITERAL;
 
-expresionChar ::= CHAR_LITERAL
-                | IDENTIFICADOR
-                | obtenerElementoLista;
-
-expresionString ::= STRING_LITERAL
-                  | IDENTIFICADOR;
+expresionString ::= STRING_LITERAL;
 
 expresionBooleana ::= TRUE
-                    | FALSE
-                    | IDENTIFICADOR;
+                    | FALSE;
 
 
 
@@ -325,8 +327,6 @@ expresionFactor ::= PAREN_I expresionAritmetica PAREN_D
 
 expresionNumerica ::= INT_LITERAL
                     | FLOAT_LITERAL
-                    | IDENTIFICADOR
-                    | obtenerElementoLista
                     | funcionLlamada /* Esta psoiblemente se tenga que separar en los dos tipos de llamada */
                     | input;
 
@@ -334,3 +334,28 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR INCREMENTO
                             | IDENTIFICADOR DECREMENTO;
 
 expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica;
+
+
+/* ##### Seccion parael manejo de listas ######*/
+lista ::= declaracionLista
+        | creacionYAsignacionLista;
+
+declaracionLista ::= LET tipoLista IDENTIFICADOR DELIMITADOR;
+
+creacionYAsignacionLista ::= LET tipoLista IDENTIFICADOR ASIGNACION LLAVE_I elementos LLAVE_D DELIMITADOR;
+
+elementos ::= elementoLista
+            | elementos COMA elementoLista;
+
+elementoLista ::= INT_LITERAL
+                | CHAR_LITERAL;
+
+modificarElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR;
+
+obtenerElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE_D;
+
+tipoLista ::= INT CORCHETE_I CORCHETE_D
+            | CHAR CORCHETE_I CORCHETE_D
+            | INT CORCHETE_I INT_LITERAL CORCHETE_D
+            | CHAR CORCHETE_I INT_LITERAL CORCHETE_D;
+
