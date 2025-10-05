@@ -46,10 +46,9 @@ InputCharacter = [^\r\n]
 WhiteSpace     = {LineTerminator} | [ \t\f]
 
 /* comentarios */
-ComentarioLinea    = \|[^\n\r]*  /* "|" {InputCharacter}* {LineTerminator}?     ---   Con la nueva version se supone que va mejor, ya que incluye todo lo que esta hacia adelante en ese punto*/
-ComentarioBloque   = ¡([^¡]|\n|\r)*?! /* "¡" [^!]* "!"   --  Estabmos haciendo una mezcla de BNF y EBNF rarisima, con la nueva deficion va mejor ya que es solo reguex */
+ComentarioLinea    = \|[^\n\r]*  
+ComentarioBloque   = \¡([^¡]|\n|\r)*\!
 
-/* Definicion de numeros (hacer algunas correcciones por que creo que definimos mal en el original.) */
 Entero = 0 | [-]?[1-9][0-9]*
 EnteroPositivo = [1-9][0-9]* | 0
 Flotante = (0\.0) | [-]?0\.[0-9]*[1-9]+ | [-]?[1-9][0-9]*\.([0-9]*[1-9]+|0)
@@ -59,7 +58,7 @@ Identificador = [a-zA-Z][a-zA-Z0-9_]*
 
 /* Caracteres especiales para strings y chars */
 CaracterSimple = [^'\n\r\t]
-StringSimple = [^\\"\\\n\r]+ /* Este da problemas hay que cambiar la definicion.[^"\n\r\t\\] : ya se hizo un cambio temporal */
+StringSimple = [^\n\r\"\\]+  
 
 %state STRING
 %state CHAR
@@ -87,8 +86,8 @@ StringSimple = [^\\"\\\n\r]+ /* Este da problemas hay que cambiar la definicion.
 <YYINITIAL> "break"              { return symbol(sym.BREAK); }
 <YYINITIAL> "output"             { return symbol(sym.OUTPUT); }
 <YYINITIAL> "input"              { return symbol(sym.INPUT); }
-<YYINITIAL> "true"               { return symbol(sym.TRUE, Boolean.TRUE); } /* { return symbol(sym.TRUE); }  Nota: La version corregida fue agregada<- Con esta deinicion se le puede llevar el valo true como objeto */
-<YYINITIAL> "false"              { return symbol(sym.FALSE, Boolean.FALSE); } /* { return symbol(sym.FALSE); }  */
+<YYINITIAL> "true"               { return symbol(sym.TRUE, Boolean.TRUE); } 
+<YYINITIAL> "false"              { return symbol(sym.FALSE, Boolean.FALSE); } 
 
 /* Tipos de datos */
 <YYINITIAL> "int"                { return symbol(sym.INT); }
@@ -146,7 +145,7 @@ StringSimple = [^\\"\\\n\r]+ /* Este da problemas hay que cambiar la definicion.
     "э"                          { return symbol(sym.PAREN_D); }
     
     /* Estos son los que se usan para el manejo de listas */
-    "["                          { return symbol(sym.CORCHETE_I); } /* Estos son los de las listas*/
+    "["                          { return symbol(sym.CORCHETE_I); } 
     "]"                          { return symbol(sym.CORCHETE_D); } 
 
     /* Los que seria para abrir y cerrar bloques o sentencias. */
