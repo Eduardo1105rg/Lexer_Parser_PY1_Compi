@@ -29,6 +29,15 @@ public class App {
             parser p = new parser(lexer);
 
             p.parse();
+
+            // Luego de analisis sintactico:
+            int errores = p.getErrorContador();
+
+            if (errores == 0) {
+                System.out.println("El archivo fue reconocido por la gramatica.");
+            } else {
+                System.out.println("El archivo fue analizado con " + errores + " errores.");
+            }
             consolaOriginal.println("El archivo fue reconocido por la gramatica.");
 
             // Esta es la parte para mostrar las tablas de simbolos.
