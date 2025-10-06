@@ -298,24 +298,30 @@ expresion ::= expresionAritmetica
             | funcionLlamada
             | IDENTIFICADOR;
 
-expresionLogica ::= expresionLogica AND expresionLogica
-                  | expresionLogica OR expresionLogica
-                  | NOT expresionLogica
-                  | PAREN_I expresionLogica PAREN_D
+
+/* Modificar las derivacion para expresion logica con el fin de que pueda volver a arriba:  expresionLogica AND expresionLogica| expresionLogica OR expresionLogica*/
+expresionLogica ::= expresionRelacional AND expresionLogica
+                  | expresionRelacional OR expresionLogica
+                  | NOT expresionLogica                  
                   | expresionRelacional
-                  | expresionBooleana;
-                 
+                  | expresionBooleana; 
+                  
+
+/* Los de expresionAritmetica no se pueden cambiar ya que los operadores de mayores y menore solo funcionan con estos. Asi */
 expresionRelacional ::= expresionAritmetica IGUAL expresionAritmetica
                       | expresionAritmetica DIFERENTE expresionAritmetica
                       | expresionAritmetica MENOR expresionAritmetica
                       | expresionAritmetica MAYOR expresionAritmetica
                       | expresionAritmetica MENOR_IGUAL expresionAritmetica
                       | expresionAritmetica MAYOR_IGUAL expresionAritmetica
+
                       | expresionBooleana IGUAL expresionBooleana
                       | expresionBooleana DIFERENTE expresionBooleana
                       | expresionChar IGUAL expresionChar
-                      | expresionChar DIFERENTE expresionChar;
-                     /* | PAREN_I expresionRelacional PAREN_D;*/
+                      | expresionChar DIFERENTE expresionChar
+                      
+                      | PAREN_I expresion PAREN_D; /* Con esta en teoria deberia de volver a arriba. */
+                     
        
 
 expresionChar ::= CHAR_LITERAL;
