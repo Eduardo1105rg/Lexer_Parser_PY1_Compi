@@ -186,15 +186,17 @@ programa ::= varGlobal programa
            | principal;
 
 principal ::= VOID PRINCIPAL PAREN_I PAREN_D bloque;
+
 tipoDatoFuncion ::= INT
                   | FLOAT
-                  | BOOLEAN; /* | error {: System.err.println("Error: tipo de función debe ser int, float o boolean"); :} */
+                  | BOOLEAN;
 
 tipoDatoVariable ::= INT
                    | FLOAT
                    | BOOLEAN
                    | CHAR
-                   | STRING;
+                   | STRING
+                   | error {: System.err.println("Error: tipo de variable debe ser int, float, boolean, char o string"); :};
 
 /*funciones ::= funcion
             | funciones funcion;*/
@@ -206,7 +208,11 @@ listaFunciones ::= funcion
                  | listaFunciones funcion;
 
 funcion ::= tipoDatoFuncion IDENTIFICADOR PAREN_I params PAREN_D bloque
-          | tipoDatoFuncion IDENTIFICADOR PAREN_I PAREN_D bloque;
+          | tipoDatoFuncion IDENTIFICADOR PAREN_I PAREN_D bloque
+          | error IDENTIFICADOR PAREN_I params PAREN_D bloque {: System.err.println("Error: Tipo de dato de funcion no valido, de"); :}
+          | error PAREN_I params PAREN_D bloque {: System.err.println("Error: Identificador no encontrado"); :}
+          | error params PAREN_D bloque {: System.err.println("Error: Faltan parentesis de apertura ("); :}
+          | error bloque {: System.err.println("Error: Faltan parentesis de cierre )"); :};
 
 params ::= param
          | params COMA param;
