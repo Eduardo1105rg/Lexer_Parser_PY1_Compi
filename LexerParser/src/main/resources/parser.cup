@@ -183,15 +183,9 @@ start with programa;
 /* Producciones generales */
 programa ::= varGlobal programa
            | funciones programa  
-           | principal
-           | error:e {: System.err.println("Error en el programa - recuperando"); :} programa
-           | error:e {: System.err.println("Error de sintaxis en el programa"); :};
+           | principal;
 
-principal ::= VOID PRINCIPAL PAREN_I PAREN_D bloque
-            | error:e PRINCIPAL PAREN_I PAREN_D bloque {: System.err.println("Error antes de 'principal'"); :}
-            | VOID error:e PAREN_I PAREN_D bloque {: System.err.println("Error: esperaba 'principal'"); :}
-            | VOID PRINCIPAL error:e PAREN_D bloque {: System.err.println("Error: 'principal' no debe tener parámetros"); :};
-
+principal ::= VOID PRINCIPAL PAREN_I PAREN_D bloque;
 tipoDatoFuncion ::= INT
                   | FLOAT
                   | BOOLEAN; /* | error {: System.err.println("Error: tipo de función debe ser int, float o boolean"); :} */
@@ -200,8 +194,7 @@ tipoDatoVariable ::= INT
                    | FLOAT
                    | BOOLEAN
                    | CHAR
-                   | STRING
-                   | error {: System.err.println("Error: tipo de variable debe ser int, float, boolean, char o string"); :};
+                   | STRING;
 
 /*funciones ::= funcion
             | funciones funcion;*/
@@ -212,22 +205,22 @@ funciones ::= listaFunciones;
 listaFunciones ::= funcion
                  | listaFunciones funcion;
 
-
-
-
 funcion ::= tipoDatoFuncion IDENTIFICADOR PAREN_I params PAREN_D bloque
-          | tipoDatoFuncion IDENTIFICADOR PAREN_I PAREN_D bloque
-          | error IDENTIFICADOR PAREN_I params PAREN_D bloque {: System.err.println("Error en la definición de la función"); :};
+          | tipoDatoFuncion IDENTIFICADOR PAREN_I PAREN_D bloque;
 
 params ::= param
          | params COMA param;
 
-param ::= tipoDatoVariable IDENTIFICADOR;
+param ::= INT IDENTIFICADOR
+        | FLOAT IDENTIFICADOR
+        | BOOLEAN IDENTIFICADOR
+        | CHAR IDENTIFICADOR
+        | STRING IDENTIFICADOR
+        | tipoLista IDENTIFICADOR;
 
 /* Producciones de sentencias y bloques */
 bloque ::= LLAVE_I sentencias LLAVE_D
-         | LLAVE_I LLAVE_D
-         | error LLAVE_I sentencias LLAVE_D {: System.err.println("Error en la definición del bloque"); :};
+         | LLAVE_I LLAVE_D;
 
 sentencias ::= sentencia
              | sentencias sentencia;
@@ -241,10 +234,10 @@ sentencia ::= var
             | return
             | break
             | input DELIMITADOR
-            | output
+            | output DELIMITADOR
             | output_inline DELIMITADOR
             | modificarElementoLista
-            | error:e DELIMITADOR {: System.err.println("Error en sentencia - recuperando en '$'"); :};
+            | expresionAritmeticaUnaria DELIMITADOR;
 
 funcionLlamada ::= IDENTIFICADOR PAREN_I argumentos PAREN_D
                  | IDENTIFICADOR PAREN_I PAREN_D;
@@ -262,8 +255,8 @@ input ::= INPUT PAREN_I tipoDatoInput PAREN_D;
 tipoDatoInput ::= INT
                 | FLOAT;
             
-output ::= output_inline DELIMITADOR
-          | output CONCATENACION_OUTPUT output_inline DELIMITADOR;
+output ::= output_inline
+         | output CONCATENACION_OUTPUT output_inline;
 
 output_inline ::= OUTPUT PAREN_I expresion PAREN_D;
 
@@ -273,42 +266,18 @@ estructruraControl ::= decide
                      | for;
 
 decide ::= DECIDE OF condiciones END DECIDE DELIMITADOR
-         | DECIDE OF condiciones ELSE bloque END DECIDE DELIMITADOR
-         | DECIDE error:e condiciones END DECIDE DELIMITADOR 
-           {: System.err.println("Error: falta 'of' después de 'decide'"); :}
-         | DECIDE OF error:e END DECIDE DELIMITADOR 
-           {: System.err.println("Error en las condiciones de 'decide'"); :}
-         | DECIDE OF condiciones error:e DELIMITADOR 
-           {: System.err.println("Error: falta 'end decide$' para cerrar"); :}
-         | error:e OF condiciones END DECIDE DELIMITADOR 
-           {: System.err.println("Error: esperaba 'decide'"); :};
+         | DECIDE OF condiciones ELSE bloque END DECIDE DELIMITADOR;
 
 condiciones ::= condicion FLECHA bloque
-              | condiciones condicion FLECHA bloque
-              | error:e FLECHA bloque 
-                {: System.err.println("Error en condición"); :}
-              | condicion error:e bloque 
-                {: System.err.println("Error: falta '->' entre condición y bloque"); :};
+              | condiciones condicion FLECHA bloque;
+
+condicion ::= PAREN_I expresion PAREN_D;
 
 loop ::= LOOP bloque EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
-       | LOOP bloque break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
-       | LOOP bloque error:e WHEN condicion DELIMITADOR END LOOP DELIMITADOR
-         {: 
-            System.err.println("Error: falta 'exit' antes de 'when'"); 
-         :}
-       ;
+       | LOOP bloque break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR;
 
 for ::= FOR IDENTIFICADOR STEP INT_LITERAL TO expresion DO bloque DELIMITADOR
-      | FOR IDENTIFICADOR STEP INT_LITERAL DOWNTO expresion DO bloque DELIMITADOR
-      | FOR error:e STEP INT_LITERAL TO expresion DO bloque DELIMITADOR
-        {: 
-           System.err.println("Error: variable de iteración inválida en 'for'"); 
-        :}
-      | FOR IDENTIFICADOR STEP error:e TO expresion DO bloque DELIMITADOR
-        {: 
-           System.err.println("Error: valor de 'step' debe ser un entero"); 
-        :}
-      ;
+      | FOR IDENTIFICADOR STEP INT_LITERAL DOWNTO expresion DO bloque DELIMITADOR;
 
 /* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
 var ::= LET tipoDatoVariable IDENTIFICADOR DELIMITADOR; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
@@ -319,8 +288,6 @@ varCyAsignacion ::= LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELI
 
 varGlobal ::= GLOBAL tipoDatoVariable IDENTIFICADOR DELIMITADOR
             | GLOBAL tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
-
-
 
 /* ##### Seccion para las expresiones ######*/
 expresion ::= expresionAritmetica
@@ -359,8 +326,6 @@ expresionBooleana ::= TRUE
                     | FALSE;
 
 
-
-
 /* >> Expresiones aritmeticas */
 
 expresionAritmetica ::= expresionSuma;
@@ -389,6 +354,7 @@ expresionNumerica ::= INT_LITERAL
                     | FLOAT_LITERAL
                     | IDENTIFICADOR
                     | funcionLlamada /* Esta psoiblemente se tenga que separar en los dos tipos de llamada */
+                    | obtenerElementoLista
                     | input;
 
 expresionAritmeticaUnaria ::= IDENTIFICADOR INCREMENTO

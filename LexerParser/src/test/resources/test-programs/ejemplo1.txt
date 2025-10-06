@@ -8,10 +8,6 @@ global boolean activo = true$
 global char inicial = 'A'$
 global string mensaje = "Hola Mundo"$
 
-| ============ LISTAS GLOBALES ============
-global int[] numeros = ¿1, 2, 3, 4, 5?$
-global char[] caracteres = ¿'a', 'b', 'c'?$
-
 | ============ FUNCIONES ============
 
 | Función que suma dos números
@@ -43,10 +39,10 @@ float calcularPromedio є int a, int b, int c э ¿
 ?
 
 | Función que no retorna nada pero modifica listas
-int procesarLista є int[] lista, int tamaño э ¿
+int procesarLista є int[] lista, int tamanio э ¿
     let int suma = 0$
-    
-    for i step 1 to tamaño do ¿
+
+    for i step 1 to tamanio do ¿
         suma = suma + lista[i]$
     ?$
     
@@ -64,7 +60,6 @@ void principal є э ¿
     
     | ============ OPERACIONES ARITMÉTICAS ============
     let int resultado1 = 10 + 5 * 2$
-    let int resultado2 = (10 + 5) * 2$
     let float resultado3 = 15.5 / 3.0$
     let int resultado4 = 17 % 5$
     let int resultado5 = 2 ^ 3$
