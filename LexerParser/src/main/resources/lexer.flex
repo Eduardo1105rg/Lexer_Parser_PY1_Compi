@@ -5,6 +5,9 @@ import java_cup.runtime.*;
 import java.io.*;
 import parser.sym;
 
+import simbolos.TablaIdentificadores;
+import simbolos.TablaLiterales;
+
 
 /**
  * Analizador lexico jflex tomando en cuenta gramatica propia
@@ -21,6 +24,11 @@ import parser.sym;
 
 /* Esta es la parte de los codigos de usuario */
 %{
+
+    // Tablas de simbolos, aunque todavia no estamos seguros de si esto deberia hacerse asi.
+    public TablaIdentificadores tablaIdentificadores = new TablaIdentificadores();
+    public TablaLiterales tablaLiterales = new TablaLiterales();
+
     StringBuffer string = new StringBuffer(); // De la parte original
     
     // Contador de linea para errores
@@ -97,8 +105,8 @@ StringSimple = [^\n\r\"\\]+
 <YYINITIAL> "break"              { System.out.println("Token: break, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.BREAK); }
 <YYINITIAL> "output"             { System.out.println("Token: output, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.OUTPUT); }
 <YYINITIAL> "input"              { System.out.println("Token: input, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.INPUT); }
-<YYINITIAL> "true"               { System.out.println("Token: true, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.TRUE, Boolean.TRUE); } 
-<YYINITIAL> "false"              { System.out.println("Token: false, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.FALSE, Boolean.FALSE); } 
+<YYINITIAL> "true"               { tablaLiterales.agregarElemento(Boolean.TRUE, "boolean", yyline + 1, yycolumn + 1); System.out.println("Token: true, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.TRUE, Boolean.TRUE); } 
+<YYINITIAL> "false"              { tablaLiterales.agregarElemento(Boolean.FALSE, "boolean", yyline + 1, yycolumn + 1); System.out.println("Token: false, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.FALSE, Boolean.FALSE); } 
 
 /* Tipos de datos */
 <YYINITIAL> "int"                { System.out.println("Token: int, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.INT); }
@@ -109,9 +117,9 @@ StringSimple = [^\n\r\"\\]+
 
 <YYINITIAL> {
     /* Literales */
-    {Flotante}                   { System.out.println("Token: FLOAT_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.FLOAT_LITERAL, Double.parseDouble(yytext())); }
-    {Entero}                     { System.out.println("Token: INT_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.INT_LITERAL, Integer.parseInt(yytext())); }
-    {Identificador}              { System.out.println("Token: identificador, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.IDENTIFICADOR, yytext()); }
+    {Flotante}                   { tablaLiterales.agregarElemento(Double.parseDouble(yytext()), "float", yyline + 1, yycolumn + 1); System.out.println("Token: FLOAT_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.FLOAT_LITERAL, Double.parseDouble(yytext())); }
+    {Entero}                     { tablaLiterales.agregarElemento(Integer.parseInt(yytext()), "int", yyline + 1, yycolumn + 1); System.out.println("Token: INT_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.INT_LITERAL, Integer.parseInt(yytext())); }
+    {Identificador}              { tablaIdentificadores.agregarElemento(yytext(), yyline + 1, yycolumn + 1); System.out.println("Token: identificador, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.IDENTIFICADOR, yytext()); }
     
     /* Strings */
     \"                           { string.setLength(0); yybegin(STRING); }
@@ -181,7 +189,7 @@ StringSimple = [^\n\r\"\\]+
 
 /* manejo de strings */
 <STRING> {
-    \"                           { System.out.println("Token: STRING_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, string.toString()); } // Esta es la que devuleve el contenido cuando el string se cirra.
+    \"                           { tablaLiterales.agregarElemento(string.toString(), "string", yyline + 1, yycolumn + 1); System.out.println("Token: STRING_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, string.toString()); } // Esta es la que devuleve el contenido cuando el string se cirra.
     [^\"\\\n\r]+                 { string.append(yytext()); }
     "\\n"                        { string.append('\n'); }
     "\\t"                        { string.append('\t'); }
@@ -193,7 +201,7 @@ StringSimple = [^\n\r\"\\]+
 
 /* Manejo de caracteres */
 <CHAR> {
-    {CaracterSimple}\'           { System.out.println("Token: CHAR_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, yytext().charAt(0)); }
+    {CaracterSimple}\'           { tablaLiterales.agregarElemento(yytext().charAt(0), "char", yyline + 1, yycolumn + 1); System.out.println("Token: CHAR_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, yytext().charAt(0)); }
 
     \'                           {yybegin(YYINITIAL); return symbolError("Caracter vacio");}
 
