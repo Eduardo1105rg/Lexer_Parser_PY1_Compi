@@ -1,7 +1,9 @@
 
 import parser.*;
-
 import lexer.Lexer;
+
+import simbolos.*;
+
 import java.io.FileReader;
 import java.io.PrintStream;
 
@@ -15,7 +17,10 @@ public class App {
         try {
 
             // Esto es para registrar los tokens y lexemas en un archivo.
-            PrintStream out = new PrintStream("tokens.txt");
+
+            PrintStream consolaOriginal = System.out; // Esto es para salvar la conosola 
+
+            PrintStream out = new PrintStream("tokens.txt"); // COn esto redirigimos la salida de toda la consola hacia el archivo, por eso si debemos 
             System.setOut(out);
 
 
@@ -24,9 +29,14 @@ public class App {
             parser p = new parser(lexer);
 
             p.parse();
-            System.out.println("El archivo fue reconocido por la gramatica.");
+            consolaOriginal.println("El archivo fue reconocido por la gramatica.");
+
+            // Esta es la parte para mostrar las tablas de simbolos.
+            // lexer.tablaIdentificadores.imprimirTabla(consolaOriginal);
+            // lexer.tablaLiterales.imprimirTabla(consolaOriginal);
+
         } catch (Exception e) {
-            System.err.println("Error durante el análisis sintáctico:");
+            System.out.println("Error durante el análisis sintáctico:"); // Esta parte se deberia de cambiar.
             e.printStackTrace();
         }
     }
