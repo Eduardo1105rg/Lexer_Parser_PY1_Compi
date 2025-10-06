@@ -299,10 +299,7 @@ varGlobal ::= GLOBAL tipoDatoVariable IDENTIFICADOR DELIMITADOR
 expresion ::= expresionAritmetica
             | expresionLogica
             | expresionChar
-            | expresionString
-            | obtenerElementoLista
-            | funcionLlamada
-            | IDENTIFICADOR;
+            | expresionString;
 
 
 /* Modificar las derivacion para expresion logica con el fin de que pueda volver a arriba:  expresionLogica AND expresionLogica| expresionLogica OR expresionLogica*/
@@ -325,17 +322,24 @@ expresionRelacional ::= expresionAritmetica IGUAL expresionAritmetica
                       | expresionBooleana DIFERENTE expresionBooleana
                       | expresionChar IGUAL expresionChar
                       | expresionChar DIFERENTE expresionChar
-                      
+
                       | PAREN_I expresion PAREN_D; /* Con esta en teoria deberia de volver a arriba. */
-                     
+
+expresionSimplificada ::= obtenerElementoLista
+                          | funcionLlamada
+                          | IDENTIFICADOR;
        
 
-expresionChar ::= CHAR_LITERAL;
+expresionChar ::= CHAR_LITERAL
+                | obtenerElementoLista
+                | funcionLlamada;
 
-expresionString ::= STRING_LITERAL;
+expresionString ::= STRING_LITERAL
+                  | IDENTIFICADOR;
 
 expresionBooleana ::= TRUE
-                    | FALSE;
+                    | FALSE
+                    | IDENTIFICADOR;
 
 
 /* >> Expresiones aritmeticas */
