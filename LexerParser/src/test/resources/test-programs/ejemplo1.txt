@@ -155,8 +155,7 @@ void principal є э ¿
     | ============ EXPRESIONES RELACIONALES ============
     let boolean comparacion1 = edad > 18$
     let boolean comparacion2 = altura <= 2.0$
-    let boolean comparacion3 = nombre == "Juan Pérez"$
-    let boolean comparacion4 = grado != 'F'$
+    let boolean comparacion4 = 'w' != 'F'$
     
     | ============ EXPRESIONES LÓGICAS COMPLEJAS ============
     let boolean expresionCompleja = є edad >= 18 @ estudiante э ~ є calificacion > 85.0 @ Σ par э$

@@ -322,13 +322,8 @@ expresionRelacional ::= expresionAritmetica IGUAL expresionAritmetica
                       | expresionBooleana DIFERENTE expresionBooleana
                       | expresionChar IGUAL expresionChar
                       | expresionChar DIFERENTE expresionChar
-
+                      | expresionString
                       | PAREN_I expresion PAREN_D; /* Con esta en teoria deberia de volver a arriba. */
-
-expresionSimplificada ::= obtenerElementoLista
-                          | funcionLlamada
-                          | IDENTIFICADOR;
-       
 
 expresionChar ::= CHAR_LITERAL
                 | obtenerElementoLista
