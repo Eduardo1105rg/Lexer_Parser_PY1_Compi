@@ -32,8 +32,8 @@ public class App {
             consolaOriginal.println("El archivo fue reconocido por la gramatica.");
 
             // Esta es la parte para mostrar las tablas de simbolos.
-            // lexer.tablaIdentificadores.imprimirTabla(consolaOriginal);
-            // lexer.tablaLiterales.imprimirTabla(consolaOriginal);
+            lexer.tablaIdentificadores.imprimirTablaIdentificadores(consolaOriginal);
+            lexer.tablaLiterales.imprimirTablaLiterales(consolaOriginal);
 
         } catch (Exception e) {
             System.out.println("Error durante el análisis sintáctico:"); // Esta parte se deberia de cambiar.
