@@ -69,9 +69,9 @@ void principal є э ¿
     incremento++$
     let int decremento = 5$
     decremento--$
-    
+
     | ============ LLAMADAS A FUNCIONES ============
-    let int suma = sumar є 15, 25 э$
+    let int suma = sumar є 2, 25 э$
     let int fact = factorial є 5 э$
     let boolean par = esPar є suma э$
     let float promedio = calcularPromedio є 10, 20, 30 э$
