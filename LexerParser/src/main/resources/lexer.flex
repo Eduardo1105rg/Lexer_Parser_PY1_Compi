@@ -9,6 +9,10 @@ import simbolos.TablaIdentificadores;
 import simbolos.TablaLiterales;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import utils.ErroresInfo;
+
 /**
  * Analizador lexico jflex tomando en cuenta gramatica propia
  */
@@ -29,6 +33,9 @@ import simbolos.TablaLiterales;
     public TablaIdentificadores tablaIdentificadores = new TablaIdentificadores();
     public TablaLiterales tablaLiterales = new TablaLiterales();
 
+    public List<ErrorInfo> erroresLexicos = new ArrayList<>();// Esto es para almacenar los errores.
+
+
     StringBuffer string = new StringBuffer(); // De la parte original
     
     // Contador de linea para errores
@@ -44,7 +51,12 @@ import simbolos.TablaLiterales;
     private Symbol symbol(int type, Object value) {
         return new Symbol(type, yyline + 1, yycolumn + 1, value);
     }
-    
+
+    // Para el registro de errores
+    public void registrarErrorLexico(String mensaje) {
+        erroresLexicos.add(new ErrorInfo("LEXICO", yyline + 1, yycolumn + 1, mensaje));
+    }
+
     // Errores lexicos
     public void reportError(String message) {
         System.err.println("Error lexico en linea " + (yyline + 1) + ", columna " + (yycolumn + 1) + ": " + message);
@@ -52,6 +64,7 @@ import simbolos.TablaLiterales;
 
     // Para reportes especificos de errores
     private Symbol symbolError(String message) {
+        registrarErrorLexico(message);// Registrar errores en la clase de registro
         reportError(message);
         return new Symbol(sym.ERROR, yyline + 1, yycolumn + 1, message);
     }
@@ -196,16 +209,16 @@ StringSimple = [^\n\r\"\\]+
     "\\r"                        { string.append('\r'); }
     "\\\\"                       { string.append('\\'); }
     "\\\""                       { string.append('\"'); }
-    {LineTerminator}             { symbolError("String sin cerrar"); yybegin(YYINITIAL); }
+    {LineTerminator}             { registrarErrorLexico("String sin cerrar");  symbolError("String sin cerrar"); yybegin(YYINITIAL); }
 }
 
 /* Manejo de caracteres */
 <CHAR> {
     {CaracterSimple}\'           { tablaLiterales.agregarElemento(yytext().charAt(0), "char", yyline + 1, yycolumn + 1); System.out.println("Token: CHAR_LITERAL, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, yytext().charAt(0)); }
 
-    \'                           {yybegin(YYINITIAL); return symbolError("Caracter vacio");}
+    \'                           { registrarErrorLexico("Caracter vacio");  yybegin(YYINITIAL); return symbolError("Caracter vacio");}
 
-    {LineTerminator}             {yybegin(YYINITIAL); return symbolError("String sin cerrar");}
+    {LineTerminator}             { registrarErrorLexico("Caracter vacio"); yybegin(YYINITIAL); return symbolError("Caracter sin cerrar");}
 }
 
 

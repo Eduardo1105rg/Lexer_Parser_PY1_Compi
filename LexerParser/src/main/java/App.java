@@ -3,9 +3,10 @@ import parser.*;
 import lexer.Lexer;
 
 import simbolos.*;
-
+import utils.ErroresInfo;
 import java.io.FileReader;
 import java.io.PrintStream;
+import java.util.List;
 
 public class App {
     public static void main(String[] args) {
@@ -38,11 +39,26 @@ public class App {
             } else {
                 System.out.println("El archivo fue analizado con " + errores + " errores.");
             }
-            consolaOriginal.println("El archivo fue reconocido por la gramatica.");
+            //consolaOriginal.println("El archivo fue reconocido por la gramatica.");
+
+            List<ErroresInfo> lexErrors = lexer.erroresLexicos;
+            List<ErroresInfo> synErrors = p.getErroresSintacticos();
+
 
             // Esta es la parte para mostrar las tablas de simbolos.
             lexer.tablaIdentificadores.imprimirTablaIdentificadores(consolaOriginal);
             lexer.tablaLiterales.imprimirTablaLiterales(consolaOriginal);
+
+
+
+                        // 6) Imprimir errores (concatenados)
+            consolaOriginal.println("---- Errores léxicos (" + lexErrors.size() + ") ----");
+            for (ErroresInfo e : lexErrors) consolaOriginal.println(e.toString());
+
+            consolaOriginal.println("---- Errores sintácticos (" + synErrors.size() + ") ----");
+            for (ErroresInfo e : synErrors) consolaOriginal.println(e.toString());
+
+
 
         } catch (Exception e) {
             System.out.println("Error durante el análisis sintáctico:"); // Esta parte se deberia de cambiar.

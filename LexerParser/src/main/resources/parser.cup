@@ -8,8 +8,17 @@ import lexer.*;
 import java.io.*;
 import lexer.Lexer;
 
+import java.util.ArrayList;
+import java.util.List;
+import util.ErrorInfo;
+
 /* Parsers */
 parser code {:
+
+    private List<ErrorInfo> erroresSintacticos = new ArrayList<>();
+
+    public List<ErrorInfo> getErroresSintacticos() { return erroresSintacticos; }
+
     private int errorContador = 0;
 
     public int getErrorContador() {
@@ -24,6 +33,9 @@ parser code {:
     public void report_error(String message, Object info) {
         StringBuilder error = new StringBuilder();
         
+        int linea = -1;
+        int columna = -1;
+
         if (info instanceof Symbol) {
             Symbol s = (Symbol) info;
             
@@ -43,6 +55,12 @@ parser code {:
         }
         
         System.err.println(error.toString());
+
+        String msg = error.toString();
+        System.err.println(msg);
+        // registrar en la lista con valores por defecto si no están disponibles
+        erroresSintacticos.add(new ErrorInfo("SINTACTICO", linea >= 0 ? linea : -1, columna >= 0 ? columna : -1, message));
+
     }
 
     public void unrecovered_syntax_error(Symbol cur_token) {
