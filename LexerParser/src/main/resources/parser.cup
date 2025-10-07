@@ -18,35 +18,40 @@ parser code {:
 
     public void syntax_error(Symbol cur_token) {
         errorContador++;
-        report_error("Error de sintaxis", cur_token);
+        String tokenInfo = obtenerInfoToken(cur_token);
+        System.err.println("Error sintactico en linea " + cur_token.left + 
+                          ", columna " + cur_token.right + ": " + tokenInfo);
+    }
+    // Mapeo de tokens a mensajes claros para debugueo
+    private String obtenerInfoToken(Symbol token) {
+        switch (token.sym) {
+            case sym.IDENTIFICADOR:
+                return "Se encontro identificador inesperado: '" + token.value + "'";
+            case sym.INT_LITERAL:
+                return "Se encontro numero entero inesperado: '" + token.value + "'";
+            case sym.FLOAT_LITERAL:
+                return "Se encontro numero flotante inesperado: '" + token.value + "'";
+            case sym.STRING_LITERAL:
+                return "Se encontro texto inesperado";
+            case sym.CHAR_LITERAL:
+                return "Se encontro caracter inesperado";
+            case sym.ASIGNACION:
+                return "Se encontro '=' inesperado";
+            case sym.DELIMITADOR:
+                return "Se encontro '$' inesperado";
+            case sym.EOF:
+                return "Final de archivo inesperado";
+            default:
+                return "Token inesperado";
+        }
     }
 
     public void report_error(String message, Object info) {
-        StringBuilder error = new StringBuilder();
-        
-        if (info instanceof Symbol) {
-            Symbol s = (Symbol) info;
-            
-            // Se agrega linea y columna si se pueden obtener
-            if (s.left >= 0) {
-                error.append("Línea ").append(s.left);
-                if (s.right >= 0) {
-                    error.append(", columna ").append(s.right);
-                }
-                error.append(": ");
-            }
-            
-            error.append(message);
-            
-        } else {
-            error.append(message);
-        }
-        
-        System.err.println(error.toString());
     }
 
     public void unrecovered_syntax_error(Symbol cur_token) {
-        report_error("Error sintáctico irrecuperable - continuando análisis", cur_token);
+        System.err.println("Error sintactico irrecuperable en linea " + cur_token.left + 
+                          ", columna " + cur_token.right + ": No se puede continuar el analisis");
     }
 
 :};
@@ -183,7 +188,8 @@ start with programa;
 /* Producciones generales */
 programa ::= varGlobal programa
            | funciones programa  
-           | principal;
+           | principal
+           | error programa {: System.err.println("Error: Declaracion global o funcion no valida"); :};
 
 principal ::= VOID PRINCIPAL PAREN_I PAREN_D bloque;
 
@@ -209,24 +215,32 @@ listaFunciones ::= funcion
 
 funcion ::= tipoDatoFuncion IDENTIFICADOR PAREN_I params PAREN_D bloque
           | tipoDatoFuncion IDENTIFICADOR PAREN_I PAREN_D bloque
-          | error IDENTIFICADOR PAREN_I params PAREN_D bloque {: System.err.println("Error: Tipo de dato de funcion no valido, de"); :}
-          | error PAREN_I params PAREN_D bloque {: System.err.println("Error: Identificador no encontrado"); :}
-          | error params PAREN_D bloque {: System.err.println("Error: Faltan parentesis de apertura ("); :}
-          | error bloque {: System.err.println("Error: Faltan parentesis de cierre )"); :};
+          | error IDENTIFICADOR PAREN_I params PAREN_D bloque {: System.err.println("Error: Tipo de dato de funcion no valido, debe ser int, float o boolean"); :}
+          | error PAREN_I params PAREN_D bloque {: System.err.println("Error: Identificador de función no encontrado"); :}
+          | error params PAREN_D bloque {: System.err.println("Error: Faltan parentesis de apertura є"); :}
+          | error bloque {: System.err.println("Error: Faltan parentesis de cierre э"); :}
+          | error IDENTIFICADOR PAREN_I PAREN_D bloque {: System.err.println("Error: Tipo de dato de funcion no valido, debe ser int, float o boolean"); :}
+          | error PAREN_I PAREN_D bloque {: System.err.println("Error: Identificador no encontrado"); :}
+          | error params PAREN_D bloque {: System.err.println("Error: Faltan parentesis de apertura є"); :};
 
 params ::= param
-         | params COMA param;
+         | params COMA param
+         | error COMA param{: System.err.println("Error: No puede haber una (,) sola al inicio de los parametros."); :};
 
 param ::= INT IDENTIFICADOR
         | FLOAT IDENTIFICADOR
         | BOOLEAN IDENTIFICADOR
         | CHAR IDENTIFICADOR
         | STRING IDENTIFICADOR
-        | tipoLista IDENTIFICADOR;
+        | tipoLista IDENTIFICADOR
+        | error IDENTIFICADOR {: System.err.println("Error: Para los parametros de una funcion se debe de indicar su tipo de dato."); :};
 
 /* Producciones de sentencias y bloques */
 bloque ::= LLAVE_I sentencias LLAVE_D
-         | LLAVE_I LLAVE_D;
+         | LLAVE_I LLAVE_D
+         | error sentencias LLAVE_D {: System.err.println("Error: Los bloques deben de tener una llave de apertura (¿)."); :}
+         | error LLAVE_D {: System.err.println("Error: Los bloques deben de tener una llave de apertura (¿). "); :}
+         | LLAVE_I sentencias error {: System.err.println("Error: Los bloques deben de tener una llave de cierre (?). "); :};
 
 sentencias ::= sentencia
              | sentencias sentencia;
@@ -246,25 +260,37 @@ sentencia ::= var
             | expresionAritmeticaUnaria DELIMITADOR;
 
 funcionLlamada ::= IDENTIFICADOR PAREN_I argumentos PAREN_D
-                 | IDENTIFICADOR PAREN_I PAREN_D;
+                 | IDENTIFICADOR PAREN_I PAREN_D
+                 | error PAREN_I argumentos PAREN_D  {: System.err.println("Error: Nombre de funcion no valido"); :}
+                 | IDENTIFICADOR error argumentos PAREN_D {: System.err.println("Error: Se esperaba parentesis de apertura 'є'"); :}
+                 | IDENTIFICADOR PAREN_I argumentos error {: System.err.println("Error: Se esperaba parentesis de cierre 'э'"); :}
+                 | IDENTIFICADOR PAREN_I error PAREN_D {: System.err.println("Error: Argumentos no validos en llamada a funcion"); :};
 
 argumentos ::= expresion
-             | argumentos COMA expresion;
-
+             | argumentos COMA expresion
+             | error COMA expresion  {: System.err.println("Error: Argumento no valido antes de ','"); :}
+             | argumentos COMA error {: System.err.println("Error: Se esperaba expresion despues de ','"); :}
+             | argumentos error expresion {: System.err.println("Error: Se esperaba ',' entre argumentos"); :};
+             
 return ::= RETURN DELIMITADOR
-         | RETURN expresion DELIMITADOR;
+         | RETURN expresion DELIMITADOR
+         | RETURN expresion error {: System.err.println("Error: Se esperaba un delimitador '$'"); :}
+         | RETURN error {: System.err.println("Error: Se esperaba un delimitador '$'"); :};
 
 break ::= BREAK DELIMITADOR;
 
-input ::= INPUT PAREN_I tipoDatoInput PAREN_D;
+input ::= INPUT PAREN_I tipoDatoInput PAREN_D
+        | INPUT PAREN_I error PAREN_D {: System.err.println("Error: Tipo de dato no valido para input, debe ser int o float."); :};
 
 tipoDatoInput ::= INT
                 | FLOAT;
             
 output ::= output_inline
-         | output CONCATENACION_OUTPUT output_inline;
+         | output CONCATENACION_OUTPUT output_inline         
+         | output error output_inline {: System.err.println("Error: Se debe de definir el caracter de concatenacion (<<) para los outpout "); :};
 
-output_inline ::= OUTPUT PAREN_I expresion PAREN_D;
+output_inline ::= OUTPUT PAREN_I expresion PAREN_D
+| error PAREN_I expresion PAREN_D {: System.err.println("Error: Se debe de definir la palabra de (input) para indicar una salida en consola."); :};
 
 /* Estructuras de control */
 estructruraControl ::= decide 
@@ -272,25 +298,50 @@ estructruraControl ::= decide
                      | for;
 
 decide ::= DECIDE OF condiciones END DECIDE DELIMITADOR
-         | DECIDE OF condiciones ELSE bloque END DECIDE DELIMITADOR;
+         | DECIDE OF condiciones ELSE bloque END DECIDE DELIMITADOR
+         | DECIDE error condiciones END DECIDE DELIMITADOR {: System.err.println("Error: Se esperaba 'of' despues de 'decide'"); :}
+         | DECIDE OF error END DECIDE DELIMITADOR {: System.err.println("Error: Condiciones no validas en estructura decide"); :}
+         | DECIDE OF condiciones error DECIDE DELIMITADOR  {: System.err.println("Error: Se esperaba 'end' antes de 'decide'"); :}
+         | DECIDE OF condiciones END error DELIMITADOR {: System.err.println("Error: Se esperaba 'decide' despues de 'end'"); :};
 
 condiciones ::= condicion FLECHA bloque
               | condiciones condicion FLECHA bloque;
 
-condicion ::= PAREN_I expresion PAREN_D;
+condicion ::= PAREN_I expresion PAREN_D
+            | error expresion PAREN_D {: System.err.println("Error: Se esperaba parentesis de apertura 'є' en condicion"); :}
+            | PAREN_I expresion error {: System.err.println("Error: Se esperaba parentesis de cierre 'э' en condicion"); :}
+            | PAREN_I error PAREN_D {: System.err.println("Error: Expresion no valida en condicion"); :};
+
 
 loop ::= LOOP bloque EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
-       | LOOP bloque break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR;
+       | LOOP bloque break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+       | LOOP error EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Bloque no valido en estructura loop"); :}
+       | LOOP bloque error WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'exit' antes de 'when'"); :}
+       | LOOP bloque EXIT error condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'when' despues de 'exit'"); :}
+       | LOOP bloque EXIT WHEN condicion DELIMITADOR error LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'end' antes de 'loop'"); :};
 
 for ::= FOR IDENTIFICADOR STEP INT_LITERAL TO expresion DO bloque DELIMITADOR
-      | FOR IDENTIFICADOR STEP INT_LITERAL DOWNTO expresion DO bloque DELIMITADOR;
+      | FOR IDENTIFICADOR STEP INT_LITERAL DOWNTO expresion DO bloque DELIMITADOR
+      | FOR error STEP INT_LITERAL TO expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba identificador despues de 'for'"); :}
+      | FOR IDENTIFICADOR error INT_LITERAL TO expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba 'step' despues del identificador"); :}
+      | FOR IDENTIFICADOR STEP error TO expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba numero entero despues de 'step'"); :}
+      | FOR IDENTIFICADOR STEP INT_LITERAL error expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba 'to' o 'downto' en bucle for"); :}
+      | FOR IDENTIFICADOR STEP INT_LITERAL TO expresion error bloque DELIMITADOR {: System.err.println("Error: Se esperaba 'do' antes del bloque"); :};
 
 /* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
 var ::= LET tipoDatoVariable IDENTIFICADOR DELIMITADOR; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
 
 varAsignacion ::= IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
                  
-varCyAsignacion ::= LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
+varCyAsignacion ::= LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR
+                  | LET tipoDatoVariable IDENTIFICADOR ASIGNACION error DELIMITADOR 
+                    {: System.err.println("Error: Expresion no valida despues de '='"); :}
+                  | LET tipoDatoVariable IDENTIFICADOR error 
+                    {: System.err.println("Error: Se esperaba '=' despues del identificador"); :}
+                  | LET tipoDatoVariable error ASIGNACION expresion DELIMITADOR
+                    {: System.err.println("Error: Identificador no valido"); :}
+                  | LET error IDENTIFICADOR ASIGNACION expresion DELIMITADOR
+                    {: System.err.println("Error: Tipo de dato no valido"); :};
 
 varGlobal ::= GLOBAL tipoDatoVariable IDENTIFICADOR DELIMITADOR
             | GLOBAL tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
@@ -344,7 +395,11 @@ expresionAritmetica ::= expresionSuma;
 
 expresionSuma ::= expresionSuma MAS expresionProducto
                 | expresionSuma MENOS expresionProducto
-                | expresionProducto;
+                | expresionProducto
+                | expresionSuma MAS error
+                  {: System.err.println("Error: Expresion no valida despues de '+'"); :}
+                | expresionSuma MENOS error
+                  {: System.err.println("Error: Expresion no valida despues de '-'"); :};
 
 expresionProducto ::= expresionProducto MULTIPLICACION expresionPotencia
                     | expresionProducto DIVISION expresionPotencia
@@ -359,14 +414,20 @@ expresionPotencia ::= expresionFactor POTENCIA expresionPotencia
 expresionFactor ::= PAREN_I expresionAritmetica PAREN_D
                   | expresionNumerica
                   | expresionAritmeticaUnaria
-                  | expresionAritmeticaUnariaNegativa;
+                  | expresionAritmeticaUnariaNegativa
+                  | error
+                    {: System.err.println("Error: Expresion aritmetica no valida"); :};
 
 expresionNumerica ::= INT_LITERAL
-                    | FLOAT_LITERAL
+                    | FLOAT_LITERAL  
                     | IDENTIFICADOR
-                    | funcionLlamada /* Esta psoiblemente se tenga que separar en los dos tipos de llamada */
+                    | funcionLlamada
                     | obtenerElementoLista
-                    | input;
+                    | input
+                    | INT_LITERAL IDENTIFICADOR error
+                      {: System.err.println("Error: Numero seguido de identificador no es valido (ej: 2f5)"); :}
+                    | FLOAT_LITERAL IDENTIFICADOR error
+                      {: System.err.println("Error: Numero flotante seguido de identificador no es valido"); :};
 
 expresionAritmeticaUnaria ::= IDENTIFICADOR INCREMENTO
                             | IDENTIFICADOR DECREMENTO;

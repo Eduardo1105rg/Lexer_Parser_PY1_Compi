@@ -31,7 +31,9 @@ public class App {
             p.parse();
 
             // Luego de analisis sintactico:
-            int errores = p.getErrorContador();
+            consolaOriginal.println("Errores lexicos: " + lexer.getErrorContador());
+            consolaOriginal.println("Errores sintacticos: " + p.getErrorContador());
+            int errores = p.getErrorContador() + lexer.getErrorContador();
 
             if (errores == 0) {
                 consolaOriginal.println("El archivo fue reconocido por la gramatica.");
@@ -40,8 +42,8 @@ public class App {
             }
 
             // Esta es la parte para mostrar las tablas de simbolos.
-            // lexer.tablaIdentificadores.imprimirTablaIdentificadores(consolaOriginal);
-            // lexer.tablaLiterales.imprimirTablaLiterales(consolaOriginal);
+            lexer.tablaIdentificadores.imprimirTablaIdentificadores(consolaOriginal);
+            lexer.tablaLiterales.imprimirTablaLiterales(consolaOriginal);
 
         } catch (Exception e) {
             System.out.println("Error durante el analisis sintactico:"); // Esta parte se deberia de cambiar.
