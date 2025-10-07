@@ -1,0 +1,25 @@
+Nombre del curso: 
+	Compiladores e Interpretes [IC - 5701]
+
+b. Número de semestre y año lectivo:
+	Segundo semestre del 2025.
+
+c. Nombre de los Estudiante:
+	Eduardo Jesus Rojas Gomez 
+	Yosimar Montenegro Montenegro 
+
+d. Número de carnet de los estudiantes:
+	Eduardo - [2023152827]
+	Yosimar - [2023147365]
+
+e. Número de proyecto programado :
+	#1.
+
+f. Fecha de entrega:
+	12-09-2025
+
+g. Estatus de la entrega (debe ser CONGRUENTE con la solución entregada): 
+	[Excelente]
+
+f. Enlace al repositorio del proyecto:
+	https://github.com/Eduardo1105rg/Lexer_Parser_PY1_Compi
