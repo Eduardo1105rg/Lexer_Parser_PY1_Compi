@@ -34,18 +34,17 @@ public class App {
             int errores = p.getErrorContador();
 
             if (errores == 0) {
-                System.out.println("El archivo fue reconocido por la gramatica.");
+                consolaOriginal.println("El archivo fue reconocido por la gramatica.");
             } else {
-                System.out.println("El archivo fue analizado con " + errores + " errores.");
+                consolaOriginal.println("El archivo fue analizado con " + errores + " errores.");
             }
-            consolaOriginal.println("El archivo fue reconocido por la gramatica.");
 
             // Esta es la parte para mostrar las tablas de simbolos.
             // lexer.tablaIdentificadores.imprimirTablaIdentificadores(consolaOriginal);
             // lexer.tablaLiterales.imprimirTablaLiterales(consolaOriginal);
 
         } catch (Exception e) {
-            System.out.println("Error durante el análisis sintáctico:"); // Esta parte se deberia de cambiar.
+            System.out.println("Error durante el analisis sintactico:"); // Esta parte se deberia de cambiar.
             e.printStackTrace();
         }
     }
