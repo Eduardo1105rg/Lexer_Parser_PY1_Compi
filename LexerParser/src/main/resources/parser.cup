@@ -42,7 +42,7 @@ parser code {:
             case sym.EOF:
                 return "Final de archivo inesperado";
             default:
-                return "Token inesperado";
+                return "Token inesperado: " + token.value;
         }
     }
 
@@ -186,8 +186,10 @@ start with programa;
 
 
 /* Producciones generales */
+/* FIX: La estructura del principal está como opcional, debe de ser obligatorio y al final (por diseño) */
+/* FIXED: Se arreglo la estructura para que siempre haya un bloque principal */
 programa ::= varGlobal programa
-           | funciones programa  
+           | funciones principal  
            | principal
            | error programa {: System.err.println("Error: Declaracion global o funcion no valida"); :};
 
@@ -259,9 +261,10 @@ sentencia ::= var
             | modificarElementoLista
             | expresionAritmeticaUnaria DELIMITADOR;
 
+/* FIX: El identificador no debe de ser validado, se valida en producción identificador, sino encuentra busca terminal  */
+/*FIXED: Eliminando la linea que valida nombre: | error PAREN_I argumentos PAREN_D  {: System.err.println("Error: Nombre de funcion no valido"); :}*/
 funcionLlamada ::= IDENTIFICADOR PAREN_I argumentos PAREN_D
                  | IDENTIFICADOR PAREN_I PAREN_D
-                 | error PAREN_I argumentos PAREN_D  {: System.err.println("Error: Nombre de funcion no valido"); :}
                  | IDENTIFICADOR error argumentos PAREN_D {: System.err.println("Error: Se esperaba parentesis de apertura 'є'"); :}
                  | IDENTIFICADOR PAREN_I argumentos error {: System.err.println("Error: Se esperaba parentesis de cierre 'э'"); :}
                  | IDENTIFICADOR PAREN_I error PAREN_D {: System.err.println("Error: Argumentos no validos en llamada a funcion"); :};
@@ -279,6 +282,7 @@ return ::= RETURN DELIMITADOR
 
 break ::= BREAK DELIMITADOR;
 
+/*FIX: Se debe hacer algo para que cuando el cup lea un IDENTIFICADOR -> PAREN_I detecte que es input, no una llamada a función*/
 input ::= INPUT PAREN_I tipoDatoInput PAREN_D
         | INPUT PAREN_I error PAREN_D {: System.err.println("Error: Tipo de dato no valido para input, debe ser int o float."); :};
 
@@ -343,7 +347,11 @@ varCyAsignacion ::= LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELI
                   | LET error IDENTIFICADOR ASIGNACION expresion DELIMITADOR
                     {: System.err.println("Error: Tipo de dato no valido"); :};
 
+/* FIX: ERROR en global para que detecte 'global tipo identificador...' */
+/* FIXED: Se agrega produ de error en falta de global */
 varGlobal ::= GLOBAL tipoDatoVariable IDENTIFICADOR DELIMITADOR
+            | error tipoDatoVariable IDENTIFICADOR DELIMITADOR
+              {: System.err.println("Error: Se esperaba la palabra 'global' al inicio de la declaracion"); :}
             | GLOBAL tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
 
 /* ##### Seccion para las expresiones ######*/
@@ -447,11 +455,17 @@ elementos ::= elementoLista
             | elementos COMA elementoLista;
 
 elementoLista ::= INT_LITERAL
-                | CHAR_LITERAL;
+                | CHAR_LITERAL
+                | IDENTIFICADOR; /* FIXED: El elemento en lista deberia poder permitir identificadores validos*/
 
-modificarElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR;
+/* FIX: El elemento en lista deberia poder permitir identificadores validos*/
+modificarElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR 
+                         | error CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR
+                           {: System.err.println("Error: Nombre de lista no valido"); :};
 
-obtenerElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE_D;
+obtenerElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE_D
+                      | error CORCHETE_I expresionAritmetica CORCHETE_D
+                        {: System.err.println("Error: Nombre de lista no valido"); :};
 
 tipoLista ::= INT CORCHETE_I CORCHETE_D
             | CHAR CORCHETE_I CORCHETE_D
