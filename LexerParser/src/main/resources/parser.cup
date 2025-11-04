@@ -13,11 +13,13 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 // Import las clases necesarias para la tabla de simbolos.
 import simbolos.Token;
 import simbolos.Ambitos;
 import simbolos.TipoLista;
+import simbolos.TipoExpresiones;
 
 
 /* Parsers */
@@ -215,11 +217,11 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
             if (token != null && "variable".equals(token.getCategoria())) {
                 String tipo = token.getTipo(); 
 
-                if ("int".equals(tipo)) return new TipoExpresiones("int", null);
-                if ("float".equals(tipo)) return new TipoExpresiones("float", null);
-                if ("char".equals(tipo)) return new TipoExpresiones("char", null);
-                if ("boolean".equals(tipo)) return new TipoExpresiones("boolean", null);
-                if ("string".equals(tipo)) return new TipoExpresiones("string", null);
+                if ("int".equals(tipo)) return new TipoExpresiones("int");
+                if ("float".equals(tipo)) return new TipoExpresiones("float");
+                if ("char".equals(tipo)) return new TipoExpresiones("char");
+                if ("boolean".equals(tipo)) return new TipoExpresiones("boolean");
+                if ("string".equals(tipo)) return new TipoExpresiones("string");
                 // if ("lista".equals(tipo)) {
                 //     // Para lo de la lista.
                 //     String tipoBase = token.getTipoBase(); // Ej: "int"
@@ -228,22 +230,22 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
                 // }
             }
         }
-        System.err.println("Error semántico: identificador '" + nombre + "' no encontrado o no es una variable.");
-        return new TipoExpresiones("error", null);
+        System.err.println("Error semantico: identificador '" + nombre + "' no encontrado o no es una variable.");
+        return new TipoExpresiones("error", 0);
     }
 
     // Para obtener el tipo de dato de una funcion.
-    public TipoExpresiones obtenerTipoFuncion(Token funcionActual) {
-        if (funcionActual == null || !"funcion".equals(funcionActual.getCategoria())) {
-            System.err.println("Error semántico: función no válida.");
-            return new TipoExpresiones("error", null);
+    public TipoExpresiones obtenerTipoFuncion(Token funcionActualA) {
+        if (funcionActualA == null || !"funcion".equals(funcionActualA.getCategoria())) {
+            System.err.println("Error semantico: funcion no valida.");
+            return new TipoExpresiones("error", 0);
         }
-        String tipo = funcionActual.getTipo(); // Ej: "int", "float", "void", etc.
+        String tipo = funcionActualA.getTipo(); // Ej: "int", "float", "void", etc.
         if ("void".equals(tipo)) {
-            System.err.println("Error semántico: la función no retorna valor.");
-            return new TipoExpresiones("error", null);
+            System.err.println("Error semantico: la funcion no retorna valor.");
+            return new TipoExpresiones("error", 0);
         }
-        return new TipoExpresiones(tipo, null);
+        return new TipoExpresiones(tipo);
     }
 
     // Esto es para validar el tipo de datos esperado en las expresiones.
@@ -315,6 +317,7 @@ terminal LISTA;
 terminal ARGUMENTOS;
 
 
+
 // --------- Fin elementos nuevos.
 
 
@@ -338,16 +341,16 @@ non terminal var, varAsignacion, varCyAsignacion, varGlobal;
 non terminal expresion;
 
 /* > Numericas */
-non terminal expresionNumerica, expresionSuma, expresionProducto, expresionPotencia, expresionFactor, expresionAritmeticaUnaria, expresionAritmeticaUnariaNegativa;
+non terminal TipoExpresiones expresionNumerica, expresionSuma, expresionProducto, expresionPotencia, expresionFactor, expresionAritmeticaUnaria, expresionAritmeticaUnariaNegativa;
 
 /* > Boolenas  */
-non terminal expresionBooleana;
+non terminal TipoExpresiones expresionBooleana;
 
 /* > Literales */
-non terminal  expresionChar, expresionString;
+non terminal TipoExpresiones expresionChar, expresionString;
 
 /* > Expresiones compuestas */
-non terminal expresionAritmetica, expresionLogica, expresionRelacional;
+non terminal TipoExpresiones expresionAritmetica, expresionLogica, expresionRelacional;
 
 /* >> Control de flujo */
 non terminal estructruraControl, decide, condicion, loop, for;
@@ -356,12 +359,12 @@ non terminal estructruraControl, decide, condicion, loop, for;
 non terminal funcionLlamada, argumentos, return, break;
 
 /* Aqui estoy poniendo los no terminales que estan faltando */
-non terminal  tipoDatoInput, condiciones, listaFunciones;
-
+non terminal  condiciones, listaFunciones;
+non terminal String tipoDatoInput;
 
 /* >> Input y ouput */
-non terminal input, output, output_inline;
-
+non terminal output, output_inline;
+non terminal String input;
 /* >> Listas */
 non terminal lista, declaracionLista, creacionYAsignacionLista, elementos, elementoLista, modificarElementoLista, obtenerElementoLista;
 
@@ -372,7 +375,8 @@ non terminal principalParteIzquierda, funcionParteIzquierda, bloqueInicio, funci
 non terminal String tipoDatoParametro; // Le definimo String para que sea mas facil trabajar con lo valores.
 
 non terminal TipoLista tipoLista; // Aqui indicamos que lo que vamos a devolver es un objeto de TipoLista
-
+non terminal decideParteIzquierda;
+non terminal String operadorRelacional;
 // --- Fin de declaracion de nuevos no terminales. 
 
 
@@ -418,27 +422,27 @@ start with programa;
 /* FIXED: Se arreglo la estructura para que siempre haya un bloque principal */
 programa ::= varGlobal programa
            | funciones principal {: 
-                if (!buscarFuncion("principal")) {
+                if (buscarFuncion("principal") == null) {
                     System.err.println("Error semantico: no se ha definido la funcion principal.");
                 }
                 mostrarTodosLosAmbitos();
             :} 
            | principal {: 
-                if (!buscarFuncion("principal")) {
+                if (buscarFuncion("principal") == null) {
                     System.err.println("Error semantico: no se ha definido la funcion principal.");
                 }
                 mostrarTodosLosAmbitos();
             :}
            | error programa {: System.err.println("Error: Declaracion global o funcion no valida"); :};
 
-principalParteIzquierda ::= VOID PRINCIPAL PAREN_I PAREN_D {: 
-                            Token principal = new Token("principal", "void", "global", null, "funcion", PRINCIPALleft, PRINCIPALright);
+principalParteIzquierda ::= VOID PRINCIPAL:pri PAREN_I PAREN_D {: 
+                            Token principal = new Token("principal", "void", "global", null, "funcion", prileft, priright);
                             if (!insertarNuevoToken(principal)) {
                                 System.err.println("Error semántico: función 'principal' ya declarada.");
                             }
 
                             crearAmbito(); // entorno local para principal
-                            funcionEnDefinicion = principal; // Para trabajar con lo datos de la funcion.
+                            funcionEnAnalisis = principal; // Para trabajar con lo datos de la funcion.
                         :};
 
 principal ::= principalParteIzquierda bloque {: 
@@ -547,7 +551,7 @@ sentencia ::= var
             | break
             | input DELIMITADOR
             | output DELIMITADOR
-            | output_inline DELIMITADOR
+            // | output_inline DELIMITADOR
             | modificarElementoLista
             | expresionAritmeticaUnaria DELIMITADOR;
 
@@ -630,7 +634,7 @@ break ::= BREAK DELIMITADOR {:
 /*FIX: Se debe hacer algo para que cuando el cup lea un IDENTIFICADOR -> PAREN_I detecte que es input, no una llamada a función*/
 input ::= INPUT PAREN_I tipoDatoInput:tipo PAREN_D {:
                 if (!"int".equals(tipo) && !"float".equals(tipo)) {
-                    System.err.println("Error semantico: tipo '" + tipo + "' no valido para input. Solo se permite int o float. Fila: " + INPUTleft + ", Columna: " + INPUTright);
+                    System.err.println("Error semantico: tipo '" + tipo + "' no valido para input. Solo se permite int o float. Fila: " + tipoleft + ", Columna: " + tiporight);
                     RESULT = "error";
                 } else {
                     RESULT = tipo; // Devolvemos el tipo esperado.
@@ -642,7 +646,7 @@ tipoDatoInput ::= INT {: RESULT = "int"; :}
                 | FLOAT {: RESULT = "float"; :};
 
 // Ouput para imprimir los datos.
-output ::= output_inline {: RESULT = "output" :}
+output ::= output_inline {: RESULT = "output"; :}
          | output CONCATENACION_OUTPUT output_inline         
          | output error output_inline {: System.err.println("Error: Se debe de definir el caracter de concatenacion (<<) para los outpout "); :};
 
@@ -658,11 +662,11 @@ estructruraControl ::= decide {: pilaEstrucControl.pop(); :}
 
 
 decideParteIzquierda ::= DECIDE:deci OF {: 
-                            Token estructura = new Token("otro_decide_" + contador++, "estructura", "local", null, "decide", deciDEleft, deciright);
+                            Token estructura = new Token("otro_decide_" + contador++, "estructura", "local", null, "decide", decileft, deciright);
                             insertarNuevoToken(estructura);
                             crearAmbito();
                             pilaEstrucControl.push("decide");
-                        :}
+                        :};
 
 
 // Aqui hay que agregar algo para agregar a la pila de estructura de control.
@@ -681,7 +685,7 @@ condicion ::= PAREN_I expresion:expr PAREN_D {: // Esto probablemente tenga una 
                     if (!"boolean".equals(tipo)) {
                         System.err.println("Error semantico: la condición en 'decide' debe ser de tipo boolean, pero se recibio '" + tipo + "'");
                     }
-                :};
+                :}
             | error expresion PAREN_D {: System.err.println("Error: Se esperaba parentesis de apertura 'є' en condicion"); :}
             | PAREN_I expresion error {: System.err.println("Error: Se esperaba parentesis de cierre 'э' en condicion"); :}
             | PAREN_I error PAREN_D {: System.err.println("Error: Expresion no valida en condicion"); :};
@@ -758,13 +762,20 @@ operadorRelacional ::= IGUAL | DIFERENTE | MENOR | MAYOR | MENOR_IGUAL | MAYOR_I
 
 
 
-expresionChar ::= CHAR_LITERAL;
+expresionChar ::= CHAR_LITERAL:charLi {: 
+                    RESULT = new TipoExpresiones("char", charLi); 
+                :};
 
-expresionString ::= STRING_LITERAL
-                  | IDENTIFICADOR;
+expresionString ::= STRING_LITERAL:strLit {: 
+                    RESULT = new TipoExpresiones("string", strLit); 
+                :};
 
-expresionBooleana ::= TRUE
-                    | FALSE;
+expresionBooleana ::= TRUE{: 
+                        RESULT = new TipoExpresiones("boolean", true); 
+                    :}
+                                        | FALSE {: 
+                        RESULT = new TipoExpresiones("boolean", false); 
+                    :};
 
 
 /* >> Expresiones aritmeticas */
@@ -797,30 +808,39 @@ expresionFactor ::= PAREN_I expresionAritmetica PAREN_D
                   | error
                     {: System.err.println("Error: Expresion aritmetica no valida"); :};
 
-expresionNumerica ::= INT_LITERAL {: RESULT = new TipoExpresiones("int", null); :}
-                    | FLOAT_LITERAL  {: RESULT = new TipoExpresiones("float", null); :}
-                    | IDENTIFICADOR:id {: RESULT = obtenerTipoIdentificador(id); :}
-                    | funcionLlamada:func {: RESULT = obtenerTipoFuncion(func); :}
-                    | obtenerElementoLista:ob {: RESULT = obtenerTipoElementoLista(ob); :}
-                    | input:inp {: RESULT = new TipoExpresiones(inp, null); :
+expresionNumerica ::= INT_LITERAL:n {: RESULT = new TipoExpresiones("int", n); :}
+                    | FLOAT_LITERAL:f  {: RESULT = new TipoExpresiones("float", f); :}
+                    | IDENTIFICADOR:id {: 
+                        
+                        RESULT = obtenerTipoIdentificador(id); 
+                    
+                    :}
+                    | funcionLlamada:func {: 
+                        RESULT = obtenerTipoFuncion(funcionActual); 
+                    :}
+                    | obtenerElementoLista:ob {: 
+                        // RESULT = obtenerTipoElementoLista(ob); 
+                        RESULT = new TipoExpresiones("int");
+                        :}
+                    | input:inp {: RESULT = new TipoExpresiones(inp); :}
 
                     // Esta parte es para intentar olucionar los problemas:
                     | expresionChar:charExp {: 
-                        if (!validarTipoEsperado("int|float", charExp)) {
-                            System.err.println("Error semantico: tipo '" + charExp.tipoDato + "' no valido en expresion numerica.");
-                        }
+                        // if (!validarTipoEsperado("int|float", charExp)) {
+                        //     System.err.println("Error semantico: tipo '" + charExp.tipoDato + "' no valido en expresion numerica.");
+                        // }
                         RESULT = charExp;
                     :}
                     | expresionString:strExp {: 
-                        if (!validarTipoEsperado("int|float", strExp)) {
-                            System.err.println("Error semantico: tipo '" + strExp.tipoDato + "' no valido en expresion numerica.");
-                        }
+                        // if (!validarTipoEsperado("int|float", strExp)) {
+                        //     System.err.println("Error semantico: tipo '" + strExp.tipoDato + "' no valido en expresion numerica.");
+                        // }
                         RESULT = strExp;
                     :}
                     | expresionBooleana:boolExp {: 
-                        if (!validarTipoEsperado("int|float", boolExp)) {
-                            System.err.println("Error semantico: tipo '" + boolExp.tipoDato + "' no valido en expresion numerica.");
-                        }
+                        // if (!validarTipoEsperado("int|float", boolExp)) {
+                        //     System.err.println("Error semantico: tipo '" + boolExp.tipoDato + "' no valido en expresion numerica.");
+                        // }
                         RESULT = boolExp;
                     :}
 
