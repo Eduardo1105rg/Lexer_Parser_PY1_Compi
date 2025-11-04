@@ -88,6 +88,10 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
   // Esta es basicamente todo el manejo de la tabla de simbolos y asi definir su alcance por ambitos.
   Ambitos entornoActual = null;
 
+  {
+    entornoActual = new Ambitos(null); // Ambito raiz, este es el inicial, el que contiene a los demas, aqui estan las globales y todas las funciones.
+  }
+
   Token funcionActual; // Para trabajar lo que es el analisis semantico de la llamada a funciones.
 
 
@@ -165,7 +169,9 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
     // Para obtener los tipos de parametros de una funcion
     public List<String> obtenerTiposParametros(Token funcion) {
         List<String> tipos = new ArrayList<>();
-        Ambitos ambitoFuncion = buscarAmbitoDeFuncion(funcion.getNombre());
+        Ambitos ambitoFuncion = funcion.getAmbitoLocal();
+        if (ambitoFuncion == null) return tipos;
+        
         for (Token t : ambitoFuncion.getTablaActual().values()) {
             if ("parametro".equals(t.getCategoria())) {
                 tipos.add(t.getTipo());
@@ -219,7 +225,7 @@ terminal  WHEN,  RETURN, BREAK, INPUT, FOR, STEP, TO, DOWNTO, DO, OUTPUT;
  
 
 // Tipos de datos
-terminal INT, FLOAT, BOOLEAN, CHAR, STRING;
+terminal String INT, FLOAT, BOOLEAN, CHAR, STRING;
 
 // Literales de los tipos de datos, esta es la representacion en string.
 terminal Integer INT_LITERAL;
@@ -229,7 +235,7 @@ terminal Character CHAR_LITERAL;
 terminal Boolean TRUE, FALSE;
 
 // Identificadores.
-terminal  IDENTIFICADOR;
+terminal String IDENTIFICADOR;
 
 // Operadores aritmeticos
 terminal MAS, MENOS, MULTIPLICACION, DIVISION, DIVISION_ENTERA, MODULO, POTENCIA;
@@ -269,8 +275,8 @@ terminal ARGUMENTOS;
 /* >> Estructura general*/
 non terminal programa, principal, funciones, funcion, params, param;
 
-/* >> Tipos de datos */
-non terminal tipoDatoFuncion, tipoDatoVariable;
+/* >> Tipos de datos: A estos se les agrega que sean String para que sea mas facil trabajarles la parte semanatica. */
+non terminal String tipoDatoFuncion, tipoDatoVariable;
 
 /* >> Sentencias y bloques */
 non terminal bloque, sentencias, sentencia;
@@ -308,13 +314,15 @@ non terminal  tipoDatoInput, condiciones, listaFunciones;
 non terminal input, output, output_inline;
 
 /* >> Listas */
-non terminal lista, declaracionLista, creacionYAsignacionLista, elementos, elementoLista, modificarElementoLista, obtenerElementoLista, tipoLista;
+non terminal lista, declaracionLista, creacionYAsignacionLista, elementos, elementoLista, modificarElementoLista, obtenerElementoLista;
 
 
 // Esta son las nuevas declaraciones: 
 non terminal principalParteIzquierda, funcionParteIzquierda, bloqueInicio, funcionLlamadaInicio;
 
-non terminal  tipoDatoParametro;
+non terminal String tipoDatoParametro; // Le definimo String para que sea mas facil trabajar con lo valores.
+
+non terminal TipoLista tipoLista; // Aqui indicamos que lo que vamos a devolver es un objeto de TipoLista
 
 // --- Fin de declaracion de nuevos no terminales. 
 
@@ -373,15 +381,15 @@ principal ::= principalParteIzquierda bloque {:
           :};
 
 // Se le agrega el result para que las producciones sepan mejor el valor semantico que van a tener.
-tipoDatoFuncion ::= INT {: RESULT = new Symbol(sym.INT, "int"); :}
-                  | FLOAT {: RESULT = new Symbol(sym.FLOAT, "float"); :}
-                  | BOOLEAN {: RESULT = new Symbol(sym.BOOLEAN, "boolean"); :};
+tipoDatoFuncion ::= INT {: RESULT = "int"; :}
+                  | FLOAT {: RESULT = "float"; :}
+                  | BOOLEAN {: RESULT = "boolean"; :};
 
-tipoDatoVariable ::= INT {: RESULT = new Symbol(sym.INT, "int"); :}
-                   | FLOAT {: RESULT = new Symbol(sym.FLOAT, "float"); :}
-                   | BOOLEAN {: RESULT = new Symbol(sym.BOOLEAN, "boolean"); :}
-                   | CHAR {: RESULT = new Symbol(sym.CHAR, "char"); :}
-                   | STRING {: RESULT = new Symbol(sym.STRING, "string"); :}
+tipoDatoVariable ::= INT {: RESULT = "int"; :}
+                  | FLOAT {: RESULT = "float"; :}
+                  | BOOLEAN {: RESULT = "boolean"; :}
+                  | CHAR {: RESULT = "char"; :}
+                  | STRING {: RESULT = "string"; :}
                    | error {: System.err.println("Error: tipo de variable debe ser int, float, boolean, char o string"); :};
 
 
@@ -394,28 +402,23 @@ listaFunciones ::= funcion
 
 
 // Para esta porte de las funciones, las dividimos en parte izquierda y parte derecha para que sea mas facil el analisis.
-funcionParteIzquierda ::= tipoDatoFuncion:tipo IDENTIFICADOR:ID PAREN_I params PAREN_D {: 
-                        Token funcion = new Token(((Symbol)ID).value.toString(), ((Symbol)tipo).value.toString(), "global", null, "funcion", ((Symbol)ID).left, ((Symbol)ID).right);
+funcionParteIzquierda ::= tipoDatoFuncion:tipo IDENTIFICADOR:ID PAREN_I  {: 
+                        Token funcion = new Token(ID, tipo, "global", null, "funcion", IDleft, IDright);
                         if (!insertarNuevoToken(funcion)) {
-                            System.err.println("Error semantico: funcion '" + ((Symbol)ID).value.toString() + "' ya declarada.");
+                            System.err.println("Error semantico: funcion '" + ID + "' ya declarada.");
                         }
 
                         crearAmbito(); // Crear el ambito local de una funcion, esto antes de que se cree el bloque.
-                      :}
-                    | tipoDatoFuncion:tipo IDENTIFICADOR:ID PAREN_I PAREN_D bloque  {: 
-                        Token funcion = new Token(((Symbol)ID).value.toString(), ((Symbol)tipo).value.toString(), "global", null, "funcion", ((Symbol)ID).left, ((Symbol)ID).right);
-                        if (!insertarNuevoToken(funcion)) {
-                            System.err.println("Error semantico: funcion '" + ((Symbol)ID).value.toString() + "' ya declarada.");
-                        }
-
-                        crearAmbito(); // Crear el ambito local de una funcion, esto antes de que se cree el bloque.
-                      :}
-                    ; // Fin de produccion.
+                        funcion.setAmbitoLocal(entornoActual);
+                      :}; // Fin de produccion.
   
+
+
 // Funciones en la parte derecha.
-funcion ::= funcionParteIzquierda bloque {: 
+funcion ::= funcionParteIzquierda params PAREN_D bloque {: 
             cerrarAmbito(); // Cerramos el ambito local de una funcion.
-        :}; // Fin de produccion.
+        :}
+        | PAREN_D bloque {: cerrarAmbito(); :}; // Fin de produccion.
 
 
 // >>>>>>>>>>Parte de los parametros de una funcion
@@ -424,17 +427,23 @@ params ::= param
          | error COMA param{: System.err.println("Error: No puede haber una (,) sola al inicio de los parametros."); :};
 
 // Definirle el valos de formas mas explicita para que puedan ser leidos.
-tipoDatoParametro ::= INT {: RESULT = new Symbol(sym.INT, "int"); :}
-                    | FLOAT {: RESULT = new Symbol(sym.FLOAT, "float"); :}
-                    | BOOLEAN {: RESULT = new Symbol(sym.BOOLEAN, "boolean"); :}
-                    | CHAR {: RESULT = new Symbol(sym.CHAR, "char"); :}
-                    | STRING {: RESULT = new Symbol(sym.STRING, "string"); :}
-                    | tipoLista {: RESULT = new Symbol(sym.LISTA, "lista"); :};
+tipoDatoParametro ::= INT {: RESULT = "int"; :}
+                    | FLOAT {: RESULT = "float"; :}
+                    | BOOLEAN {: RESULT = "boolean"; :}
+                    | CHAR {: RESULT = "char"; :}
+                    | STRING {: RESULT = "string"; :};
+                    // | tipoLista {: RESULT = new Symbol(sym.LISTA, "lista"); :}; // Este se tiene que mover ya que no dejara trabajar con lo del semantico
 
 param ::= tipoDatoParametro:tipo IDENTIFICADOR:ID {: 
-          Token parametro = new Token(((Symbol)ID).value.toString(), ((Symbol)tipo).value.toString(), "parametro", null, "parametro", ((Symbol)ID).left, ((Symbol)ID).right);
+          Token parametro = new Token(ID, tipo, "parametro", null, "parametro", IDleft, IDright);
           if (!insertarNuevoToken(parametro)) {
-              System.err.println("Error semantico: parametro '" + ((Symbol)ID).value.toString() + "' ya declarado.");
+              System.err.println("Error semantico: parametro '" + ID + "' ya declarado.");
+          }
+        :}
+      | tipoLista:tipo IDENTIFICADOR:ID {: //Despues se tiene que hacer algo para trabajar con lo del tamaño.
+          Token parametro = new Token(ID, tipo.tipoBase, "parametro", null, "parametro", IDleft, IDright);
+          if (!insertarNuevoToken(parametro)) {
+              System.err.println("Error semantico: parametro '" + ID + "' ya declarado.");
           }
         :}
       | error IDENTIFICADOR {: System.err.println("Error: Para los parametros de una funcion se debe de indicar su tipo de dato."); :};
@@ -479,27 +488,37 @@ sentencia ::= var
 /* FIX: El identificador no debe de ser validado, se valida en producción identificador, sino encuentra busca terminal  */
 /*FIXED: Eliminando la linea que valida nombre: | error PAREN_I argumentos PAREN_D  {: System.err.println("Error: Nombre de funcion no valido"); :}*/
 funcionLlamadaInicio ::= IDENTIFICADOR:ID PAREN_I {: 
-                      Token funcion = buscarFuncion(((Symbol)ID).value.toString());
+                      Token funcion = buscarFuncion(ID);
                       if (funcion == null) {
-                          System.err.println("Error semantico: funcion '" + ((Symbol)ID).value + "' no declarada.");
+                          System.err.println("Error semantico: funcion '" + ID + "' no declarada.");
+                          funcionActual = null;
                       } else {
-                          System.out.println("Llamada a funcion '" + ((Symbol)ID).value + "' valida.");
+                          System.out.println("Llamada a funcion '" + ID + "' valida.");
+                          funcionActual = funcion;
                           // Se podria hacer algo para guardar el token y validar sus argumentos luego.
                       }
                   :};
 // Para la llamada a una funcion.
 funcionLlamada ::= funcionLlamadaInicio argumentos:args PAREN_D {: 
-                      List<String> argumentos = (List<String>) ((Symbol)args).value;
-                      List<String> parametrosEsperados = obtenerTiposParametros(funcionActual);
 
-                      if (argumentos.size() != parametrosEsperados.size()) {
-                          System.err.println("Error semantico: funcion '" + funcionActual.getNombre() + "' esperaba " + parametrosEsperados.size() + " argumentos, pero recibio " + argumentos.size());
+                      if (funcionActual == null) {
+                          System.err.println("Error: No se puede validardar los argumentos de la funcion, debido a que la funcion  buscada no esta declarada.");
+                          
                       } else {
-                          for (int i = 0; i < argumentos.size(); i++) {
-                              if (!argumentos.get(i).equals(parametrosEsperados.get(i))) {
-                                  System.err.println("Error semantico: argumento " + (i+1) + " de funcion '" + funcionActual.getNombre() + "' esperaba tipo '" + parametrosEsperados.get(i) + "', pero recibio '" + argumentos.get(i) + "'");
-                              }
-                          }
+
+                        List<String> argumentos = (List<String>) ((Symbol)args).value;
+                        List<String> parametrosEsperados = obtenerTiposParametros(funcionActual);
+
+                        if (argumentos.size() != parametrosEsperados.size()) {
+                            System.err.println("Error semantico: funcion '" + funcionActual.getNombre() + "' esperaba " + parametrosEsperados.size() + " argumentos, pero recibio " + argumentos.size());
+                        } else {
+                            for (int i = 0; i < argumentos.size(); i++) {
+                                if (!argumentos.get(i).equals(parametrosEsperados.get(i))) {
+                                    System.err.println("Error semantico: argumento " + (i+1) + " de funcion '" + funcionActual.getNombre() + "' esperaba tipo '" + parametrosEsperados.get(i) + "', pero recibio '" + argumentos.get(i) + "'");
+                                }
+                            }
+                        }
+
                       }
                   :}
                  | funcionLlamadaInicio PAREN_D;
@@ -712,21 +731,21 @@ obtenerElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE_D
 
 tipoLista ::= INT CORCHETE_I CORCHETE_D {: 
                 TipoLista tipoL = new TipoLista("int", null);
-                RESULT = new Symbol(sym.LISTA, tipoL);
+                RESULT = tipoL;
             :}
            | CHAR CORCHETE_I CORCHETE_D {: 
                 TipoLista tipoL = new TipoLista("char", null);
-                RESULT = new Symbol(sym.LISTA, tipoL);
+                RESULT = tipoL;
             :}
            | INT CORCHETE_I INT_LITERAL:num CORCHETE_D {: 
                 int tama = num;
                 TipoLista tipoL = new TipoLista("int", tama);
-                RESULT = new Symbol(sym.LISTA, tipoL);
+                RESULT = tipoL;
             :}
            | CHAR CORCHETE_I INT_LITERAL:num CORCHETE_D {: 
                 int tama = num;
                 TipoLista tipoL = new TipoLista("char", tama);
-                RESULT = new Symbol(sym.LISTA, tipoL);
+                RESULT = tipoL;
             :};
 
 

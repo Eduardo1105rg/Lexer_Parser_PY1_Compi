@@ -14,6 +14,7 @@ public class Ambitos {
     public Ambitos(Ambitos anterior) {
         this.tabla = new HashMap<>();
         this.anterior = anterior;
+        System.out.println(" >> Nuevo Ambito creado.");
     }
 
     // Insertar un nuevo simbolo en el ambito actual, aqui se una vez validamos que no exista en el entorno actual. [Tambien deberiamos de validar que no existe en la parte de los globales]

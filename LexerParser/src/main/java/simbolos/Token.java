@@ -8,6 +8,10 @@ public class Token {
     public String categoria;
     public int linea;
     public int columna;
+
+    // Cosas que hemos agregado despues:
+    public Ambitos ambitoLocal;
+
     
     public Token (String nombre, String tipo, String ambito, Object valor, String categoria, int linea, int columna) {
         this.nombre = nombre;
@@ -17,6 +21,10 @@ public class Token {
         this.categoria = categoria;
         this.linea = linea;
         this.columna = columna;
+    }
+
+    public void setAmbitoLocal (Ambitos pAmbitoLocal) {
+        this.ambitoLocal = pAmbitoLocal;
     }
 
     public String getNombre() {
@@ -44,6 +52,10 @@ public class Token {
     }
     public int getColumna() {
         return this.columna;
+    }
+
+    public Ambitos getAmbitoLocal() {
+        return this.ambitoLocal;
     }
 
     public void mostrarToken() {
