@@ -20,8 +20,8 @@ public class App {
 
             PrintStream consolaOriginal = System.out; // Esto es para salvar la conosola 
 
-            PrintStream out = new PrintStream("tokens.txt"); // COn esto redirigimos la salida de toda la consola hacia el archivo, por eso si debemos 
-            System.setOut(out);
+            // PrintStream out = new PrintStream("tokens.txt"); // COn esto redirigimos la salida de toda la consola hacia el archivo, por eso si debemos 
+            // System.setOut(out);
 
 
             FileReader file = new FileReader(args[0]);
@@ -29,6 +29,8 @@ public class App {
             parser p = new parser(lexer);
 
             p.parse();
+
+            // p.mostrarTodosLosAmbitos();
 
             // Luego de analisis sintactico:
             consolaOriginal.println("Errores lexicos: " + lexer.getErrorContador());
@@ -42,8 +44,8 @@ public class App {
             }
 
             // Esta es la parte para mostrar las tablas de simbolos.
-            lexer.tablaIdentificadores.imprimirTablaIdentificadores(consolaOriginal);
-            lexer.tablaLiterales.imprimirTablaLiterales(consolaOriginal);
+            // lexer.tablaIdentificadores.imprimirTablaIdentificadores(consolaOriginal);
+            // lexer.tablaLiterales.imprimirTablaLiterales(consolaOriginal);
 
         } catch (Exception e) {
             System.out.println("Error durante el analisis sintactico:"); // Esta parte se deberia de cambiar.

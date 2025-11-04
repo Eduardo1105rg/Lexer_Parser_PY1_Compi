@@ -1,0 +1,31 @@
+| ============ VARIABLES GLOBALES ============
+global int contadorGlobal = 100$
+global float pi = 3.14159$
+global boolean activo = true$
+global char inicial = 'A'$
+global string mensaje = "Hola Mundo"$
+
+| ============ FUNCIONES ============
+
+void principal є э ¿
+    | Variables locales de diferentes tipos
+    let int edad = 25$
+    let float altura = 1.75$
+    let boolean estudiante = true$
+    let char grado = 'A'$
+    let string nombre = "Juan Pérez"$
+    
+    | ============ OPERACIONES ARITMÉTICAS ============
+    let int resultado1 = 10 + 5 * 2$
+    let float resultado3 = 15.5 / 3.0$
+    let int resultado4 = 17 % 5$
+    let int resultado5 = 2 ^ 3$
+    
+    | Operadores unarios
+    let int incremento = 10$
+    incremento++$
+    let int decremento = 5$
+    decremento--$
+
+    
+?
