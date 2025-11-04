@@ -94,6 +94,10 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
 
   Token funcionActual; // Para trabajar lo que es el analisis semantico de la llamada a funciones.
 
+  Token funcionEnAnalisis; // Esta esa para tener los datos de la funcionn que estamos revisando en este momento.
+
+  Stack<String> pilaEstrucControl = new Stack<>();// La idea con esto que que para saber si estamos dentro de una estructura de control.
+  int contador = 0; // Esto es para ayudar a generar el token de los identificadores.
 
   // Crear un nuevo ambito y asigarle a lo anterior el que ya estabamos trabajando. [Este esta mas pensado para lo que pase dentro de BLOQUE]
   public void crearAmbito() {
@@ -204,6 +208,49 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
     }
 
 
+    // Para obtener el tipo de dato de un identificador, principalmente variables.
+    public TipoExpresiones obtenerTipoIdentificador(String nombre) {
+        for (Ambitos ambito = entornoActual; ambito != null; ambito = ambito.getAnterior()) {
+            Token token = ambito.buscar(nombre);
+            if (token != null && "variable".equals(token.getCategoria())) {
+                String tipo = token.getTipo(); 
+
+                if ("int".equals(tipo)) return new TipoExpresiones("int", null);
+                if ("float".equals(tipo)) return new TipoExpresiones("float", null);
+                if ("char".equals(tipo)) return new TipoExpresiones("char", null);
+                if ("boolean".equals(tipo)) return new TipoExpresiones("boolean", null);
+                if ("string".equals(tipo)) return new TipoExpresiones("string", null);
+                // if ("lista".equals(tipo)) {
+                //     // Para lo de la lista.
+                //     String tipoBase = token.getTipoBase(); // Ej: "int"
+                //     Integer tamano = token.getTamano();    // Ej: 8
+                //     return new TipoExpresiones(tipoBase, tamano);
+                // }
+            }
+        }
+        System.err.println("Error semántico: identificador '" + nombre + "' no encontrado o no es una variable.");
+        return new TipoExpresiones("error", null);
+    }
+
+    // Para obtener el tipo de dato de una funcion.
+    public TipoExpresiones obtenerTipoFuncion(Token funcionActual) {
+        if (funcionActual == null || !"funcion".equals(funcionActual.getCategoria())) {
+            System.err.println("Error semántico: función no válida.");
+            return new TipoExpresiones("error", null);
+        }
+        String tipo = funcionActual.getTipo(); // Ej: "int", "float", "void", etc.
+        if ("void".equals(tipo)) {
+            System.err.println("Error semántico: la función no retorna valor.");
+            return new TipoExpresiones("error", null);
+        }
+        return new TipoExpresiones(tipo, null);
+    }
+
+    // Esto es para validar el tipo de datos esperado en las expresiones.
+    public boolean validarTipoEsperado(String esperado, TipoExpresiones tipoReal) {
+        if (tipoReal == null || "error".equals(tipoReal.tipoDato)) return false;
+        return esperado.equals(tipoReal.tipoDato);
+    }
 
 
 
@@ -221,8 +268,10 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
 /* Definición de terminales (tokens) */
 // Son las palabras reservadas
 terminal LET, GLOBAL, VOID, PRINCIPAL, DECIDE, OF, ELSE, END, LOOP, EXIT;
-terminal  WHEN,  RETURN, BREAK, INPUT, FOR, STEP, TO, DOWNTO, DO, OUTPUT;
- 
+terminal  WHEN,  RETURN, BREAK, INPUT, FOR, STEP, TO, DOWNTO, DO;
+
+// Modificamos el output para que sea solo usado como sentencia y no en asignaciones o cosas raras:
+terminal String OUTPUT;
 
 // Tipos de datos
 terminal String INT, FLOAT, BOOLEAN, CHAR, STRING;
@@ -368,12 +417,28 @@ start with programa;
 /* FIX: La estructura del principal está como opcional, debe de ser obligatorio y al final (por diseño) */
 /* FIXED: Se arreglo la estructura para que siempre haya un bloque principal */
 programa ::= varGlobal programa
-           | funciones principal  
-           | principal
+           | funciones principal {: 
+                if (!buscarFuncion("principal")) {
+                    System.err.println("Error semantico: no se ha definido la funcion principal.");
+                }
+                mostrarTodosLosAmbitos();
+            :} 
+           | principal {: 
+                if (!buscarFuncion("principal")) {
+                    System.err.println("Error semantico: no se ha definido la funcion principal.");
+                }
+                mostrarTodosLosAmbitos();
+            :}
            | error programa {: System.err.println("Error: Declaracion global o funcion no valida"); :};
 
 principalParteIzquierda ::= VOID PRINCIPAL PAREN_I PAREN_D {: 
+                            Token principal = new Token("principal", "void", "global", null, "funcion", PRINCIPALleft, PRINCIPALright);
+                            if (!insertarNuevoToken(principal)) {
+                                System.err.println("Error semántico: función 'principal' ya declarada.");
+                            }
+
                             crearAmbito(); // entorno local para principal
+                            funcionEnDefinicion = principal; // Para trabajar con lo datos de la funcion.
                         :};
 
 principal ::= principalParteIzquierda bloque {: 
@@ -410,6 +475,7 @@ funcionParteIzquierda ::= tipoDatoFuncion:tipo IDENTIFICADOR:ID PAREN_I  {:
 
                         crearAmbito(); // Crear el ambito local de una funcion, esto antes de que se cree el bloque.
                         funcion.setAmbitoLocal(entornoActual);
+                        funcionEnAnalisis = funcion; // Guardamos la funcion que acabamos de crear para que sea mas facil trabajarla despues.
                       :}; // Fin de produccion.
   
 
@@ -537,43 +603,85 @@ argumentos ::= expresion:expr {:
              | argumentos COMA error {: System.err.println("Error: Se esperaba expresion despues de ','"); :}
              | argumentos error expresion {: System.err.println("Error: Se esperaba ',' entre argumentos"); :};
              
-return ::= RETURN DELIMITADOR
-         | RETURN expresion DELIMITADOR
+return ::= RETURN DELIMITADOR {: 
+            if (!"void".equals(funcionEnAnalisis.getTipo())) {
+                System.err.println("Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar un valor de tipo '" + funcionEnAnalisis.getTipo() + "'.");
+            }
+        :}
+         | RETURN expresion:expr DELIMITADOR {: 
+                String tipoExpr = (String) expr; // suponiendo que expresion devuelve un String con el tipo, pero creo que devolvera una clase con otros datos.
+                String tipoFuncion = funcionEnAnalisis.getTipo();
+
+                if ("void".equals(tipoFuncion)) {
+                    System.err.println("Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' no debe retornar ningun valor.");
+                } else if (!tipoExpr.equals(tipoFuncion)) {
+                    System.err.println("Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar tipo '" + tipoFuncion + "', pero se retorno tipo '" + tipoExpr + "'.");
+                }
+            :}
          | RETURN expresion error {: System.err.println("Error: Se esperaba un delimitador '$'"); :}
          | RETURN error {: System.err.println("Error: Se esperaba un delimitador '$'"); :};
 
-break ::= BREAK DELIMITADOR;
+break ::= BREAK DELIMITADOR {: 
+            if (pilaEstrucControl.isEmpty()) {
+                System.err.println("Error semantico: 'break' fuera de una estructura de control.");
+            }
+        :};
 
 /*FIX: Se debe hacer algo para que cuando el cup lea un IDENTIFICADOR -> PAREN_I detecte que es input, no una llamada a función*/
-input ::= INPUT PAREN_I tipoDatoInput PAREN_D
+input ::= INPUT PAREN_I tipoDatoInput:tipo PAREN_D {:
+                if (!"int".equals(tipo) && !"float".equals(tipo)) {
+                    System.err.println("Error semantico: tipo '" + tipo + "' no valido para input. Solo se permite int o float. Fila: " + INPUTleft + ", Columna: " + INPUTright);
+                    RESULT = "error";
+                } else {
+                    RESULT = tipo; // Devolvemos el tipo esperado.
+                }
+            :}
         | INPUT PAREN_I error PAREN_D {: System.err.println("Error: Tipo de dato no valido para input, debe ser int o float."); :};
 
-tipoDatoInput ::= INT
-                | FLOAT;
-            
-output ::= output_inline
+tipoDatoInput ::= INT {: RESULT = "int"; :}
+                | FLOAT {: RESULT = "float"; :};
+
+// Ouput para imprimir los datos.
+output ::= output_inline {: RESULT = "output" :}
          | output CONCATENACION_OUTPUT output_inline         
          | output error output_inline {: System.err.println("Error: Se debe de definir el caracter de concatenacion (<<) para los outpout "); :};
 
 output_inline ::= OUTPUT PAREN_I expresion PAREN_D
 | error PAREN_I expresion PAREN_D {: System.err.println("Error: Se debe de definir la palabra de (input) para indicar una salida en consola."); :};
 
-/* Estructuras de control */
-estructruraControl ::= decide 
-                     | loop 
-                     | for;
 
-decide ::= DECIDE OF condiciones END DECIDE DELIMITADOR
-         | DECIDE OF condiciones ELSE bloque END DECIDE DELIMITADOR
-         | DECIDE error condiciones END DECIDE DELIMITADOR {: System.err.println("Error: Se esperaba 'of' despues de 'decide'"); :}
-         | DECIDE OF error END DECIDE DELIMITADOR {: System.err.println("Error: Condiciones no validas en estructura decide"); :}
-         | DECIDE OF condiciones error DECIDE DELIMITADOR  {: System.err.println("Error: Se esperaba 'end' antes de 'decide'"); :}
-         | DECIDE OF condiciones END error DELIMITADOR {: System.err.println("Error: Se esperaba 'decide' despues de 'end'"); :};
+
+/* -------------------- Estructuras de control ----------------------------- */
+estructruraControl ::= decide {: pilaEstrucControl.pop(); :}
+                     | loop {: pilaEstrucControl.pop(); :}
+                     | for {: pilaEstrucControl.pop(); :};
+
+
+decideParteIzquierda ::= DECIDE:deci OF {: 
+                            Token estructura = new Token("otro_decide_" + contador++, "estructura", "local", null, "decide", deciDEleft, deciright);
+                            insertarNuevoToken(estructura);
+                            crearAmbito();
+                            pilaEstrucControl.push("decide");
+                        :}
+
+
+// Aqui hay que agregar algo para agregar a la pila de estructura de control.
+decide ::= decideParteIzquierda condiciones END DECIDE DELIMITADOR {: pilaEstrucControl.pop(); cerrarAmbito(); :}
+         | decideParteIzquierda condiciones ELSE bloque END DECIDE DELIMITADOR {: pilaEstrucControl.pop(); cerrarAmbito(); :} // Posiblemente requiramos crear una ambito especifico para el else.
+         | decideParteIzquierda error condiciones END DECIDE DELIMITADOR {: System.err.println("Error: Se esperaba 'of' despues de 'decide'"); :}
+         | decideParteIzquierda error END DECIDE DELIMITADOR {: System.err.println("Error: Condiciones no validas en estructura decide"); :}
+         | decideParteIzquierda condiciones error DECIDE DELIMITADOR  {: System.err.println("Error: Se esperaba 'end' antes de 'decide'"); :}
+         | decideParteIzquierda condiciones END error DELIMITADOR {: System.err.println("Error: Se esperaba 'decide' despues de 'end'"); :};
 
 condiciones ::= condicion FLECHA bloque
               | condiciones condicion FLECHA bloque;
 
-condicion ::= PAREN_I expresion PAREN_D
+condicion ::= PAREN_I expresion:expr PAREN_D {: // Esto probablemente tenga una forma diferente despues, la parte de expr va a ser diferente y se tendra que cambiar esta validacion.
+                    String tipo = (String) expr;
+                    if (!"boolean".equals(tipo)) {
+                        System.err.println("Error semantico: la condición en 'decide' debe ser de tipo boolean, pero se recibio '" + tipo + "'");
+                    }
+                :};
             | error expresion PAREN_D {: System.err.println("Error: Se esperaba parentesis de apertura 'є' en condicion"); :}
             | PAREN_I expresion error {: System.err.println("Error: Se esperaba parentesis de cierre 'э' en condicion"); :}
             | PAREN_I error PAREN_D {: System.err.println("Error: Expresion no valida en condicion"); :};
@@ -617,45 +725,46 @@ varGlobal ::= GLOBAL tipoDatoVariable IDENTIFICADOR DELIMITADOR
             | GLOBAL tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
 
 /* ##### Seccion para las expresiones ######*/
-expresion ::= expresionAritmetica
-            | expresionLogica
-            | expresionChar
-            | expresionString;
+expresion ::= expresionLogica;
 
 
 /* Modificar las derivacion para expresion logica con el fin de que pueda volver a arriba:  expresionLogica AND expresionLogica| expresionLogica OR expresionLogica*/
-expresionLogica ::= expresionRelacional AND expresionLogica
-                  | expresionRelacional OR expresionLogica
+expresionLogica ::= expresionLogica AND expresionRelacional
+                  | expresionLogica OR expresionRelacional
                   | NOT expresionLogica                  
-                  | expresionRelacional
-                  | expresionBooleana; 
+                  | expresionRelacional; 
                   
 
 /* Los de expresionAritmetica no se pueden cambiar ya que los operadores de mayores y menore solo funcionan con estos. Asi */
-expresionRelacional ::= expresionAritmetica IGUAL expresionAritmetica
-                      | expresionAritmetica DIFERENTE expresionAritmetica
-                      | expresionAritmetica MENOR expresionAritmetica
-                      | expresionAritmetica MAYOR expresionAritmetica
-                      | expresionAritmetica MENOR_IGUAL expresionAritmetica
-                      | expresionAritmetica MAYOR_IGUAL expresionAritmetica
+expresionRelacional ::= expresionRelacional operadorRelacional expresionAritmetica
+                      | expresionAritmetica
+                      | PAREN_I expresion PAREN_D;
 
-                      | expresionBooleana IGUAL expresionBooleana
-                      | expresionBooleana DIFERENTE expresionBooleana
-                      | expresionChar IGUAL expresionChar
-                      | expresionChar DIFERENTE expresionChar
-                      | expresionString
-                      | PAREN_I expresion PAREN_D; /* Con esta en teoria deberia de volver a arriba. */
+operadorRelacional ::= IGUAL | DIFERENTE | MENOR | MAYOR | MENOR_IGUAL | MAYOR_IGUAL;
 
-expresionChar ::= CHAR_LITERAL
-                | obtenerElementoLista
-                | funcionLlamada;
+
+//  Para intentar solucionar lo de expresiones.
+// valorLiteral ::= INT_LITERAL {:RESULT = "int":}
+//                | FLOAT_LITERAL
+//                | TRUE
+//                | FALSE
+//                | CHAR_LITERAL
+//                | STRING_LITERAL;
+
+// valorReferencia ::= IDENTIFICADOR
+//                   | funcionLlamada
+//                   | obtenerElementoLista
+//                   | input;
+
+
+
+expresionChar ::= CHAR_LITERAL;
 
 expresionString ::= STRING_LITERAL
                   | IDENTIFICADOR;
 
 expresionBooleana ::= TRUE
-                    | FALSE
-                    | IDENTIFICADOR;
+                    | FALSE;
 
 
 /* >> Expresiones aritmeticas */
@@ -688,12 +797,33 @@ expresionFactor ::= PAREN_I expresionAritmetica PAREN_D
                   | error
                     {: System.err.println("Error: Expresion aritmetica no valida"); :};
 
-expresionNumerica ::= INT_LITERAL
-                    | FLOAT_LITERAL  
-                    | IDENTIFICADOR
-                    | funcionLlamada
-                    | obtenerElementoLista
-                    | input
+expresionNumerica ::= INT_LITERAL {: RESULT = new TipoExpresiones("int", null); :}
+                    | FLOAT_LITERAL  {: RESULT = new TipoExpresiones("float", null); :}
+                    | IDENTIFICADOR:id {: RESULT = obtenerTipoIdentificador(id); :}
+                    | funcionLlamada:func {: RESULT = obtenerTipoFuncion(func); :}
+                    | obtenerElementoLista:ob {: RESULT = obtenerTipoElementoLista(ob); :}
+                    | input:inp {: RESULT = new TipoExpresiones(inp, null); :
+
+                    // Esta parte es para intentar olucionar los problemas:
+                    | expresionChar:charExp {: 
+                        if (!validarTipoEsperado("int|float", charExp)) {
+                            System.err.println("Error semantico: tipo '" + charExp.tipoDato + "' no valido en expresion numerica.");
+                        }
+                        RESULT = charExp;
+                    :}
+                    | expresionString:strExp {: 
+                        if (!validarTipoEsperado("int|float", strExp)) {
+                            System.err.println("Error semantico: tipo '" + strExp.tipoDato + "' no valido en expresion numerica.");
+                        }
+                        RESULT = strExp;
+                    :}
+                    | expresionBooleana:boolExp {: 
+                        if (!validarTipoEsperado("int|float", boolExp)) {
+                            System.err.println("Error semantico: tipo '" + boolExp.tipoDato + "' no valido en expresion numerica.");
+                        }
+                        RESULT = boolExp;
+                    :}
+
                     | INT_LITERAL IDENTIFICADOR error
                       {: System.err.println("Error: Numero seguido de identificador no es valido (ej: 2f5)"); :}
                     | FLOAT_LITERAL IDENTIFICADOR error
@@ -716,16 +846,16 @@ creacionYAsignacionLista ::= LET tipoLista IDENTIFICADOR ASIGNACION LLAVE_I elem
 elementos ::= elementoLista
             | elementos COMA elementoLista;
 
-elementoLista ::= expresionAritmetica /* Este deberia ser expresion aritmetica en ves de -> INT_LITERAL*/
-                | CHAR_LITERAL
-                | IDENTIFICADOR; /* FIXED: El elemento en lista deberia poder permitir identificadores validos*/
+elementoLista ::= expresionAritmetica:op; /* Este deberia ser expresion aritmetica en ves de -> INT_LITERAL*/
+                // | CHAR_LITERAL
+                // | IDENTIFICADOR; /* FIXED: El elemento en lista deberia poder permitir identificadores validos*/
 
 /* FIX: El elemento en lista deberia poder permitir identificadores validos*/
 modificarElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR 
                          | error CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR
                            {: System.err.println("Error: Nombre de lista no valido"); :};
 
-obtenerElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE_D
+obtenerElementoLista ::= IDENTIFICADOR:ID CORCHETE_I expresionAritmetica:op CORCHETE_D
                       | error CORCHETE_I expresionAritmetica CORCHETE_D
                         {: System.err.println("Error: Nombre de lista no valido"); :};
 

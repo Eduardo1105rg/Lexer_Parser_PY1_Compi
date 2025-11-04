@@ -11,6 +11,9 @@ public class Token {
 
     // Cosas que hemos agregado despues:
     public Ambitos ambitoLocal;
+    public boolean retornoActivado; // Este seria para definir cuando una funcion tiene activado su retorno o no.
+
+    public TipoLista tipoLista; // Esto seria para el caso en el que el token sea una lista.
 
     
     public Token (String nombre, String tipo, String ambito, Object valor, String categoria, int linea, int columna) {
@@ -25,6 +28,14 @@ public class Token {
 
     public void setAmbitoLocal (Ambitos pAmbitoLocal) {
         this.ambitoLocal = pAmbitoLocal;
+    }
+
+    public void setrRetornoActivado(boolean pRetornoActivado) {
+        this.retornoActivado = pRetornoActivado;
+    }
+
+    public void setTipoLista(TipoLista pTipoLista) {
+        this.tipoLista = pTipoLista;
     }
 
     public String getNombre() {
@@ -56,6 +67,14 @@ public class Token {
 
     public Ambitos getAmbitoLocal() {
         return this.ambitoLocal;
+    }
+
+    public boolean getRetornoActivado() {
+        return this.retornoActivado;
+    }
+
+    public TipoLista getTipoLista() {
+        return this.tipoLista;
     }
 
     public void mostrarToken() {
