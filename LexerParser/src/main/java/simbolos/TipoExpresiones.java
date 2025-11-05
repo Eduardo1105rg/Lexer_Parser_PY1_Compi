@@ -39,5 +39,7 @@ public class TipoExpresiones {
         this.valorB = tamano;
     }
 
-
+    public String getTipo() {
+        return this.tipoDato;
+    }
 }
