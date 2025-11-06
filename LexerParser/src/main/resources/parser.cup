@@ -703,6 +703,7 @@ decideParteIzquierda ::= DECIDE:deci OF {:
 // Aqui hay que agregar algo para agregar a la pila de estructura de control.
 decide ::= decideParteIzquierda condiciones END DECIDE DELIMITADOR {: pilaEstrucControl.pop(); cerrarAmbito(); :}
          | decideParteIzquierda condiciones ELSE bloque END DECIDE DELIMITADOR {: pilaEstrucControl.pop(); cerrarAmbito(); :} // Posiblemente requiramos crear una ambito especifico para el else.
+         
          | decideParteIzquierda error condiciones END DECIDE DELIMITADOR {: System.err.println("Error: Se esperaba 'of' despues de 'decide'"); :}
          | decideParteIzquierda error END DECIDE DELIMITADOR {: System.err.println("Error: Condiciones no validas en estructura decide"); :}
          | decideParteIzquierda condiciones error DECIDE DELIMITADOR  {: System.err.println("Error: Se esperaba 'end' antes de 'decide'"); :}
@@ -724,6 +725,7 @@ condicion ::= PAREN_I expresion:expr PAREN_D {: // Esto probablemente tenga una 
 
 loop ::= LOOP bloque EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
        | LOOP bloque break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+
        | LOOP error EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Bloque no valido en estructura loop"); :}
        | LOOP bloque error WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'exit' antes de 'when'"); :}
        | LOOP bloque EXIT error condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'when' despues de 'exit'"); :}
@@ -731,6 +733,7 @@ loop ::= LOOP bloque EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
 
 for ::= FOR IDENTIFICADOR STEP INT_LITERAL TO expresion DO bloque DELIMITADOR
       | FOR IDENTIFICADOR STEP INT_LITERAL DOWNTO expresion DO bloque DELIMITADOR
+
       | FOR error STEP INT_LITERAL TO expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba identificador despues de 'for'"); :}
       | FOR IDENTIFICADOR error INT_LITERAL TO expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba 'step' despues del identificador"); :}
       | FOR IDENTIFICADOR STEP error TO expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba numero entero despues de 'step'"); :}
@@ -738,19 +741,44 @@ for ::= FOR IDENTIFICADOR STEP INT_LITERAL TO expresion DO bloque DELIMITADOR
       | FOR IDENTIFICADOR STEP INT_LITERAL TO expresion error bloque DELIMITADOR {: System.err.println("Error: Se esperaba 'do' antes del bloque"); :};
 
 /* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
-var ::= LET tipoDatoVariable IDENTIFICADOR DELIMITADOR; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
+var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
+            if (entornoActual.buscar(id) != null) {
+                System.err.println("Error semantico: la variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+            } else {
+                // nombre, tipo, ambito, valor, categoria, linea, columna
+                Token tokenVar = new Token(id, tipo, "local", null, "variable", idleft, idright);
+                insertarNuevoToken(tokenVar);
+            }
+        :}; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
 
-varAsignacion ::= IDENTIFICADOR ASIGNACION expresion DELIMITADOR;
+varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
+                    Token token = entornoActual.buscar(id);
+                    if (token == null) {
+                        System.err.println("Error semantico: la variable '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+                    } else if (!token.getTipo().equals(exp.tipoDato)) {
+                        System.err.println("Error semantico: Tipo incompatible en asignacion. Se esperaba '" + token.getTipo() + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                    } else {
+                        //token.setValor(exp.valor); // actualizar el valor de la variable
+                        token.setValor(null);
+                    }
+                :};
                  
-varCyAsignacion ::= LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR
-                  | LET tipoDatoVariable IDENTIFICADOR ASIGNACION error DELIMITADOR 
-                    {: System.err.println("Error: Expresion no valida despues de '='"); :}
-                  | LET tipoDatoVariable IDENTIFICADOR error 
-                    {: System.err.println("Error: Se esperaba '=' despues del identificador"); :}
-                  | LET tipoDatoVariable error ASIGNACION expresion DELIMITADOR
-                    {: System.err.println("Error: Identificador no valido"); :}
-                  | LET error IDENTIFICADOR ASIGNACION expresion DELIMITADOR
-                    {: System.err.println("Error: Tipo de dato no valido"); :};
+varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
+                        if (entornoActual.buscar(id) != null) {
+                            System.err.println("Error semantico: la variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+
+                        } else if (!tipo.equals(exp.tipoDato)) {
+                            System.err.println("Error semantico: el tipo de la variable '" + id + "' no es compatible con el tipo de la expresion. Se esperaba '" + tipo + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                        } else {
+                            // nombre, tipo, ambito, valor, categoria, linea, columna
+                            Token tokenLocal = new Token(id, tipo, "local", null, "variable", idleft, idright); //<- Se tiene que cambiar esto para para guardar el valor, pero se tiene que modificar desde expresion.
+                            insertarNuevoToken(tokenLocal);
+                        }
+                    :}
+                  | LET tipoDatoVariable IDENTIFICADOR ASIGNACION error DELIMITADOR {: System.err.println("Error: Expresion no valida despues de '='"); :}
+                  | LET tipoDatoVariable IDENTIFICADOR error  {: System.err.println("Error: Se esperaba '=' despues del identificador"); :}
+                  | LET tipoDatoVariable error ASIGNACION expresion DELIMITADOR {: System.err.println("Error: Identificador no valido"); :}
+                  | LET error IDENTIFICADOR ASIGNACION expresion DELIMITADOR {: System.err.println("Error: Tipo de dato no valido"); :};
 
 /* FIX: ERROR en global para que detecte 'global tipo identificador...' */
 /* FIXED: Se agrega produ de error en falta de global */
@@ -765,9 +793,11 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                 :}
             | GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
                     if (entornoActual.buscar(id) != null) {
-                        System.err.println("Error semantico: la variable global '" + id + "' ya fue declarada." + "Fila: " + idleft + ", Columna: " + idright);
+                        System.err.println("-> Error semantico: la variable global '" + id + "' ya fue declarada." + "Fila: " + idleft + ", Columna: " + idright);
+
                     } else if (!tipo.equals(exp.tipoDato)) {
-                        System.err.println("Error semantico: El tipo de la variable global no es compatible con el tipo de la expresion que se le asigna. Se esperaba '" + tipo + "', pero se recibió '" + exp.tipoDato + "'." + "Fila: " + idleft + ", Columna: " + idright);
+                        System.err.println("-> Error semantico: El tipo de la variable global no es compatible con el tipo de la expresion que se le asigna. Se esperaba '" + tipo + "', pero se recibió '" + exp.tipoDato + "'." + "Fila: " + idleft + ", Columna: " + idright);
+                    
                     } else {
                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
                         insertarNuevoToken(tokenGlobal);
@@ -988,7 +1018,7 @@ expresionNumerica ::= INT_LITERAL:n {: RESULT = new TipoExpresiones("int", n); :
                     :}
                     | obtenerElementoLista:ob {: 
                         // RESULT = obtenerTipoElementoLista(ob); 
-                        RESULT = new TipoExpresiones("int"); //>> Esta se tiene que arrglar para que funcione con la funcion que deberia.
+                        RESULT = ob;//new TipoExpresiones("int"); //>> Esta se tiene que arrglar para que funcione con la funcion que deberia.
                         :}
                     | input:inp {: RESULT = new TipoExpresiones(inp); :}
 
@@ -1054,9 +1084,29 @@ expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica:expr {:
 lista ::= declaracionLista
         | creacionYAsignacionLista;
 
-declaracionLista ::= LET tipoLista IDENTIFICADOR DELIMITADOR;
+declaracionLista ::= LET tipoLista:tipo IDENTIFICADOR:id DELIMITADOR {: 
+                    if (entornoActual.buscar(id) != null) {
+                        System.err.println("Error semantico: la lista '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                    } else {
+                        // nombre, tipoBase, ambito, valor, categoria, linea, columna
+                        Token tokenLista = new Token(id, tipo.tipoBase, "local", null, "lista", idleft, idright);
+                        tokenLista.setTipoLista;
+                        insertarNuevoToken(tokenLista);
+                    }
+                :};
 
-creacionYAsignacionLista ::= LET tipoLista IDENTIFICADOR ASIGNACION LLAVE_I elementos LLAVE_D DELIMITADOR;
+creacionYAsignacionLista ::= LET tipoLista:tipo IDENTIFICADOR:id ASIGNACION LLAVE_I elementos:elems LLAVE_D DELIMITADOR {: 
+                            if (entornoActual.buscar(id) != null) {
+                                System.err.println("Error semantico: la lista '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                            } else if (!elems.tipoDato.equals(tipo.tipoBase)) {
+                                System.err.println("Error semantico: los elementos de la lista '" + id + "' no coinciden con el tipo declarado. Se esperaba '" + tipo.tipoBase + "', pero se recibio '" + elems.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                            } else {
+                                // Guardamos la lista con su tipo base y tamaño
+                                Token tokenLista = new Token(id, tipo.tipoBase, "local", elems.valor, "lista", idleft, idright);
+                                tokenLista.setTamano(elems.tamano); // si manejas tamaño de lista
+                                insertarNuevoToken(tokenLista);
+                            }
+                        :};
 
 elementos ::= elementoLista
             | elementos COMA elementoLista;
@@ -1070,9 +1120,26 @@ modificarElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE
                          | error CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR
                            {: System.err.println("Error: Nombre de lista no valido"); :};
 
-obtenerElementoLista ::= IDENTIFICADOR:ID CORCHETE_I expresionAritmetica:op CORCHETE_D
-                      | error CORCHETE_I expresionAritmetica CORCHETE_D
-                        {: System.err.println("Error: Nombre de lista no valido"); :};
+obtenerElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:op CORCHETE_D {: 
+                                Token token = entornoActual.buscar(id);
+                                if (token == null) {
+                                    System.err.println("Error semantico: la lista '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+                                    RESULT = new TipoExpresiones("error");
+
+                                } else if (!"lista".equals(token.getCategoria())) {
+                                    System.err.println("Error semantico: el identificador '" + id + "' no corresponde a una lista. Fila: " + idleft + ", Columna: " + idright);
+                                    RESULT = new TipoExpresiones("error");
+
+                                } else if (!"int".equals(op.tipoDato)) {
+                                    System.err.println("Error semantico: el indice de la lista '" + id + "' debe ser de tipo int, pero se recibio '" + op.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                                    RESULT = new TipoExpresiones("error");
+
+                                } else {
+                                    // Propagar el tipo base de la lista
+                                    RESULT = new TipoExpresiones(token.getTipoBase());
+                                }
+                            :}
+                        | error CORCHETE_I expresionAritmetica CORCHETE_D {: System.err.println("Error: Nombre de lista no valido"); :};
 
 tipoLista ::= INT CORCHETE_I CORCHETE_D {: 
                 TipoLista tipoL = new TipoLista("int", null);

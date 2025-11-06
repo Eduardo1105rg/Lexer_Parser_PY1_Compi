@@ -10,6 +10,8 @@ public class TipoExpresiones {
     public String valorS;
     public Boolean valorB;
 
+    public int tamano; // Para lo del tamaño del valor en las listas.
+
     public TipoExpresiones(String pTipoDato) {
         this.tipoDato = pTipoDato;
     }
@@ -39,7 +41,24 @@ public class TipoExpresiones {
         this.valorB = tamano;
     }
 
+    public TipoExpresiones(String pTipoDato, int pValor, int pTamano) {
+        this.tipoDato = pTipoDato;
+        this.valorI = pValor;
+        this.tamano = pTamano;
+    }
+
+    public TipoExpresiones(String pTipoDato, Character pValor, int pTamano) {
+        this.tipoDato = pTipoDato;
+        this.valorC = pValor;
+        this.tamano = pTamano;
+    }
+
+
     public String getTipo() {
         return this.tipoDato;
     }
+
+    
+
+
 }
