@@ -214,13 +214,10 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
     public TipoExpresiones obtenerTipoIdentificador(String nombre) {
         for (Ambitos ambito = entornoActual; ambito != null; ambito = ambito.getAnterior()) {
             Token token = ambito.buscar(nombre);
-            if (token != null && (
-                "variable".equals(token.getCategoria()) || 
-                "parametro".equals(token.getCategoria()) || 
-                "global".equals(token.getCategoria()))
+            if (token != null && ("variable".equals(token.getCategoria()) || "parametro".equals(token.getCategoria()) || "global".equals(token.getCategoria()))
             ) {
                 String tipo = token.getTipo();
-
+                System.out.println("Identificador '" + nombre + "' encontrado como " + token.getCategoria() + " de tipo '" + token.getTipo() + "'");
                 if ("int".equals(tipo)) return new TipoExpresiones("int");
                 if ("float".equals(tipo)) return new TipoExpresiones("float");
                 if ("char".equals(tipo)) return new TipoExpresiones("char");
@@ -303,8 +300,8 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
 
 /* Definición de terminales (tokens) */
 // Son las palabras reservadas
-terminal LET, GLOBAL, VOID, PRINCIPAL, DECIDE, OF, ELSE, END, LOOP, EXIT;
-terminal  WHEN,  RETURN, BREAK, INPUT, FOR, STEP, TO, DOWNTO, DO;
+terminal String LET, GLOBAL, VOID, PRINCIPAL, DECIDE, OF, ELSE, END, LOOP, EXIT;
+terminal String  WHEN,  RETURN, BREAK, INPUT, FOR, STEP, TO, DOWNTO, DO;
 
 // Modificamos el output para que sea solo usado como sentencia y no en asignaciones o cosas raras:
 terminal String OUTPUT;
@@ -393,7 +390,7 @@ non terminal estructruraControl, decide, condicion, loop, for;
 non terminal funcionLlamada, argumentos, return, break;
 
 /* Aqui estoy poniendo los no terminales que estan faltando */
-non terminal  condiciones, listaFunciones;
+non terminal condiciones, listaFunciones;
 non terminal String tipoDatoInput;
 
 /* >> Input y ouput */
@@ -848,7 +845,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                         :}
                         | expresionAritmetica:izq MENOR expresionAritmetica:der {: 
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, "<")) {
-                                System.err.println("Error semántico: La comparación '<' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato +"'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                System.err.println("Error semantico: La comparación '<' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato +"'." + "Fila: " + izqleft + ", Columna: " + izqright);
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
@@ -856,7 +853,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                         :}
                         | expresionAritmetica:izq MAYOR expresionAritmetica:der {: 
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, ">")) {
-                                System.err.println("Error semántico: La comparación '>' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                System.err.println("Error semantico: La comparacion '>' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
@@ -864,7 +861,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                         :}
                         | expresionAritmetica:izq MENOR_IGUAL expresionAritmetica:der {: 
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, "<=")) {
-                                System.err.println("Error semántico: La comparación '<=' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                System.err.println("Error semantico: La comparacion '<=' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
@@ -976,9 +973,8 @@ expresionPotencia ::= expresionFactor:base POTENCIA expresionPotencia:exp {:
 expresionFactor ::= PAREN_I expresionAritmetica:expr PAREN_D {: RESULT = expr; :}
                   | expresionNumerica:expr {: RESULT = expr; :}
                   | expresionAritmeticaUnaria:expr {: RESULT = expr; :}
-                  | expresionAritmeticaUnariaNegativa:expr {: RESULT = expr; :}
-                  | error
-                    {: System.err.println("Error: Expresion aritmetica no valida"); :};
+                  | expresionAritmeticaUnariaNegativa:expr {: RESULT = expr; :};
+                //   | error {: System.err.println("Error: Expresion aritmetica no valida"); :};
 
 expresionNumerica ::= INT_LITERAL:n {: RESULT = new TipoExpresiones("int", n); :}
                     | FLOAT_LITERAL:f  {: RESULT = new TipoExpresiones("float", f); :}
