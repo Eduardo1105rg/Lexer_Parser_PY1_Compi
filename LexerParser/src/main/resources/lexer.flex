@@ -73,7 +73,8 @@ ComentarioBloque   = \¡([^¡]|\n|\r)*\! /* >> Se tiene que corregir esta, no fu
 
 Entero = 0 | [-]?[1-9][0-9]*
 EnteroPositivo = [1-9][0-9]* | 0
-Flotante = [-]?(0\.0) | [-]?0\.[0-9]*[1-9]+ | [-]?[1-9][0-9]*\.([0-9]*[1-9]+|0) /* >> Se tiene que corregir esta, no acepta negativos */
+// Flotante = [-]?(0\.0) | [-]?0\.[0-9]*[1-9]+ | [-]?[1-9][0-9]*\.([0-9]*[1-9]+|0) /* >> Se tiene que corregir esta, no acepta negativos */
+Flotante = -?( (0\.0) | (0\.[0-9]*[1-9]+) | ([1-9][0-9]*\.([0-9]*[1-9]+|0)) )
 
 /* Identificadores */
 Identificador = [a-zA-Z][a-zA-Z0-9_]* /* >> Se tiene que corregir esta: No acepta un guion al inicio */
@@ -180,16 +181,16 @@ StringSimple = [^\n\r\"\\]+
     /* ";"                          { return symbol(sym.SEMICOLON); } Me parece que no esta definido en la gramatica original.*/
     
     /* Parentesis especiales para operaciones () */
-    "є"                          { System.out.println("Token: PAREN_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.PAREN_I); }
-    "э"                          { System.out.println("Token: PAREN_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.PAREN_D); }
+    "є"                          { System.out.println("Token: PAREN_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.PAREN_I); }
+    "э"                          { System.out.println("Token: PAREN_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.PAREN_D);  }
     
     /* Estos son los que se usan para el manejo de listas */
     "["                          { System.out.println("Token: CORCHETE_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.CORCHETE_I); } 
     "]"                          { System.out.println("Token: CORCHETE_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.CORCHETE_D); } 
 
     /* Los que seria para abrir y cerrar bloques o sentencias. */
-    "¿"                          { System.out.println("Token: LLAVE_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.LLAVE_I); }
-    "?"                          { System.out.println("Token: LLAVE_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.LLAVE_D); }
+    "¿"                          { System.out.println("Token: LLAVE_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.LLAVE_I); }
+    "?"                          { System.out.println("Token: LLAVE_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.LLAVE_D); }
     
     /* Flecha para condiciones */
     "->"                         { System.out.println("Token: FLECHA, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.FLECHA); }

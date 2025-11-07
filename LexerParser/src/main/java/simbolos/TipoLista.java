@@ -9,5 +9,9 @@ public class TipoLista {
         this.tamano = tamano;
     }
 
+    // Para cuando ocupamos modificar el tamaño de la lista despues de creada.
+    public void setTamano(int nuevoTamano) {
+        this.tamano = nuevoTamano;
+    }
     
 }

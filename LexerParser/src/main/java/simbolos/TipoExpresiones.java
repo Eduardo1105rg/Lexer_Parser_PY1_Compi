@@ -1,5 +1,8 @@
 package simbolos;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class TipoExpresiones {
 
     public String tipoDato; // int, char.
@@ -10,10 +13,15 @@ public class TipoExpresiones {
     public String valorS;
     public Boolean valorB;
 
+    // Este es para el trabajo con las listas.
+    public List<String> tipos;
+
     public int tamano; // Para lo del tamaño del valor en las listas.
 
     public TipoExpresiones(String pTipoDato) {
         this.tipoDato = pTipoDato;
+        this.tipos = new ArrayList<>();
+        this.tamano = 0;
     }
 
     public TipoExpresiones(String pTipoDato, Integer tamano) {
@@ -53,12 +61,16 @@ public class TipoExpresiones {
         this.tamano = pTamano;
     }
 
+    public TipoExpresiones(String tipoDato, List<String> tipos, int tamano) {
+        this.tipoDato = tipoDato;
+        this.tipos = tipos;
+        this.tamano = tamano;
+    }
+
 
     public String getTipo() {
         return this.tipoDato;
     }
-
-    
 
 
 }

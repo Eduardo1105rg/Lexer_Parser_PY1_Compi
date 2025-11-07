@@ -30,7 +30,7 @@ public class App {
 
             p.parse();
 
-            // p.mostrarTodosLosAmbitos();
+            p.mostrarTS();
 
             // Luego de analisis sintactico:
             consolaOriginal.println("Errores lexicos: " + lexer.getErrorContador());
@@ -42,6 +42,8 @@ public class App {
             } else {
                 consolaOriginal.println("El archivo fue analizado con " + errores + " errores.");
             }
+
+            // p.mostrarTablaSimbolos();
 
             // Esta es la parte para mostrar las tablas de simbolos.
             // lexer.tablaIdentificadores.imprimirTablaIdentificadores(consolaOriginal);

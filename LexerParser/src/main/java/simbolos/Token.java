@@ -16,6 +16,7 @@ public class Token {
     public TipoLista tipoLista; // Esto seria para el caso en el que el token sea una lista.
 
     
+    
     public Token (String nombre, String tipo, String ambito, Object valor, String categoria, int linea, int columna) {
         this.nombre = nombre;
         this.tipo = tipo;

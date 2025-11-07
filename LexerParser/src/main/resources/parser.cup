@@ -22,76 +22,16 @@ import simbolos.TipoLista;
 import simbolos.TipoExpresiones;
 
 
-/* Parsers */
-parser code {:
-    private int errorContador = 0;
-
-    public int getErrorContador() {
-        return errorContador;
-    }
-
-    public void syntax_error(Symbol cur_token) {
-        errorContador++;
-        String tokenInfo = obtenerInfoToken(cur_token);
-        System.err.println("Error sintactico en linea " + cur_token.left + 
-                          ", columna " + cur_token.right + ": " + tokenInfo);
-    }
-    // Mapeo de tokens a mensajes claros para debugueo
-    private String obtenerInfoToken(Symbol token) {
-        switch (token.sym) {
-            case sym.IDENTIFICADOR:
-                return "Se encontro identificador inesperado: '" + token.value + "'";
-            case sym.INT_LITERAL:
-                return "Se encontro numero entero inesperado: '" + token.value + "'";
-            case sym.FLOAT_LITERAL:
-                return "Se encontro numero flotante inesperado: '" + token.value + "'";
-            case sym.STRING_LITERAL:
-                return "Se encontro texto inesperado";
-            case sym.CHAR_LITERAL:
-                return "Se encontro caracter inesperado";
-            case sym.ASIGNACION:
-                return "Se encontro '=' inesperado";
-            case sym.DELIMITADOR:
-                return "Se encontro '$' inesperado";
-            case sym.EOF:
-                return "Final de archivo inesperado";
-            default:
-                return "Token inesperado: " + token.value;
-        }
-    }
-
-    public void report_error(String message, Object info) {
-    }
-
-    public void unrecovered_syntax_error(Symbol cur_token) {
-        System.err.println("Error sintactico irrecuperable en linea " + cur_token.left + 
-                          ", columna " + cur_token.right + ": No se puede continuar el analisis");
-    }
-
-
-
-
-  // El profe tiene esto en el codigo de el, me parece que es para hacer la sobrecarga, pero no s epara que llama al lexer.
-
-
-  // Lexer lexer;
-
-  // public Parser (Lexer lexer) {
-  //   this.lexer = lexer;
-  //   this.symbolFactory = new DefaultSymbolFactory();
-  // }
-
-
-:};
 
 /* Aqui vamos a definir lo que se va a ejecutar al reducir una produccion o algo asi. (Es diferente del 'parser code')*/
 action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi de momento.
 
-  // Esta es basicamente todo el manejo de la tabla de simbolos y asi definir su alcance por ambitos.
-  Ambitos entornoActual = null;
+
+// Esta es basicamente todo el manejo de la tabla de simbolos y asi definir su alcance por ambitos.
 
   {
     entornoActual = new Ambitos(null); // Ambito raiz, este es el inicial, el que contiene a los demas, aqui estan las globales y todas las funciones.
+    System.out.println(" \n>> Ambito inicial global creado \n");
   }
 
   Token funcionActual; // Para trabajar lo que es el analisis semantico de la llamada a funciones.
@@ -100,6 +40,11 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
 
   Stack<String> pilaEstrucControl = new Stack<>();// La idea con esto que que para saber si estamos dentro de una estructura de control.
   int contador = 0; // Esto es para ayudar a generar el token de los identificadores.
+
+
+
+
+
 
   // Crear un nuevo ambito y asigarle a lo anterior el que ya estabamos trabajando. [Este esta mas pensado para lo que pase dentro de BLOQUE]
   public void crearAmbito() {
@@ -121,6 +66,7 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
   // Volver a lo que seria el ambito de mas arriba, el padre por asi decirlo, en algun punto vuelve al punto general del programa.
   public void cerrarAmbito() {
       entornoActual = entornoActual.getAnterior();
+      System.out.println(" \n>> Ambito cerrado. \n");
   }
 
   // Ahora se inserta un nuevo simbolo en el ambito en el que estamos.
@@ -151,7 +97,7 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
 
   // Mostrar la tabla de simbolos actual.
   public void mostrarTablaActual() {
-      System.out.println("Tabla de símbolos actual:");
+      System.out.println("Tabla de simbolos actual:");
       for (Token token : entornoActual.getTablaActual().values()) {
           token.mostrarToken();
       }
@@ -186,28 +132,32 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
         return tipos;
     }
 
-    public void mostrarTodosLosAmbitos() {
-        System.out.println("╔════════════════════════════════════════════════════════════════════════════╗");
-        System.out.println("║                    TABLA DE SÍMBOLOS EN TODOS LOS ÁMBITOS                 ║");
-        System.out.println("╠════════════════════════════════════════════════════════════════════════════╣");
-        System.out.printf("║ %-15s │ %-10s │ %-10s │ %-10s │ %-10s │ %-5s │ %-5s ║\n",
-                        "Nombre", "Tipo", "Categoría", "Ambito", "Valor", "Linea", "Col");
-        System.out.println("╠════════════════════════════════════════════════════════════════════════════╣");
+    // public void mostrarTodosLosAmbitosV1() {
+    //     System.out.println("╔════════════════════════════════════════════════════════════════════════════╗");
+    //     System.out.println("║                    TABLA DE SÍMBOLOS EN TODOS LOS AMBITOS                  ║");
+    //     System.out.println("╠════════════════════════════════════════════════════════════════════════════╣");
+    //     System.out.printf("║ %-15s │ %-10s │ %-10s │ %-10s │ %-10s │ %-5s │ %-5s ║\n",
+    //                     "Nombre", "Tipo", "Categoria", "Ambito", "Valor", "Linea", "Col");
+    //     System.out.println("╠════════════════════════════════════════════════════════════════════════════╣");
 
-        int nivel = 0;
-        for (Ambitos ambito = entornoActual; ambito != null; ambito = ambito.getAnterior()) {
-            String nombreAmbito = "Nivel_" + nivel;
-            for (Token t : ambito.getTablaActual().values()) {
-                System.out.printf("║ %-15s │ %-10s │ %-10s │ %-10s │ %-10s │ %-5d │ %-5d ║\n",
-                                t.getNombre(), t.getTipo(), t.getCategoria(),
-                                nombreAmbito, String.valueOf(t.getValor()),
-                                t.getLinea(), t.getColumna());
-            }
-            nivel++;
-        }
+    //     int nivel = 0;
+    //     for (Ambitos ambito = entornoActual; ambito != null; ambito = ambito.getAnterior()) {
+    //         System.out.println("\n>> Ambito con " + ambito.getTablaActual().size() + " tokens. \n");
+    //         String nombreAmbito = "\nNivel_" + nivel;
+    //         for (Token t : ambito.getTablaActual().values()) {
+    //             System.out.printf("║ %-15s │ %-10s │ %-10s │ %-10s │ %-10s │ %-5d │ %-5d ║\n",
+    //                             t.getNombre(), t.getTipo(), t.getCategoria(),
+    //                             nombreAmbito, String.valueOf(t.getValor()),
+    //                             t.getLinea(), t.getColumna());
+    //         }
+    //         nivel++;
+    //     }
 
-        System.out.println("╚════════════════════════════════════════════════════════════════════════════╝");
-    }
+    //     System.out.println("╚════════════════════════════════════════════════════════════════════════════╝");
+    // }
+
+
+
 
 
     // Para obtener el tipo de dato de un identificador, principalmente variables.
@@ -286,8 +236,84 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
 
 
 
+:};
+
+
+
+/* Parsers */
+parser code {:
+    Ambitos entornoActual = null;
+
+    private int errorContador = 0;
+
+    public int getErrorContador() {
+        return errorContador;
+    }
+
+    public void syntax_error(Symbol cur_token) {
+        errorContador++;
+        String tokenInfo = obtenerInfoToken(cur_token);
+        System.err.println("Error sintactico en linea " + cur_token.left + ", columna " + cur_token.right + ": " + tokenInfo);
+    }
+    // Mapeo de tokens a mensajes claros para debugueo
+    private String obtenerInfoToken(Symbol token) {
+        switch (token.sym) {
+            case sym.IDENTIFICADOR:
+                return "Se encontro identificador inesperado: '" + token.value + "'";
+            case sym.INT_LITERAL:
+                return "Se encontro numero entero inesperado: '" + token.value + "'";
+            case sym.FLOAT_LITERAL:
+                return "Se encontro numero flotante inesperado: '" + token.value + "'";
+            case sym.STRING_LITERAL:
+                return "Se encontro texto inesperado";
+            case sym.CHAR_LITERAL:
+                return "Se encontro caracter inesperado";
+            case sym.ASIGNACION:
+                return "Se encontro '=' inesperado";
+            case sym.DELIMITADOR:
+                return "Se encontro '$' inesperado";
+            case sym.EOF:
+                return "Final de archivo inesperado";
+            default:
+                return "Token inesperado: " + token.value;
+        }
+    }
+
+    public void report_error(String message, Object info) {
+    }
+
+    public void unrecovered_syntax_error(Symbol cur_token) {
+        System.err.println("Error sintactico irrecuperable en linea " + cur_token.left + 
+                          ", columna " + cur_token.right + ": No se puede continuar el analisis");
+    }
+
+    public void mostrarTS() {
+        entornoActual.mostrarTodosLosAmbitos(entornoActual);
+    }
+    // public void mostrarTablaSimbolos() {
+    //     mostrarTodosLosAmbitos();
+    // }
+
+
+
+  // El profe tiene esto en el codigo de el, me parece que es para hacer la sobrecarga, pero no s epara que llama al lexer.
+
+
+    //   Lexer lexer;
+        // @SuppressWarnings("deprecation")
+    //   public Parser (Lexer lexer) {
+    //     this.lexer = lexer;
+    //     this.symbolFactory = new DefaultSymbolFactory();
+    //   }
+
+
+
+
+
 
 :};
+
+
 
 
 // >> El profe tambien define esto. >> De momento lo dejo comentado por que no se para que sirve.
@@ -362,7 +388,9 @@ non terminal programa, principal, funciones, funcion, params, param;
 non terminal String tipoDatoFuncion, tipoDatoVariable;
 
 /* >> Sentencias y bloques */
-non terminal bloque, sentencias, sentencia;
+non terminal sentencias, sentencia;
+
+non terminal Token bloque;
 
 /* >> Declaraciones y variables */
 non terminal var, varAsignacion, varCyAsignacion, varGlobal;
@@ -397,7 +425,9 @@ non terminal String tipoDatoInput;
 non terminal output, output_inline;
 non terminal String input;
 /* >> Listas */
-non terminal lista, declaracionLista, creacionYAsignacionLista, elementos, elementoLista, modificarElementoLista, obtenerElementoLista;
+non terminal lista, declaracionLista, creacionYAsignacionLista ;
+
+non terminal TipoExpresiones elementos, elementoLista, modificarElementoLista, obtenerElementoLista;
 
 
 // Esta son las nuevas declaraciones: 
@@ -407,6 +437,8 @@ non terminal String tipoDatoParametro; // Le definimo String para que sea mas fa
 
 non terminal TipoLista tipoLista; // Aqui indicamos que lo que vamos a devolver es un objeto de TipoLista
 non terminal decideParteIzquierda;
+
+non terminal seExprAritUni, seOutput, seInput, seFuncLlama;
 // non terminal String operadorRelacional;
 // --- Fin de declaracion de nuevos no terminales. 
 
@@ -456,28 +488,35 @@ programa ::= varGlobal programa
                 if (buscarFuncion("principal") == null) {
                     System.err.println("Error semantico: no se ha definido la funcion principal.");
                 }
-                mostrarTodosLosAmbitos();
+                mostrarTS();
             :} 
            | principal {: 
                 if (buscarFuncion("principal") == null) {
                     System.err.println("Error semantico: no se ha definido la funcion principal.");
                 }
-                mostrarTodosLosAmbitos();
+                mostrarTS();
             :}
            | error programa {: System.err.println("Error: Declaracion global o funcion no valida"); :};
 
 principalParteIzquierda ::= VOID PRINCIPAL:pri PAREN_I PAREN_D {: 
                             Token principal = new Token("principal", "void", "global", null, "funcion", prileft, priright);
                             if (!insertarNuevoToken(principal)) {
-                                System.err.println("Error semántico: función 'principal' ya declarada.");
+                                System.err.println("Error semantico: funcion 'principal' ya declarada.");
                             }
 
+
+                            System.out.println("\n >> Reconociendo una funcion 1. \n");
                             crearAmbito(); // entorno local para principal
+                            principal.setAmbitoLocal(entornoActual);
                             funcionEnAnalisis = principal; // Para trabajar con lo datos de la funcion.
                         :};
 
-principal ::= principalParteIzquierda bloque {: 
+principal ::= principalParteIzquierda bloque:blo {: 
+            insertarNuevoToken(blo);
+
+            //   mostrarTablaActual();
               cerrarAmbito(); // cerramos entorno de principal
+              System.out.println("\n >> Cerando el reconociendo una funcion 1. \n");
           :};
 
 // Se le agrega el result para que las producciones sepan mejor el valor semantico que van a tener.
@@ -508,18 +547,26 @@ funcionParteIzquierda ::= tipoDatoFuncion:tipo IDENTIFICADOR:ID PAREN_I  {:
                             System.err.println("Error semantico: funcion '" + ID + "' ya declarada.");
                         }
 
+                        System.out.println("\n >> Reconociendo una funcion 1. \n");
                         crearAmbito(); // Crear el ambito local de una funcion, esto antes de que se cree el bloque.
-                        funcion.setAmbitoLocal(entornoActual);
+                        funcion.setAmbitoLocal(entornoActual); // Me parece que este deberia de 
                         funcionEnAnalisis = funcion; // Guardamos la funcion que acabamos de crear para que sea mas facil trabajarla despues.
                       :}; // Fin de produccion.
   
 
 
 // Funciones en la parte derecha.
-funcion ::= funcionParteIzquierda params PAREN_D bloque {: 
+funcion ::= funcionParteIzquierda params PAREN_D bloque:blo {: 
+            insertarNuevoToken(blo);
             cerrarAmbito(); // Cerramos el ambito local de una funcion.
+            System.out.println("\n >> Cerando el reconociendo una funcion 1. \n");
         :}
-        | PAREN_D bloque {: cerrarAmbito(); :}; // Fin de produccion.
+        | funcionParteIzquierda PAREN_D bloque:blo {: 
+            insertarNuevoToken(blo);
+
+            cerrarAmbito(); 
+            System.out.println("\n >> Cerando el reconociendo una funcion 1. \n");
+        :}; // Fin de produccion.
 
 
 // >>>>>>>>>>Parte de los parametros de una funcion
@@ -557,34 +604,90 @@ bloqueInicio ::= LLAVE_I {:
 :};
 
 /* Producciones de sentencias y bloques */
-bloque ::= bloqueInicio sentencias LLAVE_D {: 
-              cerrarAmbito(); 
+bloque ::= bloqueInicio sentencias LLAVE_D:ld {: 
+              // Guardar el entorno antes de cerrarlo
+            //   mostrarTablaActual();
+              Ambitos ambitoBloque = entornoActual;
+              cerrarAmbito();
+
+              // Crear un token de bloque o devolver el ambito
+              RESULT = new Token("bloque", null, "local", null, "bloque", ldleft, ldright);
+              RESULT.setAmbitoLocal(ambitoBloque);
+
+              // Si estamos dentro de una función en análisis, enlazarlo
+            //   if (funcionEnAnalisis != null) {
+            //       funcionEnAnalisis.setAmbitoLocal(ambitoBloque);
+            //   }
+          :}
+        | bloqueInicio LLAVE_D:ld {: 
+                // mostrarTablaActual();
+              Ambitos ambitoBloque = entornoActual;
+              cerrarAmbito();
+
+              RESULT = new Token("bloque", null, "local", null, "bloque", ldleft, ldright);
+              RESULT.setAmbitoLocal(entornoActual);
+
+            //   if (funcionEnAnalisis != null) {
+            //       funcionEnAnalisis.setAmbitoLocal(ambitoBloque);
+            //   }
           :}
 
-          | bloqueInicio LLAVE_D {: 
-              cerrarAmbito(); 
-          :}
+         | error sentencias LLAVE_D:ld {: 
+                Ambitos ambitoBloque = entornoActual;
 
-         | error sentencias LLAVE_D {: System.err.println("Error: Los bloques deben de tener una llave de apertura (¿)."); :}
-         | error LLAVE_D {: System.err.println("Error: Los bloques deben de tener una llave de apertura (¿). "); :}
-         | LLAVE_I sentencias error {: System.err.println("Error: Los bloques deben de tener una llave de cierre (?). "); :};
+                System.err.println("Error: Los bloques deben de tener una llave de apertura (¿)."); 
+                RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
+                RESULT.setAmbitoLocal(entornoActual);
+            :}
+         | error LLAVE_D:ld {: 
+                Ambitos ambitoBloque = entornoActual;
+                System.err.println("Error: Los bloques deben de tener una llave de apertura (¿). "); 
+                RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
+                RESULT.setAmbitoLocal(ambitoBloque);
+            :}
+         | LLAVE_I:li sentencias error {: 
+                Ambitos ambitoBloque = entornoActual;
+                System.err.println("Error: Los bloques deben de tener una llave de cierre (?). "); 
+                RESULT = new Token("bloqueError", null, "local", null, "bloqueError", lileft, liright);
+                RESULT.setAmbitoLocal(ambitoBloque);
+            :};
 
-sentencias ::= sentencia
-             | sentencias sentencia;
+// No tocar esta parte, por alguna razon si funciona y no dio el error de tokens inesperados, esto es brujeria.
+sentencias ::= /* vacío */
+             | sentencias sentencia ;
+
+// sentencia ::= var
+//             | varAsignacion  
+//             | varCyAsignacion
+//             | lista
+//             | estructruraControl
+//             | funcionLlamada DELIMITADOR
+//             | return
+//             | break
+//             | input DELIMITADOR
+//             | output DELIMITADOR
+//             // | output_inline DELIMITADOR
+//             | modificarElementoLista
+//             | expresionAritmeticaUnaria DELIMITADOR;
+
 
 sentencia ::= var
             | varAsignacion  
             | varCyAsignacion
             | lista
             | estructruraControl
-            | funcionLlamada DELIMITADOR
+            | seFuncLlama
             | return
             | break
-            | input DELIMITADOR
-            | output DELIMITADOR
-            // | output_inline DELIMITADOR
+            | seInput
+            | seOutput
             | modificarElementoLista
-            | expresionAritmeticaUnaria DELIMITADOR;
+            | seExprAritUni;
+
+seFuncLlama ::= funcionLlamada DELIMITADOR;
+seInput ::= input DELIMITADOR;
+seOutput ::= output DELIMITADOR;
+seExprAritUni ::= expresionAritmeticaUnaria DELIMITADOR;
 
 /* FIX: El identificador no debe de ser validado, se valida en producción identificador, sino encuentra busca terminal  */
 /*FIXED: Eliminando la linea que valida nombre: | error PAREN_I argumentos PAREN_D  {: System.err.println("Error: Nombre de funcion no valido"); :}*/
@@ -627,11 +730,11 @@ funcionLlamada ::= funcionLlamadaInicio argumentos:args PAREN_D {:
 
 argumentos ::= expresion:expr {: 
                   List<String> args = new ArrayList<>();
-                  args.add("Prueba_tipo"); // suponiendo que expresion devuelve tipo: ((Symbol)expr).value.toString()
+                  args.add(expr.getTipo()); // suponiendo que expresion devuelve tipo: ((Symbol)expr).value.toString()
                   RESULT = new Symbol(sym.ARGUMENTOS, args);
               :}
              | argumentos:prev COMA expresion:expr {: 
-                  ((List<String>) ((Symbol)prev).value).add("Prueba_tipo"); //((Symbol)expr).value.toString()
+                  ((List<String>) ((Symbol)prev).value).add(expr.getTipo()); //((Symbol)expr).value.toString()
                   RESULT = new Symbol(sym.ARGUMENTOS, ((Symbol)prev).value);
               :}
              | error COMA expresion  {: System.err.println("Error: Argumento no valido antes de ','"); :}
@@ -688,8 +791,8 @@ output_inline ::= OUTPUT PAREN_I expresion PAREN_D
 
 /* -------------------- Estructuras de control ----------------------------- */
 estructruraControl ::= decide {: pilaEstrucControl.pop(); :}
-                     | loop {: pilaEstrucControl.pop(); :}
-                     | for {: pilaEstrucControl.pop(); :};
+                     | loop //{: pilaEstrucControl.pop(); :}
+                     | for; //{: pilaEstrucControl.pop(); :};
 
 
 decideParteIzquierda ::= DECIDE:deci OF {: 
@@ -701,8 +804,8 @@ decideParteIzquierda ::= DECIDE:deci OF {:
 
 
 // Aqui hay que agregar algo para agregar a la pila de estructura de control.
-decide ::= decideParteIzquierda condiciones END DECIDE DELIMITADOR {: pilaEstrucControl.pop(); cerrarAmbito(); :}
-         | decideParteIzquierda condiciones ELSE bloque END DECIDE DELIMITADOR {: pilaEstrucControl.pop(); cerrarAmbito(); :} // Posiblemente requiramos crear una ambito especifico para el else.
+decide ::= decideParteIzquierda condiciones END DECIDE DELIMITADOR {: cerrarAmbito(); :}
+         | decideParteIzquierda condiciones ELSE bloque END DECIDE DELIMITADOR {: cerrarAmbito(); :} // Posiblemente requiramos crear una ambito especifico para el else.
          
          | decideParteIzquierda error condiciones END DECIDE DELIMITADOR {: System.err.println("Error: Se esperaba 'of' despues de 'decide'"); :}
          | decideParteIzquierda error END DECIDE DELIMITADOR {: System.err.println("Error: Condiciones no validas en estructura decide"); :}
@@ -759,7 +862,8 @@ varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {:
                         System.err.println("Error semantico: Tipo incompatible en asignacion. Se esperaba '" + token.getTipo() + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
                     } else {
                         //token.setValor(exp.valor); // actualizar el valor de la variable
-                        token.setValor(null);
+                        // token.setValor(null);
+                        
                     }
                 :};
                  
@@ -782,6 +886,32 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
 
 /* FIX: ERROR en global para que detecte 'global tipo identificador...' */
 /* FIXED: Se agrega produ de error en falta de global */
+// varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
+//                     if (entornoActual.buscar(id) != null) {
+//                         System.err.println("Error semantico: La variable global '" + id + "' ya fue declarada."  + "Fila: " + idleft + ", Columna: " + idright);
+//                     } else {
+//                         //String nombre, String tipo, String ambito, Object valor, String categoria, int linea, int columna
+//                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
+//                         insertarNuevoToken(tokenGlobal);
+//                         System.out.println("\n >> Var globar registrada. \n");
+//                     }
+//                 :}
+//             | GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
+//                     if (entornoActual.buscar(id) != null) {
+//                         System.err.println("-> Error semantico: la variable global '" + id + "' ya fue declarada." + "Fila: " + idleft + ", Columna: " + idright);
+
+//                     } else if (!tipo.equals(exp.tipoDato)) {
+//                         System.err.println("-> Error semantico: El tipo de la variable global no es compatible con el tipo de la expresion que se le asigna. Se esperaba '" + tipo + "', pero se recibió '" + exp.tipoDato + "'." + "Fila: " + idleft + ", Columna: " + idright);
+                    
+//                     } else {
+//                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
+//                         insertarNuevoToken(tokenGlobal);
+//                         System.out.println("\n >> Var globar registrada. \n");
+
+//                     }
+//                 :}
+//             | error tipoDatoVariable IDENTIFICADOR DELIMITADOR {: System.err.println("Error: Se esperaba la palabra 'global' al inicio de la declaracion"); :};
+
 varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
                     if (entornoActual.buscar(id) != null) {
                         System.err.println("Error semantico: La variable global '" + id + "' ya fue declarada."  + "Fila: " + idleft + ", Columna: " + idright);
@@ -789,24 +919,13 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                         //String nombre, String tipo, String ambito, Object valor, String categoria, int linea, int columna
                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
                         insertarNuevoToken(tokenGlobal);
+                        System.out.println("\n >> Var globar registrada. \n");
                     }
+                    System.out.println(">> Reconocida variable global simple");
                 :}
-            | GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
-                    if (entornoActual.buscar(id) != null) {
-                        System.err.println("-> Error semantico: la variable global '" + id + "' ya fue declarada." + "Fila: " + idleft + ", Columna: " + idright);
-
-                    } else if (!tipo.equals(exp.tipoDato)) {
-                        System.err.println("-> Error semantico: El tipo de la variable global no es compatible con el tipo de la expresion que se le asigna. Se esperaba '" + tipo + "', pero se recibió '" + exp.tipoDato + "'." + "Fila: " + idleft + ", Columna: " + idright);
-                    
-                    } else {
-                        Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
-                        insertarNuevoToken(tokenGlobal);
-                    }
-                :}
-            | error tipoDatoVariable IDENTIFICADOR DELIMITADOR {: System.err.println("Error: Se esperaba la palabra 'global' al inicio de la declaracion"); :};
-
-/* ##### Seccion para las expresiones ######*/
-expresion ::= expresionLogica:exp {: RESULT = exp; :};
+| GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR;
+// /* ##### Seccion para las expresiones ######*/
+expresion ::= expresionLogica:exp {: RESULT = exp; System.out.println("\n Expresion en validacion -> expresion completa: inicio de la derivacion" + "Tipo final:" + exp.getTipo() + "\n"); :};
 
 
 /* Modificar las derivacion para expresion logica con el fin de que pueda volver a arriba:  expresionLogica AND expresionLogica| expresionLogica OR expresionLogica*/
@@ -816,6 +935,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         RESULT = new TipoExpresiones("error");
                     } else {
                         RESULT = new TipoExpresiones("boolean");
+                        System.out.println("\n Expresion en validacion -> expr rela: and \n");
                     }
                 :}
                 | expresionLogica:izq OR expresionRelacional:der {: 
@@ -824,6 +944,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         RESULT = new TipoExpresiones("error");
                     } else {
                         RESULT = new TipoExpresiones("boolean");
+                        System.out.println("\n Expresion en validacion -> expr rela: or \n");
                     }
                 :}
                 | NOT expresionLogica:exp {: 
@@ -832,6 +953,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         RESULT = new TipoExpresiones("error");
                     } else {
                         RESULT = new TipoExpresiones("boolean");
+                        System.out.println("\n Expresion en validacion -> expr rela: not  \n");
                     }
                 :}
                 | expresionRelacional:exp {: // En teoria esta deveria de dejar pasar el valor directo
@@ -840,6 +962,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                     //     RESULT = new TipoExpresiones("error", null);
                     // } else {
                         RESULT = exp;
+                        System.out.println("\n Expresion en validacion -> expr logi: expr rela\n");
                     // }
                 :};
 
@@ -863,6 +986,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
+                                System.out.println("\n Expresion en validacion -> expr rela: igual\n");
                             }
                         :}
                         | expresionAritmetica:izq DIFERENTE expresionAritmetica:der {: 
@@ -871,6 +995,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
+                                System.out.println("\n Expresion en validacion -> expr rela: diferente \n");
                             }
                         :}
                         | expresionAritmetica:izq MENOR expresionAritmetica:der {: 
@@ -879,6 +1004,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
+                                System.out.println("\n Expresion en validacion -> expr rela: menor\n");
                             }
                         :}
                         | expresionAritmetica:izq MAYOR expresionAritmetica:der {: 
@@ -887,6 +1013,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
+                                System.out.println("\n Expresion en validacion -> expr rela: mayor\n");
                             }
                         :}
                         | expresionAritmetica:izq MENOR_IGUAL expresionAritmetica:der {: 
@@ -895,6 +1022,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
+                                System.out.println("\n Expresion en validacion -> expr rela: menor igual\n");
                             }
                         :}
                         | expresionAritmetica:izq MAYOR_IGUAL expresionAritmetica:der {: 
@@ -903,10 +1031,11 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
+                                System.out.println("\n Expresion en validacion -> expr rela: mayor igual\n");
                             }
                         :}
-
-                      | PAREN_I expresion:expr PAREN_D {: RESULT = expr; :}; /* Con esta en teoria deberia de volver a arriba. */
+                      | expresionAritmetica:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: expr arit" + "Tipo final:" + expr.getTipo() + "\n"); :}
+                      | PAREN_I expresion:expr PAREN_D {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: parentesis" + "Tipo final:" + expr.getTipo() + "\n"); :}; /* Con esta en teoria deberia de volver a arriba. */
 
 
 
@@ -921,14 +1050,14 @@ expresionString ::= STRING_LITERAL:strLit {:
 expresionBooleana ::= TRUE{: 
                         RESULT = new TipoExpresiones("boolean", true); 
                     :}
-                                        | FALSE {: 
+                    | FALSE {: 
                         RESULT = new TipoExpresiones("boolean", false); 
                     :};
 
 
 /* >> Expresiones aritmeticas */
 
-expresionAritmetica ::= expresionSuma:expr {: RESULT = expr; :};
+expresionAritmetica ::= expresionSuma:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr arit: inicip expr arit " + "Tipo final:" + expr.getTipo() + "\n");  :};
 
 
 expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {: 
@@ -937,6 +1066,7 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                             RESULT = new TipoExpresiones("error");
                         } else {
                             RESULT = new TipoExpresiones(izq.tipoDato);
+                            System.out.println("\n Expresion en validacion -> expr suma: suma\n");
                         }
                     :}
                 | expresionSuma:izq MENOS expresionProducto:der {: 
@@ -945,11 +1075,12 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                             RESULT = new TipoExpresiones("error");
                         } else {
                             RESULT = new TipoExpresiones(izq.tipoDato);
+                            System.out.println("\n Expresion en validacion -> expr suma: resta\n");
                         }
                     :}
-                | expresionProducto:expr {: RESULT = expr; :}
-                | expresionSuma MAS error {: System.err.println("Error: Expresion no valida despues de '+'"); :}
-                | expresionSuma MENOS error {: System.err.println("Error: Expresion no valida despues de '-'"); :};
+                | expresionProducto:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr suma: expr prod \n"); :}
+                | expresionSuma MAS error {: System.err.println("Error: Expresion no valida despues de '+'"); RESULT = new TipoExpresiones("error"); :}
+                | expresionSuma MENOS error {: System.err.println("Error: Expresion no valida despues de '-'"); RESULT = new TipoExpresiones("error"); :};
 
 expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der {: 
                     if (!tiposIgualesNumericos(izq, der)) {
@@ -957,6 +1088,7 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                         RESULT = new TipoExpresiones("error");
                     } else {
                         RESULT = new TipoExpresiones(izq.tipoDato);
+                        System.out.println("\n Expresion en validacion -> expr prod multi \n");
                     }
                     :}
                     | expresionProducto:izq DIVISION expresionPotencia:der {: 
@@ -965,6 +1097,7 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             RESULT = new TipoExpresiones("error");
                         } else {
                             RESULT = new TipoExpresiones("float"); // Este hay que revisarlo ya que si hay casos donde da int
+                            System.out.println("\n Expresion en validacion -> expr prod div normal \n");
                         }
                     :}
                     | expresionProducto:izq DIVISION_ENTERA expresionPotencia:der {: 
@@ -973,6 +1106,7 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             RESULT = new TipoExpresiones("error");
                         } else {
                             RESULT = new TipoExpresiones("int");
+                            System.out.println("\n Expresion en validacion -> expr prod div entera \n");
                         }
                     :}
                     | expresionProducto:izq MODULO expresionPotencia:der {: 
@@ -982,9 +1116,10 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             RESULT = new TipoExpresiones("error");
                         } else {
                             RESULT = new TipoExpresiones("int");
+                            System.out.println("\n Expresion en validacion -> expr prod modulo \n");
                         }
                     :}
-                    | expresionPotencia:expr {: RESULT = expr; :};
+                    | expresionPotencia:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr prod exp poten\n"); :};
 
 
 // Para este hay que validar si el exponente y la base son enteros y solo enteros.
@@ -995,38 +1130,42 @@ expresionPotencia ::= expresionFactor:base POTENCIA expresionPotencia:exp {:
                         } else {
                             String tipoFinal = (base.tipoDato.equals("float")) ? "float" : "int";
                             RESULT = new TipoExpresiones(tipoFinal);
+                            System.out.println("\n Expresion en validacion -> po ba po exp\n");
                         }
                     :}
-                    | expresionFactor:expr {: RESULT = expr; :};
+                    | expresionFactor:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> po expr fac\n"); :};
 
 
-expresionFactor ::= PAREN_I expresionAritmetica:expr PAREN_D {: RESULT = expr; :}
-                  | expresionNumerica:expr {: RESULT = expr; :}
-                  | expresionAritmeticaUnaria:expr {: RESULT = expr; :}
-                  | expresionAritmeticaUnariaNegativa:expr {: RESULT = expr; :};
+expresionFactor ::= PAREN_I expresionAritmetica:expr PAREN_D {: RESULT = expr; System.out.println("\n Expresion en validacion -> paren expr \n"); :}
+                  | expresionNumerica:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> fac exp num \n"); :}
+                  | expresionAritmeticaUnaria:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> fac uni \n"); :}
+                  | expresionAritmeticaUnariaNegativa:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> facuni nega \n"); :};
                 //   | error {: System.err.println("Error: Expresion aritmetica no valida"); :};
 
-expresionNumerica ::= INT_LITERAL:n {: RESULT = new TipoExpresiones("int", n); :}
-                    | FLOAT_LITERAL:f  {: RESULT = new TipoExpresiones("float", f); :}
+expresionNumerica ::= INT_LITERAL:n {: RESULT = new TipoExpresiones("int", n); System.out.println("\n Expresion en validacion -> num int \n"); :}
+                    | FLOAT_LITERAL:f  {: RESULT = new TipoExpresiones("float", f); System.out.println("\n Expresion en validacion -> num flo \n"); :}
                     | IDENTIFICADOR:id {: 
                         
                         RESULT = obtenerTipoIdentificador(id); 
+                        System.out.println("\n Expresion en validacion -> num id \n");
                     
                     :}
                     | funcionLlamada:func {: 
                         RESULT = obtenerTipoFuncion(funcionActual); 
+                        System.out.println("\n Expresion en validacion -> num func\n");
                     :}
                     | obtenerElementoLista:ob {: 
                         // RESULT = obtenerTipoElementoLista(ob); 
                         RESULT = ob;//new TipoExpresiones("int"); //>> Esta se tiene que arrglar para que funcione con la funcion que deberia.
                         :}
-                    | input:inp {: RESULT = new TipoExpresiones(inp); :}
+                    | input:inp {: RESULT = new TipoExpresiones(inp); System.out.println("\n Expresion en validacion -> elemento lista\n");:}
 
                     // Esta parte es para intentar olucionar los problemas:
                     | expresionChar:charExp {: 
                         // if (!validarTipoEsperado("int|float", charExp)) {
                         //     System.err.println("Error semantico: tipo '" + charExp.tipoDato + "' no valido en expresion numerica.");
                         // }
+                        System.out.println("\n Expresion en validacion -> char \n");
                         RESULT = charExp;
                     :}
                     | expresionString:strExp {: 
@@ -1034,18 +1173,20 @@ expresionNumerica ::= INT_LITERAL:n {: RESULT = new TipoExpresiones("int", n); :
                         //     System.err.println("Error semantico: tipo '" + strExp.tipoDato + "' no valido en expresion numerica.");
                         // }
                         RESULT = strExp;
+                        System.out.println("\n Expresion en validacion -> String\n");
                     :}
                     | expresionBooleana:boolExp {: 
                         // if (!validarTipoEsperado("int|float", boolExp)) {
                         //     System.err.println("Error semantico: tipo '" + boolExp.tipoDato + "' no valido en expresion numerica.");
                         // }
                         RESULT = boolExp;
+                        System.out.println("\n Expresion en validacion -> expr booneana\n");
                     :}
 
-                    | INT_LITERAL IDENTIFICADOR error
-                      {: System.err.println("Error: Numero seguido de identificador no es valido (ej: 2f5)"); :}
-                    | FLOAT_LITERAL IDENTIFICADOR error
-                      {: System.err.println("Error: Numero flotante seguido de identificador no es valido"); :}; 
+                    | INT_LITERAL:n IDENTIFICADOR error
+                      {: System.err.println("Error: Numero seguido de identificador no es valido (ej: 2f5)"); RESULT = new TipoExpresiones("erro",n);:}
+                    | FLOAT_LITERAL:n IDENTIFICADOR error
+                      {: System.err.println("Error: Numero flotante seguido de identificador no es valido"); RESULT = new TipoExpresiones("error", n); :}; 
                     // Fin de la expresion.
 
 
@@ -1057,6 +1198,8 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                     System.err.println("Error semantico: El operador '++' no es valido para tipo '" + tipo.tipoDato + "'." + "Linea: " + idleft + ", Columna: " + idright);
                                     RESULT = new TipoExpresiones("error");
                                 } else {
+                                            System.out.println("\n Expresion en validacion -> Unaria incremento.\n");
+
                                     RESULT = tipo;
                                 }
                             :}
@@ -1067,6 +1210,8 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                     RESULT = new TipoExpresiones("error");
                                 } else {
                                     RESULT = tipo;
+                                            System.out.println("\n Expresion en validacion -> Unaria decremento. \n");
+
                                 }
                             :};
 
@@ -1075,6 +1220,7 @@ expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica:expr {:
                                             System.err.println("Error semantico: operador para pasar a negativo una operacion no es valido para tipo '" + expr.tipoDato + "''." + "Linea: " + exprleft + ", Columna: " + exprright);
                                             RESULT = new TipoExpresiones("error");
                                         } else {
+                                            System.out.println("\n Expresion en validacion -> Unaria negativa.\n");
                                             RESULT = expr;
                                         }
                                     :};
@@ -1090,56 +1236,123 @@ declaracionLista ::= LET tipoLista:tipo IDENTIFICADOR:id DELIMITADOR {:
                     } else {
                         // nombre, tipoBase, ambito, valor, categoria, linea, columna
                         Token tokenLista = new Token(id, tipo.tipoBase, "local", null, "lista", idleft, idright);
-                        tokenLista.setTipoLista;
+                        tokenLista.setTipoLista(tipo);
                         insertarNuevoToken(tokenLista);
                     }
                 :};
 
 creacionYAsignacionLista ::= LET tipoLista:tipo IDENTIFICADOR:id ASIGNACION LLAVE_I elementos:elems LLAVE_D DELIMITADOR {: 
-                            if (entornoActual.buscar(id) != null) {
-                                System.err.println("Error semantico: la lista '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
-                            } else if (!elems.tipoDato.equals(tipo.tipoBase)) {
-                                System.err.println("Error semantico: los elementos de la lista '" + id + "' no coinciden con el tipo declarado. Se esperaba '" + tipo.tipoBase + "', pero se recibio '" + elems.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
-                            } else {
-                                // Guardamos la lista con su tipo base y tamaño
-                                Token tokenLista = new Token(id, tipo.tipoBase, "local", elems.valor, "lista", idleft, idright);
-                                tokenLista.setTamano(elems.tamano); // si manejas tamaño de lista
-                                insertarNuevoToken(tokenLista);
-                            }
-                        :};
+                                if (entornoActual.buscar(id) != null) {
+                                    System.err.println("Error semantico: La lista '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                                
+                                } else if (!elems.tipoDato.equals(tipo.tipoBase)) {
+                                    System.err.println("Error semantico: Los elementos de la lista '" + id + "' no coinciden con el tipo declarado. Se esperaba '" + tipo.tipoBase + "', pero se recibio '" + elems.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                               
+                                } else if (tipo.tamano != null && elems.tamano > tipo.tamano) {
+                                    System.err.println("Error semantico: la lista '" + id + "' excede el tamaño declarado. Se esperaba maximo " + tipo.tamano + " elementos, pero se recibieron " + elems.tamano + ". Fila: " + idleft + ", Columna: " + idright);
+                                } else {
+                                    Token tokenLista = new Token(id, tipo.tipoBase, "local", null, "lista", idleft, idright);
+                                    tipo.setTamano(elems.tamano); // Modificamos el tamaño de la lista por si la definieron como []
+                                    tokenLista.setTipoLista(tipo);
+                                    insertarNuevoToken(tokenLista);
+                                }
+                            :};
 
-elementos ::= elementoLista
-            | elementos COMA elementoLista;
+elementos ::= elementoLista:elem {: 
+                // Primer elemento: inicializamos la lista de tipos
+                List<String> tipos = new ArrayList<>();
+                tipos.add(elem.tipoDato);
+                RESULT = new TipoExpresiones(elem.tipoDato, tipos, 1);
+            :}
+            | elementos:lst COMA elementoLista:elem {: 
+                if (!lst.tipoDato.equals(elem.tipoDato)) { 
+                    System.err.println("Error semantico: Todos los elementos de la lista deben ser del mismo tipo. Se esperaba '" + lst.tipoDato + "', pero se recibio '" + elem.tipoDato + "'. Fila: " + elemleft + ", Columna: " + elemright);
+                    RESULT = new TipoExpresiones("error");
+                } else {
+                    lst.tipos.add(elem.tipoDato);
+                    lst.tamano++;
+                    RESULT = lst;
+                }
+            :};
 
-elementoLista ::= expresionAritmetica:op; /* Este deberia ser expresion aritmetica en ves de -> INT_LITERAL*/
+
+/* Este deberia ser expresion aritmetica en ves de -> INT_LITERAL*/
+elementoLista ::= expresionAritmetica:op {: 
+                    // Guardamos cada uno de los elementos de la lista.
+                    List<String> tipos = new ArrayList<>();
+                    tipos.add(op.tipoDato);
+                    RESULT = new TipoExpresiones(op.tipoDato, tipos, 1); 
+                :}; /* Este deberia ser expresion aritmetica en ves de -> INT_LITERAL*/
                 // | CHAR_LITERAL
                 // | IDENTIFICADOR; /* FIXED: El elemento en lista deberia poder permitir identificadores validos*/
 
 /* FIX: El elemento en lista deberia poder permitir identificadores validos*/
-modificarElementoLista ::= IDENTIFICADOR CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR 
-                         | error CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR
-                           {: System.err.println("Error: Nombre de lista no valido"); :};
-
-obtenerElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:op CORCHETE_D {: 
+modificarElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:indice CORCHETE_D ASIGNACION elementoLista:elem DELIMITADOR {: 
                                 Token token = entornoActual.buscar(id);
                                 if (token == null) {
-                                    System.err.println("Error semantico: la lista '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+
+                                    System.err.println("Error semantico: La lista '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
                                     RESULT = new TipoExpresiones("error");
 
                                 } else if (!"lista".equals(token.getCategoria())) {
                                     System.err.println("Error semantico: el identificador '" + id + "' no corresponde a una lista. Fila: " + idleft + ", Columna: " + idright);
                                     RESULT = new TipoExpresiones("error");
-
-                                } else if (!"int".equals(op.tipoDato)) {
-                                    System.err.println("Error semantico: el indice de la lista '" + id + "' debe ser de tipo int, pero se recibio '" + op.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                                    
+                                } else if (!"int".equals(indice.tipoDato)) {
+                                    System.err.println("Error semantico: El indice de la lista '" + id + "' debe ser de tipo int, pero se recibio '" + indice.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
                                     RESULT = new TipoExpresiones("error");
 
                                 } else {
-                                    // Propagar el tipo base de la lista
-                                    RESULT = new TipoExpresiones(token.getTipoBase());
+                                    TipoLista tipoLista = token.getTipoLista();
+                                    Integer tamano = tipoLista.tamano;
+
+                                    // Validacion de rango
+                                    // if (tamano != null && (indice.valor < 0 || indice.valor >= tamano)) {
+                                    //     System.err.println("Error semantico: El indice " + indice.valor + " esta fuera del rango de la lista '" + id + "'. Tamano maximo: " + (tamano-1));
+                                    //     RESULT = new TipoExpresiones("error");} else
+
+                                    if (!elem.tipoDato.equals(tipoLista.tipoBase)) {
+                                        System.err.println("Error semantico: El tipo del elemento asignado no coincide con el tipo base de la lista '" + id + "'. Se esperaba '" + tipoLista.tipoBase + "', pero se recibio '" + elem.tipoDato + "'.");
+                                        RESULT = new TipoExpresiones("error");
+
+                                    } else {
+                                        // Asignacion valida
+                                        RESULT = new TipoExpresiones(tipoLista.tipoBase);
+                                    }
                                 }
                             :}
-                        | error CORCHETE_I expresionAritmetica CORCHETE_D {: System.err.println("Error: Nombre de lista no valido"); :};
+                         | error CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR {: System.err.println("Error: Nombre de lista no valido"); RESULT = new TipoExpresiones("error"); :};
+
+obtenerElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:op CORCHETE_D {: 
+                                Token token = entornoActual.buscar(id);
+                                if (token == null) {
+                                    System.err.println("Error semantico: lLa lista '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+                                    RESULT = new TipoExpresiones("error");
+
+                                } else if (!"lista".equals(token.getCategoria())) {
+                                    System.err.println("Error semantico: El identificador '" + id + "' no corresponde a una lista. Fila: " + idleft + ", Columna: " + idright);
+                                    RESULT = new TipoExpresiones("error");
+
+                                } else if (!"int".equals(op.tipoDato)) {
+                                    System.err.println("Error semantico: El indice de la lista '" + id + "' debe ser de tipo int, pero se recibio '" + op.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                                    RESULT = new TipoExpresiones("error");
+
+                                } else {
+                                    TipoLista tipoLista = token.getTipoLista();
+                                    Integer tamano = tipoLista.tamano;
+
+                                    // Validacion de rango
+                                    // if (tamano != null && (op.valor < 0 || op.valor >= tamano)) {
+                                    //     System.err.println("Error semantico: El indice " + op.valor + " esta fuera del rango de la lista '" + id + "'. Tamano maximo: " + (tamano - 1));
+                                    //     RESULT = new TipoExpresiones("error");
+
+                                    // } else {
+                                        // Propagar el tipo base de la lista
+                                        RESULT = new TipoExpresiones(tipoLista.tipoBase);
+                                    // }
+                                }
+                            :}
+                        | error CORCHETE_I expresionAritmetica CORCHETE_D {: System.err.println("Error: Nombre de lista no valido"); RESULT = new TipoExpresiones("error"); :};
 
 tipoLista ::= INT CORCHETE_I CORCHETE_D {: 
                 TipoLista tipoL = new TipoLista("int", null);
