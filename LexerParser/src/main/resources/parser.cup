@@ -20,7 +20,8 @@ import simbolos.Token;
 import simbolos.Ambitos;
 import simbolos.TipoLista;
 import simbolos.TipoExpresiones;
-
+import simbolos.TokenDecide;
+import simbolos.CondicionBloque;
 
 
 /* Aqui vamos a definir lo que se va a ejecutar al reducir una produccion o algo asi. (Es diferente del 'parser code')*/
@@ -39,7 +40,12 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
   Token funcionEnAnalisis; // Esta esa para tener los datos de la funcionn que estamos revisando en este momento.
 
   Stack<String> pilaEstrucControl = new Stack<>();// La idea con esto que que para saber si estamos dentro de una estructura de control.
-  int contador = 0; // Esto es para ayudar a generar el token de los identificadores.
+
+  int contador = 0; // Esto es para ayudar a generar el token de los identificadores del decide.
+
+  int contadorFor = 0;
+
+  int contadorLoop = 0;
 
 
 
@@ -412,14 +418,20 @@ non terminal TipoExpresiones expresionChar, expresionString;
 non terminal TipoExpresiones expresionAritmetica, expresionLogica, expresionRelacional;
 
 /* >> Control de flujo */
-non terminal estructruraControl, decide, condicion, loop, for;
+non terminal estructruraControl, decide, loop, for;
+
+non terminal TipoExpresiones condicion;
+
+non terminal forInt, loopInicio;
 
 /* >> Funciones y sus llamadas  */
 non terminal funcionLlamada, argumentos, return, break;
 
 /* Aqui estoy poniendo los no terminales que estan faltando */
-non terminal condiciones, listaFunciones;
+non terminal listaFunciones;
 non terminal String tipoDatoInput;
+
+non terminal List<CondicionBloque> condiciones;
 
 /* >> Input y ouput */
 non terminal output, output_inline;
@@ -488,13 +500,13 @@ programa ::= varGlobal programa
                 if (buscarFuncion("principal") == null) {
                     System.err.println("Error semantico: no se ha definido la funcion principal.");
                 }
-                mostrarTS();
+                // mostrarTS();
             :} 
            | principal {: 
                 if (buscarFuncion("principal") == null) {
                     System.err.println("Error semantico: no se ha definido la funcion principal.");
                 }
-                mostrarTS();
+                // mostrarTS();
             :}
            | error programa {: System.err.println("Error: Declaracion global o funcion no valida"); :};
 
@@ -634,19 +646,24 @@ bloque ::= bloqueInicio sentencias LLAVE_D:ld {:
 
          | error sentencias LLAVE_D:ld {: 
                 Ambitos ambitoBloque = entornoActual;
-
+                cerrarAmbito();
+                
                 System.err.println("Error: Los bloques deben de tener una llave de apertura (¿)."); 
                 RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
                 RESULT.setAmbitoLocal(entornoActual);
             :}
          | error LLAVE_D:ld {: 
                 Ambitos ambitoBloque = entornoActual;
+                cerrarAmbito();
+
                 System.err.println("Error: Los bloques deben de tener una llave de apertura (¿). "); 
                 RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
                 RESULT.setAmbitoLocal(ambitoBloque);
             :}
          | LLAVE_I:li sentencias error {: 
                 Ambitos ambitoBloque = entornoActual;
+                cerrarAmbito();
+
                 System.err.println("Error: Los bloques deben de tener una llave de cierre (?). "); 
                 RESULT = new Token("bloqueError", null, "local", null, "bloqueError", lileft, liright);
                 RESULT.setAmbitoLocal(ambitoBloque);
@@ -790,9 +807,9 @@ output_inline ::= OUTPUT PAREN_I expresion PAREN_D
 
 
 /* -------------------- Estructuras de control ----------------------------- */
-estructruraControl ::= decide {: pilaEstrucControl.pop(); :}
-                     | loop //{: pilaEstrucControl.pop(); :}
-                     | for; //{: pilaEstrucControl.pop(); :};
+estructruraControl ::= decide   {: pilaEstrucControl.pop(); :}
+                     | loop     {: pilaEstrucControl.pop(); :}
+                     | for      {: pilaEstrucControl.pop(); :};
 
 
 decideParteIzquierda ::= DECIDE:deci OF {: 
@@ -807,13 +824,33 @@ decideParteIzquierda ::= DECIDE:deci OF {:
 
 
 // Aqui hay que agregar algo para agregar a la pila de estructura de control.
-decide ::= decideParteIzquierda:deciP condiciones END DECIDE:deci DELIMITADOR {: 
+decide ::= decideParteIzquierda:deciP condiciones:condi END DECIDE:deci DELIMITADOR {: 
                 // Token estructura = new Token("otro_decide_" + contador++, "estructura", "local", null, "decide", decileft, deciright);
-                deciP.setAmbitoLocal(entornoActual);
+                TokenDecide bloques = new TokenDecide();
+                for (CondicionBloque cb : condi) {
+                   // podrías guardar la lista en el token decide
+                   bloques.addCondiBloque(cb);
+               }
+                
+                deciP.setBloqueDecide(bloques); // Guardamos la estructura interna.
+                deciP.setAmbitoLocal(entornoActual); // Este de aqui basicamente no se ocupa, puesto que guardamos las estrcuturas de los bloques por aparte.
                 cerrarAmbito(); 
                 insertarNuevoToken(deciP);
             :}
-         | decideParteIzquierda condiciones ELSE bloque END DECIDE DELIMITADOR {: cerrarAmbito(); :} // Posiblemente requiramos crear una ambito especifico para el else.
+         | decideParteIzquierda:deciP condiciones:condi ELSE bloque:blo END DECIDE DELIMITADOR {:
+                TokenDecide bloques = new TokenDecide();
+                for (CondicionBloque cb : condi) {
+                   // podrías guardar la lista en el token decide
+                   bloques.addCondiBloque(cb);
+               } 
+
+                bloques.setBloqueElse(blo);
+                deciP.setBloqueDecide(bloques); // Guardamos la estructura interna.
+                deciP.setAmbitoLocal(entornoActual); // Este de aqui basicamente no se ocupa, puesto que guardamos las estrcuturas de los bloques por aparte.
+                cerrarAmbito(); 
+                insertarNuevoToken(deciP);
+
+            :} // Posiblemente requiramos crear una ambito especifico para el else.
          
          | decideParteIzquierda error condiciones END DECIDE DELIMITADOR {: System.err.println("Error: Se esperaba 'of' despues de 'decide'"); :}
          | decideParteIzquierda error END DECIDE DELIMITADOR {: System.err.println("Error: Condiciones no validas en estructura decide"); :}
@@ -821,37 +858,118 @@ decide ::= decideParteIzquierda:deciP condiciones END DECIDE:deci DELIMITADOR {:
          | decideParteIzquierda condiciones END error DELIMITADOR {: System.err.println("Error: Se esperaba 'decide' despues de 'end'"); :};
 
 // Esta es la que se usa para DECIDE OF
-condiciones ::= condicion FLECHA bloque
-              | condiciones condicion FLECHA bloque;
+condiciones ::= condicion:cond FLECHA bloque:blo {: 
+                        List<CondicionBloque> lista = new ArrayList<>();
+                        lista.add(new CondicionBloque(cond, blo));
+                        RESULT = lista;
+                    :}
+                | condiciones:lista condicion:cond FLECHA bloque:blo {: 
+                        lista.add(new CondicionBloque(cond, blo));
+                        RESULT = lista;
+                    :};
 
 // Esta parte es mas general y es para cada una 
 condicion ::= PAREN_I expresion:expr PAREN_D {: // Esto probablemente tenga una forma diferente despues, la parte de expr va a ser diferente y se tendra que cambiar esta validacion.
                     String tipo = expr.getTipo();
                     if (!"boolean".equals(tipo)) {
-                        System.err.println("Error semantico: la condición en 'decide' debe ser de tipo boolean, pero se recibio '" + tipo + "'");
+                        System.err.println("Error semantico: la condicion en 'decide' debe ser de tipo boolean, pero se recibio '" + tipo + "'");
+                        RESULT = new TipoExpresiones("error");
+                    } else {
+                        RESULT = new TipoExpresiones(tipo);
                     }
                 :}
-            | error expresion PAREN_D {: System.err.println("Error: Se esperaba parentesis de apertura 'є' en condicion"); :}
-            | PAREN_I expresion error {: System.err.println("Error: Se esperaba parentesis de cierre 'э' en condicion"); :}
-            | PAREN_I error PAREN_D {: System.err.println("Error: Expresion no valida en condicion"); :};
+            | error expresion PAREN_D {: System.err.println("Error: Se esperaba parentesis de apertura 'є' en condicion"); RESULT = new TipoExpresiones("error"); :}
+            | PAREN_I expresion error {: System.err.println("Error: Se esperaba parentesis de cierre 'э' en condicion"); RESULT = new TipoExpresiones("error"); :}
+            | PAREN_I error PAREN_D {: System.err.println("Error: Expresion no valida en condicion"); RESULT = new TipoExpresiones("error"); :};
 
 
-loop ::= LOOP sentencias EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
-       | LOOP sentencias break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+loopInicio ::= LOOP {: 
 
-       | LOOP error EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Bloque no valido en estructura loop"); :}
-       | LOOP sentencias error WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'exit' antes de 'when'"); :}
-       | LOOP sentencias EXIT error condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'when' despues de 'exit'"); :}
-       | LOOP sentencias EXIT WHEN condicion DELIMITADOR error LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'end' antes de 'loop'"); :};
+                // En esta parte debemos de crear el entorno y crear al token que almacenara ese entorno.
+                // para que una vez que finalice el loop, agreguemos al entorno padre el token
 
-for ::= FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion DO bloque 
-      | FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica STEP INT_LITERAL DOWNTO expresion DO bloque 
+                crearAmbito(); // Crear el ambito.
+                pilaEstrucControl.push("loop"); // Registrar el la pila que hay una nueva estructura.
+            :};
 
-      | FOR LET INT error ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion DO bloque  {: System.err.println("Error: Se esperaba identificador despues de 'for'"); :}
-      | FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica error INT_LITERAL TO expresion DO bloque  {: System.err.println("Error: Se esperaba 'step' despues del identificador"); :}
-      | FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica STEP error TO expresion DO bloque  {: System.err.println("Error: Se esperaba numero entero despues de 'step'"); :}
-      | FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica STEP INT_LITERAL error expresion DO bloque  {: System.err.println("Error: Se esperaba 'to' o 'downto' en bucle for"); :}
-      | FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion error bloque  {: System.err.println("Error: Se esperaba 'do' antes del bloque"); :};
+loop ::= loopInicio:loopIni sentencias EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR {:
+                // Aqui va el codigo del loop
+                Token estructura = new Token("otro_loop_" + contadorLoop++, "estructura", "local", null, "loop", loopInileft, loopIniright);
+
+                estructura.setAmbitoLocal(entornoActual); // Este de aqui basicamente no se ocupa, puesto que guardamos las estrcuturas de los bloques por aparte.
+                cerrarAmbito(); 
+                insertarNuevoToken(estructura);
+            :}
+
+    //    | loopInicio sentencias break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR // Sentencias tambien tiene break, entonces si queremos hacer algo para que finalice debe de ser diferente.
+
+       | loopInicio error EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Bloque no valido en estructura loop"); :}
+       | loopInicio sentencias error WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'exit' antes de 'when'"); :}
+       | loopInicio sentencias EXIT error condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'when' despues de 'exit'"); :}
+       | loopInicio sentencias EXIT WHEN condicion DELIMITADOR error LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'end' antes de 'loop'"); :};
+
+forInt ::= FOR LET INT:tipo IDENTIFICADOR:id ASIGNACION expresionAritmetica:expr {:
+                crearAmbito(); // Crear el ambito.
+                pilaEstrucControl.push("for"); // Registrar el la pila que hay una nueva estructura.
+
+                if (entornoActual.buscar(id) != null) {
+                    System.err.println("Error semantico: la variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                } else { 
+                    Token varFor = new Token (id, tipo, "local", null, "variable", idleft, idright );
+                    insertarNuevoToken(varFor);
+                }
+
+
+                if (!"int".equals(expr.tipoDato)) {
+                    System.err.println("Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
+                }
+
+
+            :}
+        | FOR LET INT error ASIGNACION expresionAritmetica {:
+            System.err.println("Error: Se esperaba identificador despues de 'for'");
+            crearAmbito(); // Crear el ambito.
+            pilaEstrucControl.push("for");
+        :};
+
+for ::= forInt:init STEP INT_LITERAL TO expresion:expr DO bloque:blo {:
+
+            if (!"int".equals(expr.tipoDato)) {
+                System.err.println("Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
+            }
+
+
+            // Crear el token del for y registrarlo en el entorno.
+            Token estructura = new Token("otro_for_" + contadorFor++, "estructura", "local", null, "for", initleft, initright);
+            // Registrar el bloque.
+            insertarNuevoToken(blo);
+            estructura.setAmbitoLocal(entornoActual);
+
+            // Cerrar el entorno.
+            cerrarAmbito();
+            insertarNuevoToken(estructura);
+
+        :}
+      | forInt:init STEP INT_LITERAL DOWNTO expresion:expr DO bloque:blo {:
+            if (!"int".equals(expr.tipoDato)) {
+                System.err.println("Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
+            }
+            // Crear el token del for y registrarlo en el entorno.
+            Token estructura = new Token("otro_for_" + contadorFor++, "estructura", "local", null, "for", initleft, initright);
+            // Registrar el bloque.
+            insertarNuevoToken(blo);
+            estructura.setAmbitoLocal(entornoActual);
+
+            // Cerrar el entorno.
+            cerrarAmbito();
+            insertarNuevoToken(estructura);
+        :}
+
+    //   | FOR LET INT error ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion DO bloque  {: System.err.println("Error: Se esperaba identificador despues de 'for'"); :}
+      | forInt error INT_LITERAL TO expresion DO bloque  {: System.err.println("Error: Se esperaba 'step' despues del identificador"); :}
+      | forInt STEP error TO expresion DO bloque  {: System.err.println("Error: Se esperaba numero entero despues de 'step'"); :}
+      | forInt STEP INT_LITERAL error expresion DO bloque  {: System.err.println("Error: Se esperaba 'to' o 'downto' en bucle for"); :}
+      | forInt STEP INT_LITERAL TO expresion error bloque  {: System.err.println("Error: Se esperaba 'do' antes del bloque"); :};
 
 /* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
 var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
@@ -861,7 +979,7 @@ var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                 // nombre, tipo, ambito, valor, categoria, linea, columna
                 Token tokenVar = new Token(id, tipo, "local", null, "variable", idleft, idright);
                 insertarNuevoToken(tokenVar);
-                System.out.println("\n >> Var globar registrada. var \n");
+                System.out.println("\n >> Definicion var registrada. var \n");
             }
         :}; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
 
@@ -927,7 +1045,7 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
 
 varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
                     if (entornoActual.buscar(id) != null) {
-                        System.err.println("Error semantico: La variable global '" + id + "' ya fue declarada."  + "Fila: " + idleft + ", Columna: " + idright);
+                        System.err.println("-> Error semantico: La variable global '" + id + "' ya fue declarada."  + "Fila: " + idleft + ", Columna: " + idright);
                     } else {
                         //String nombre, String tipo, String ambito, Object valor, String categoria, int linea, int columna
                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
@@ -936,7 +1054,28 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                     }
                     System.out.println(">> Reconocida variable global simple");
                 :}
-| GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR;
+            | GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
+                    if (entornoActual.buscar(id) != null) {
+                        System.err.println("-> Error semantico: la variable global '" + id + "' ya fue declarada." + "Fila: " + idleft + ", Columna: " + idright);
+
+                    } else if (!tipo.equals(exp.tipoDato)) {
+                        System.err.println("-> Error semantico: El tipo de la variable global no es compatible con el tipo de la expresion que se le asigna. Se esperaba '" + tipo + "', pero se recibió '" + exp.tipoDato + "'." + "Fila: " + idleft + ", Columna: " + idright);
+                    
+                    } else {
+                        Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
+                        insertarNuevoToken(tokenGlobal);
+                        System.out.println("\n >> Var globar con expresion registrada. \n");
+
+                    }
+                :};
+                // Estos errores estan dando shift reduce, probablemente hay alguna otra expresion que tambien los tenga.
+            //| error tipoDatoVariable IDENTIFICADOR DELIMITADOR {: System.err.println("Error: Se esperaba la palabra 'global' al inicio de la declaracion"); :};
+
+
+
+
+
+
 // /* ##### Seccion para las expresiones ######*/
 expresion ::= expresionLogica:exp {: RESULT = exp; System.out.println("\n Expresion en validacion -> expresion completa: inicio de la derivacion" + "Tipo final:" + exp.getTipo() + "\n"); :};
 
@@ -1014,6 +1153,8 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                         | expresionAritmetica:izq MENOR expresionAritmetica:der {: 
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, "<")) {
                                 System.err.println("Error semantico: La comparación '<' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato +"'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                
+                                
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");

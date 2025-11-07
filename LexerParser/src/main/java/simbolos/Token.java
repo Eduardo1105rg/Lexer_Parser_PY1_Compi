@@ -15,6 +15,7 @@ public class Token {
 
     public TipoLista tipoLista; // Esto seria para el caso en el que el token sea una lista.
 
+    public TokenDecide tokendecide;
     
     
     public Token (String nombre, String tipo, String ambito, Object valor, String categoria, int linea, int columna) {
@@ -37,6 +38,10 @@ public class Token {
 
     public void setTipoLista(TipoLista pTipoLista) {
         this.tipoLista = pTipoLista;
+    }
+
+    public void setBloqueDecide(TokenDecide toDeci) {
+        this.tokendecide = toDeci;
     }
 
     public String getNombre() {
@@ -77,6 +82,11 @@ public class Token {
     public TipoLista getTipoLista() {
         return this.tipoLista;
     }
+
+    public TokenDecide getTokenDecide () {
+        return this.tokendecide;
+    }
+
 
     public void mostrarToken() {
         System.out.println("Nombre: " + this.nombre + ", Tipo: " + this.tipo + ", Ambito: " + this.ambito + "Categoria:" + this.categoria + ", Valor: " + this.valor + ", Linea: " + this.linea + ", Columna: " + this.columna);
