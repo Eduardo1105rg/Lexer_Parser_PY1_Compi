@@ -77,7 +77,7 @@ EnteroPositivo = [1-9][0-9]* | 0
 Flotante = -?( (0\.0) | (0\.[0-9]*[1-9]+) | ([1-9][0-9]*\.([0-9]*[1-9]+|0)) )
 
 /* Identificadores */
-Identificador = [a-zA-Z][a-zA-Z0-9_]* /* >> Se tiene que corregir esta: No acepta un guion al inicio */
+Identificador = [_a-zA-Z][a-zA-Z0-9_]* /* >> Se tiene que corregir esta: No acepta un guion al inicio */
 
 /* Caracteres especiales para strings y chars */
 CaracterSimple = [^'\n\r\t]

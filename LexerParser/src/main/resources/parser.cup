@@ -436,7 +436,7 @@ non terminal principalParteIzquierda, funcionParteIzquierda, bloqueInicio, funci
 non terminal String tipoDatoParametro; // Le definimo String para que sea mas facil trabajar con lo valores.
 
 non terminal TipoLista tipoLista; // Aqui indicamos que lo que vamos a devolver es un objeto de TipoLista
-non terminal decideParteIzquierda;
+non terminal Token decideParteIzquierda;
 
 non terminal seExprAritUni, seOutput, seInput, seFuncLlama;
 // non terminal String operadorRelacional;
@@ -796,15 +796,23 @@ estructruraControl ::= decide {: pilaEstrucControl.pop(); :}
 
 
 decideParteIzquierda ::= DECIDE:deci OF {: 
+                            // esta parte deberia ser mas bien para cuando se cierre el ambito.
                             Token estructura = new Token("otro_decide_" + contador++, "estructura", "local", null, "decide", decileft, deciright);
-                            insertarNuevoToken(estructura);
+                            // insertarNuevoToken(estructura);
                             crearAmbito();
                             pilaEstrucControl.push("decide");
+
+                            RESULT = estructura;
                         :};
 
 
 // Aqui hay que agregar algo para agregar a la pila de estructura de control.
-decide ::= decideParteIzquierda condiciones END DECIDE DELIMITADOR {: cerrarAmbito(); :}
+decide ::= decideParteIzquierda:deciP condiciones END DECIDE:deci DELIMITADOR {: 
+                // Token estructura = new Token("otro_decide_" + contador++, "estructura", "local", null, "decide", decileft, deciright);
+                deciP.setAmbitoLocal(entornoActual);
+                cerrarAmbito(); 
+                insertarNuevoToken(deciP);
+            :}
          | decideParteIzquierda condiciones ELSE bloque END DECIDE DELIMITADOR {: cerrarAmbito(); :} // Posiblemente requiramos crear una ambito especifico para el else.
          
          | decideParteIzquierda error condiciones END DECIDE DELIMITADOR {: System.err.println("Error: Se esperaba 'of' despues de 'decide'"); :}
@@ -812,9 +820,11 @@ decide ::= decideParteIzquierda condiciones END DECIDE DELIMITADOR {: cerrarAmbi
          | decideParteIzquierda condiciones error DECIDE DELIMITADOR  {: System.err.println("Error: Se esperaba 'end' antes de 'decide'"); :}
          | decideParteIzquierda condiciones END error DELIMITADOR {: System.err.println("Error: Se esperaba 'decide' despues de 'end'"); :};
 
+// Esta es la que se usa para DECIDE OF
 condiciones ::= condicion FLECHA bloque
               | condiciones condicion FLECHA bloque;
 
+// Esta parte es mas general y es para cada una 
 condicion ::= PAREN_I expresion:expr PAREN_D {: // Esto probablemente tenga una forma diferente despues, la parte de expr va a ser diferente y se tendra que cambiar esta validacion.
                     String tipo = expr.getTipo();
                     if (!"boolean".equals(tipo)) {
@@ -826,22 +836,22 @@ condicion ::= PAREN_I expresion:expr PAREN_D {: // Esto probablemente tenga una 
             | PAREN_I error PAREN_D {: System.err.println("Error: Expresion no valida en condicion"); :};
 
 
-loop ::= LOOP bloque EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
-       | LOOP bloque break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+loop ::= LOOP sentencias EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
+       | LOOP sentencias break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR
 
        | LOOP error EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Bloque no valido en estructura loop"); :}
-       | LOOP bloque error WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'exit' antes de 'when'"); :}
-       | LOOP bloque EXIT error condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'when' despues de 'exit'"); :}
-       | LOOP bloque EXIT WHEN condicion DELIMITADOR error LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'end' antes de 'loop'"); :};
+       | LOOP sentencias error WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'exit' antes de 'when'"); :}
+       | LOOP sentencias EXIT error condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'when' despues de 'exit'"); :}
+       | LOOP sentencias EXIT WHEN condicion DELIMITADOR error LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'end' antes de 'loop'"); :};
 
-for ::= FOR IDENTIFICADOR STEP INT_LITERAL TO expresion DO bloque DELIMITADOR
-      | FOR IDENTIFICADOR STEP INT_LITERAL DOWNTO expresion DO bloque DELIMITADOR
+for ::= FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion DO bloque 
+      | FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica STEP INT_LITERAL DOWNTO expresion DO bloque 
 
-      | FOR error STEP INT_LITERAL TO expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba identificador despues de 'for'"); :}
-      | FOR IDENTIFICADOR error INT_LITERAL TO expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba 'step' despues del identificador"); :}
-      | FOR IDENTIFICADOR STEP error TO expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba numero entero despues de 'step'"); :}
-      | FOR IDENTIFICADOR STEP INT_LITERAL error expresion DO bloque DELIMITADOR {: System.err.println("Error: Se esperaba 'to' o 'downto' en bucle for"); :}
-      | FOR IDENTIFICADOR STEP INT_LITERAL TO expresion error bloque DELIMITADOR {: System.err.println("Error: Se esperaba 'do' antes del bloque"); :};
+      | FOR LET INT error ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion DO bloque  {: System.err.println("Error: Se esperaba identificador despues de 'for'"); :}
+      | FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica error INT_LITERAL TO expresion DO bloque  {: System.err.println("Error: Se esperaba 'step' despues del identificador"); :}
+      | FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica STEP error TO expresion DO bloque  {: System.err.println("Error: Se esperaba numero entero despues de 'step'"); :}
+      | FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica STEP INT_LITERAL error expresion DO bloque  {: System.err.println("Error: Se esperaba 'to' o 'downto' en bucle for"); :}
+      | FOR LET INT IDENTIFICADOR ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion error bloque  {: System.err.println("Error: Se esperaba 'do' antes del bloque"); :};
 
 /* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
 var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
@@ -851,6 +861,7 @@ var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                 // nombre, tipo, ambito, valor, categoria, linea, columna
                 Token tokenVar = new Token(id, tipo, "local", null, "variable", idleft, idright);
                 insertarNuevoToken(tokenVar);
+                System.out.println("\n >> Var globar registrada. var \n");
             }
         :}; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
 
@@ -863,6 +874,7 @@ varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {:
                     } else {
                         //token.setValor(exp.valor); // actualizar el valor de la variable
                         // token.setValor(null);
+                        System.out.println("\n >> Var globar registrada. varAsignacion\n");
                         
                     }
                 :};
@@ -877,6 +889,7 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
                             // nombre, tipo, ambito, valor, categoria, linea, columna
                             Token tokenLocal = new Token(id, tipo, "local", null, "variable", idleft, idright); //<- Se tiene que cambiar esto para para guardar el valor, pero se tiene que modificar desde expresion.
                             insertarNuevoToken(tokenLocal);
+                            System.out.println("\n >> Variable local registrada. varCyAsignacion \n");
                         }
                     :}
                   | LET tipoDatoVariable IDENTIFICADOR ASIGNACION error DELIMITADOR {: System.err.println("Error: Expresion no valida despues de '='"); :}
