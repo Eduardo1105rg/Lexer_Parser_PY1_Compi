@@ -34,31 +34,56 @@ public class TipoExpresiones {
     public TipoExpresiones(String tipo, Object valor) {
         this.tipoDato = tipo;
         this.cuads = new ArrayList<>();
+        // guardar valor literal como temp para usar en TAC (hoja)
+        if (valor != null) {
+            this.temp = valor.toString();
+            if (valor instanceof Integer) {
+                this.valorI = (Integer) valor;
+            } else if (valor instanceof Double) {
+                this.valorF = (Double) valor;
+            } else if (valor instanceof Character) {
+                this.valorC = (Character) valor;
+            } else if (valor instanceof String) {
+                this.valorS = (String) valor;
+            } else if (valor instanceof Boolean) {
+                this.valorB = (Boolean) valor;
+            }
+        }
     }
 
     public TipoExpresiones(String pTipoDato, Integer tamano) {
         this.tipoDato = pTipoDato;
         this.valorI = tamano;
+        this.cuads = new ArrayList<>();
+        if (tamano != null) this.temp = tamano.toString();
     }
 
     public TipoExpresiones(String pTipoDato, Double tamano) {
         this.tipoDato = pTipoDato;
         this.valorF = tamano;
+        this.cuads = new ArrayList<>();
+        if (tamano != null) this.temp = tamano.toString();
     }
 
     public TipoExpresiones(String pTipoDato, Character tamano) {
         this.tipoDato = pTipoDato;
         this.valorC = tamano;
+        this.cuads = new ArrayList<>();
+        if (tamano != null) this.temp = tamano.toString();
     }
 
     public TipoExpresiones(String pTipoDato, String tamano) {
         this.tipoDato = pTipoDato;
         this.valorS = tamano;
+        this.cuads = new ArrayList<>();
+        if (tamano != null) this.temp = tamano;
     }
 
     public TipoExpresiones(String pTipoDato, Boolean tamano) {
         this.tipoDato = pTipoDato;
         this.valorB = tamano;
+        this.cuads = new ArrayList<>();
+        if (tamano != null) this.temp = tamano.toString();
     }
 
     public TipoExpresiones(String pTipoDato, int pValor, int pTamano) {
