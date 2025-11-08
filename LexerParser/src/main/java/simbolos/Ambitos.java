@@ -62,30 +62,54 @@ public class Ambitos {
 
     // Funcion para mostrar todos los ambitos asociados a un token junto con lo tokens que ete tenga.
     public void mostrarTodosLosAmbitosAuxiliar(Ambitos ambito, String nombreAmbito, int nivel) {
-        if (ambito == null) return;
+    if (ambito == null) return;
 
-        // Podemos agregar una validacion para el caso de que sea un bloque no mostrar los datos del nombre.
-        // if (nombreAmbito == "bloque" || nombreAmbito == "bloqueError") {
+    System.out.println("\n>> Ambito " + nombreAmbito + " con " + ambito.getTablaActual().size() + " tokens. \n");
 
-            System.out.println("\n>> Ambito " + nombreAmbito + " con " + ambito.getTablaActual().size() + " tokens. \n");
-        // }
+    for (Token t : ambito.getTablaActual().values()) {
 
-        for (Token t : ambito.getTablaActual().values()) {
-            System.out.printf("|| %-15s | %-10s | %-10s | %-10s | %-10s | %-5d | %-5d ||\n",
-                    t.nombre, t.tipo, t.categoria,
-                    nombreAmbito, String.valueOf(t.valor),
-                    t.linea, t.columna);
-
-            // Si este token es una función y tiene ambito local asociado, lo mostramos recursivamente
-            // if ("funcion".equals(t.categoria) && t.ambitoLocal != null) {
-            //     mostrarTodosLosAmbitosAuxiliar(t.ambitoLocal, nombreAmbito + "->Func_" + t.nombre, nivel + 1);
-            // }
+        // Caso especial: no mostrar el token bloque como fila
+        if ("bloque".equals(t.categoria) || "bloqueError".equals(t.categoria)) {
+            // Solo recorrer su contenido
             if (t.ambitoLocal != null) {
-                String subNombre = nombreAmbito + "->" + t.categoria + "_" + t.nombre;
-                mostrarTodosLosAmbitosAuxiliar(t.ambitoLocal, subNombre, nivel + 1);
+                mostrarTodosLosAmbitosAuxiliar(t.ambitoLocal, nombreAmbito + "->Bloque", nivel + 1);
+            }
+            continue;
+        }
+
+        // Mostrar token normal
+        System.out.printf("|| %-15s | %-10s | %-10s | %-10s | %-10s | %-5d | %-5d ||\n",
+                t.nombre, t.tipo, t.categoria,
+                nombreAmbito, String.valueOf(t.valor),
+                t.linea, t.columna);
+
+        // Si tiene un ámbito local, recorrerlo
+        if (t.ambitoLocal != null) {
+            String subNombre = nombreAmbito + "->" + t.categoria + "_" + t.nombre;
+            mostrarTodosLosAmbitosAuxiliar(t.ambitoLocal, subNombre, nivel + 1);
+        }
+
+        // Caso especial: estructuras de control (ej. decide)
+        if ("decide".equals(t.categoria) && t.getTokenDecide() != null) {
+            TokenDecide deci = t.getTokenDecide();
+            int i = 1;
+            for (CondicionBloque cb : deci.getCondiciones()) {
+                System.out.println("   Condición " + i + ": tipo=" + cb.getCondicion().getTipo());
+                if (cb.getToken().getAmbitoLocal() != null) {
+                    mostrarTodosLosAmbitosAuxiliar(cb.getToken().getAmbitoLocal(),
+                        nombreAmbito + "->Condicion_" + i, nivel + 1);
+                }
+                i++;
+            }
+            if (deci.getBloqueElese() != null && deci.getBloqueElese().getAmbitoLocal() != null) {
+                System.out.println("   Bloque ELSE:");
+                mostrarTodosLosAmbitosAuxiliar(deci.getBloqueElese().getAmbitoLocal(),
+                    nombreAmbito + "->Else", nivel + 1);
             }
         }
     }
+}
+
 
     // Funcion para mostrar todos los ambitos registrados en el entorno actual, se usa la funcion auxiliar, para mostrar los datos especificos de cada token.
     public void mostrarTodosLosAmbitos(Ambitos entornoActual) {

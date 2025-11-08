@@ -69,7 +69,7 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 
 /* comentarios */
 ComentarioLinea    = \|[^\n\r]*  
-ComentarioBloque   = \¡([^¡]|\n|\r)*\! /* >> Se tiene que corregir esta, no funciona cuando son varias lineas */
+ComentarioBloque   = \¡([^¡]|\n)*\! /* >> Se tiene que corregir esta, no funciona cuando son varias lineas */
 
 Entero = 0 | [-]?[1-9][0-9]*
 EnteroPositivo = [1-9][0-9]* | 0
