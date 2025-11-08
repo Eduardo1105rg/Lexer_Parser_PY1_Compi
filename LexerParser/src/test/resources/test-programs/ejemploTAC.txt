@@ -1,0 +1,7 @@
+void principal є э ¿
+    let int a = 10$
+    let int b = 5$
+    let int c = a + b * b$
+    let int d = єc + cэ * 2$
+    return c$
+?
