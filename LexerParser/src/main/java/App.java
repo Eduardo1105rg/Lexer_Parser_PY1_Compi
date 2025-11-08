@@ -32,6 +32,9 @@ public class App {
 
             p.mostrarTS();
 
+            // Pruebas de TAC
+            TAC_Generator.imprimirCuads(consolaOriginal);
+
             // Luego de analisis sintactico:
             consolaOriginal.println("Errores lexicos: " + lexer.getErrorContador());
             consolaOriginal.println("Errores sintacticos: " + p.getErrorContador());

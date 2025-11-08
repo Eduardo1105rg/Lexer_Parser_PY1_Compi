@@ -312,9 +312,18 @@ parser code {:
     //     this.symbolFactory = new DefaultSymbolFactory();
     //   }
 
+    // PRUEBAS TAC
+    public boolean esHoja (TipoExpresiones e) {
+        return e.cuads.isEmpty(); // Si no contiene otros cuadruplos quiere decir que es hoja (no tiene subexpresiones)
+    }
 
-
-
+    public String valorHoja (TipoExpresiones e) {
+        // Si es un constante o literal almacenado como un temporal:
+        if (e.temp != null) {
+            return e.temp;
+        }
+        return e.temp; // si es hoja no deberia llegar aqui porque el temp deberia tener valor
+    }
 
 
 :};
@@ -1219,7 +1228,19 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                             System.err.println("Error semantico: La suma requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            RESULT = new TipoExpresiones(izq.tipoDato);
+                            // Pruebas TAC:
+                            // Buscamos los valores de las expresiones para construir un codigo TAC
+                            String t = TAC_Generator.newTemp();
+                            izq.append (der);
+                            TAC_Generator.generarCuad ("+", izq.temp != null ? izq.temp : valorHoja(izq),
+                                                      der.temp != null ? der.temp : valorHoja (der), t);
+                            
+                            TipoExpresiones res = new TipoExpresiones (izq.tipoDato);
+                            res.cuads = izq.cuads;
+                            res.temp = t;
+                            RESULT = res;
+                            // Linea original:
+                            // RESULT = new TipoExpresiones(izq.tipoDato);
                             System.out.println("\n Expresion en validacion -> expr suma: suma\n");
                         }
                     :}
