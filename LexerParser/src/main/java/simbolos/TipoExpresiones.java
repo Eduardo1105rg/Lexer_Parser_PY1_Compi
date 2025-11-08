@@ -18,10 +18,22 @@ public class TipoExpresiones {
 
     public int tamano; // Para lo del tamaño del valor en las listas.
 
+    // Pruebas para TAC
+    public String temp; // Esto es para tener el valor temporal
+    public List<Cuad> cuads;
+
     public TipoExpresiones(String pTipoDato) {
         this.tipoDato = pTipoDato;
         this.tipos = new ArrayList<>();
         this.tamano = 0;
+
+        // Prueba para TAC
+        this.cuads = new ArrayList<>();
+    }
+
+    public TipoExpresiones(String tipo, Object valor) {
+        this.tipoDato = tipo;
+        this.cuads = new ArrayList<>();
     }
 
     public TipoExpresiones(String pTipoDato, Integer tamano) {
@@ -65,6 +77,7 @@ public class TipoExpresiones {
         this.tipoDato = tipoDato;
         this.tipos = tipos;
         this.tamano = tamano;
+        this.cuads = new ArrayList<>();
     }
 
 
@@ -72,5 +85,11 @@ public class TipoExpresiones {
         return this.tipoDato;
     }
 
-
+    // Prueba TAC
+    // helper para clonar cuads (como estructura)
+    public void append(TipoExpresiones otro) {
+        if (otro != null && otro.cuads != null) {
+            this.cuads.addAll(otro.cuads);
+        }
+    }
 }
