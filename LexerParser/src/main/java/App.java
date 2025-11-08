@@ -3,7 +3,7 @@ import parser.*;
 import lexer.Lexer;
 
 import simbolos.*;
-
+import utils.*;
 import java.io.FileReader;
 import java.io.PrintStream;
 
@@ -16,6 +16,7 @@ public class App {
 
         try {
 
+            utils.ManejoArchivos.iniciar("tokens.txt");
             // Esto es para registrar los tokens y lexemas en un archivo.
 
             PrintStream consolaOriginal = System.out; // Esto es para salvar la conosola 
@@ -35,9 +36,12 @@ public class App {
             // Luego de analisis sintactico:
             consolaOriginal.println("Errores lexicos: " + lexer.getErrorContador());
             consolaOriginal.println("Errores sintacticos: " + p.getErrorContador());
-            int errores = p.getErrorContador() + lexer.getErrorContador();
+            int erroresSemanTicos = p.getCountErroresSemanticos();
 
-            if (errores == 0) {
+            consolaOriginal.println("Errores semanticos: " + erroresSemanTicos);
+
+            int errores = p.getErrorContador() + lexer.getErrorContador();
+            if (errores == 0 && erroresSemanTicos == 0) {
                 consolaOriginal.println("El archivo fue reconocido por la gramatica.");
             } else {
                 consolaOriginal.println("El archivo fue analizado con " + errores + " errores.");
@@ -52,6 +56,8 @@ public class App {
         } catch (Exception e) {
             System.out.println("Error durante el analisis sintactico:"); // Esta parte se deberia de cambiar.
             e.printStackTrace();
+        } finally {
+            utils.ManejoArchivos.cerrar();
         }
     }
 }
