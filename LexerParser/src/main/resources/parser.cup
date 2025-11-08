@@ -23,6 +23,10 @@ import simbolos.TipoExpresiones;
 import simbolos.TokenDecide;
 import simbolos.CondicionBloque;
 
+// Import de TAC
+import simbolos.Cuad;
+import simbolos.TAC_Generator;
+
 
 /* Aqui vamos a definir lo que se va a ejecutar al reducir una produccion o algo asi. (Es diferente del 'parser code')*/
 action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi de momento.
@@ -999,6 +1003,28 @@ varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {:
                     } else if (!token.getTipo().equals(exp.tipoDato)) {
                         System.err.println("Error semantico: Tipo incompatible en asignacion. Se esperaba '" + token.getTipo() + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
                     } else {
+                        // Generamos TAC: Si la expresión producjo temporales usamos el ultimo temp, si es hoja usamos el valor directo.
+                        String fuente = (exp.temp != null) ? exp.temp : null;
+                        System.out.println("Temporal: " + exp.temp);
+                        if (fuente == null) {
+                            // Usar el valor literal
+                            if (exp.valorI != null) {
+                                fuente = exp.valorI.toString();
+                            } else if (exp.valorF != null) {
+                                fuente = exp.valorF.toString();
+                            } else if (exp.valorS != null) {
+                                fuente = exp.valorS;
+                            } else if (exp.valorC != null) {
+                                fuente = exp.valorC.toString();
+                            } else if (exp.valorB != null) {
+                                fuente = exp.valorB.toString();
+                            }
+                        }
+                        if (fuente == null) {
+                            System.err.println ("Error: No se pudo obtener el valor de la expresion para asignar a la variable '" + id + "'. Fila: " + idleft + ", Columna: " + idright);
+                        } else {
+                            TAC_Generator.generarCuadAsignacion (fuente, id);
+                        }
                         //token.setValor(exp.valor); // actualizar el valor de la variable
                         // token.setValor(null);
                         System.out.println("\n >> Var globar registrada. varAsignacion\n");
@@ -1016,6 +1042,26 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
                             // nombre, tipo, ambito, valor, categoria, linea, columna
                             Token tokenLocal = new Token(id, tipo, "local", null, "variable", idleft, idright); //<- Se tiene que cambiar esto para para guardar el valor, pero se tiene que modificar desde expresion.
                             insertarNuevoToken(tokenLocal);
+                            String fuente = exp.temp;
+                            if (fuente == null) {
+                                if (exp.valorI != null) {
+                                    fuente = exp.valorI.toString();
+                                } else if (exp.valorF != null) {
+                                    fuente = exp.valorF.toString();
+                                } else if (exp.valorS != null) {
+                                    fuente = exp.valorS;
+                                } else if (exp.valorC != null) {
+                                    fuente = exp.valorC.toString();
+                                } else if (exp.valorB != null) {
+                                    fuente = exp.valorB.toString();
+                                }
+                            }
+                            if (fuente != null) {
+                                TAC_Generator.generarCuadAsignacion (fuente, id);
+                            } else {
+                                System.err.println ("Error: No se pudo obtener el valor de la expresion para asignar a la variable '" + id + "'. Fila: " + idleft + ", Columna: " + idright);
+                            }
+
                             System.out.println("\n >> Variable local registrada. varCyAsignacion \n");
                         }
                     :}
@@ -1223,27 +1269,56 @@ expresionBooleana ::= TRUE{:
 expresionAritmetica ::= expresionSuma:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr arit: inicip expr arit " + "Tipo final:" + expr.getTipo() + "\n");  :};
 
 
-expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {: 
-                        if (!tiposIgualesNumericos(izq, der)) {
-                            System.err.println("Error semantico: La suma requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
+expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
+                        if (izq == null || der == null) {
+                            RESULT = new TipoExpresiones("error");
+                        } else if ("error".equals(izq.getTipo()) || "error".equals(der.getTipo())) {
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            // Pruebas TAC:
-                            // Buscamos los valores de las expresiones para construir un codigo TAC
+                            String tipoResultado = "int";
+                            if ("float".equals(izq.getTipo()) || "float".equals(der.getTipo())) {
+                                tipoResultado = "float";
+                            }
+
+                            String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                            String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+
+                            if (a1 == null){
+                                a1 = "null";
+                            }
+
+                            if (a2 == null){
+                                a2 = "null";
+                            }
+
                             String t = TAC_Generator.newTemp();
-                            izq.append (der);
-                            TAC_Generator.generarCuad ("+", izq.temp != null ? izq.temp : valorHoja(izq),
-                                                      der.temp != null ? der.temp : valorHoja (der), t);
-                            
-                            TipoExpresiones res = new TipoExpresiones (izq.tipoDato);
-                            res.cuads = izq.cuads;
+                            TAC_Generator.generarCuad ("+", a1, a2, t);
+
+                            TipoExpresiones res = new TipoExpresiones (tipoResultado);
                             res.temp = t;
                             RESULT = res;
-                            // Linea original:
-                            // RESULT = new TipoExpresiones(izq.tipoDato);
-                            System.out.println("\n Expresion en validacion -> expr suma: suma\n");
+
                         }
-                    :}
+                        // if (!tiposIgualesNumericos(izq, der)) {
+                        //     System.err.println("Error semantico: La suma requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
+                        //     RESULT = new TipoExpresiones("error");
+                        // } else {
+                        //     // Pruebas TAC:
+                        //     // Buscamos los valores de las expresiones para construir un codigo TAC
+                        //     String t = TAC_Generator.newTemp();
+                        //     izq.append (der);
+                        //     TAC_Generator.generarCuad ("+", izq.temp != null ? izq.temp : valorHoja(izq),
+                        //                               der.temp != null ? der.temp : valorHoja (der), t);
+                            
+                        //     TipoExpresiones res = new TipoExpresiones (izq.tipoDato);
+                        //     res.cuads = izq.cuads;
+                        //     res.temp = t;
+                        //     RESULT = res;
+                        //     // Linea original:
+                        //     // RESULT = new TipoExpresiones(izq.tipoDato);
+                        //     System.out.println("\n Expresion en validacion -> expr suma: suma\n");
+                        // }
+                :}
                 | expresionSuma:izq MENOS expresionProducto:der {: 
                         if (!tiposIgualesNumericos(izq, der)) {
                             System.err.println("Error semantico: La resta requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
@@ -1257,14 +1332,42 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                 | expresionSuma MAS error {: System.err.println("Error: Expresion no valida despues de '+'"); RESULT = new TipoExpresiones("error"); :}
                 | expresionSuma MENOS error {: System.err.println("Error: Expresion no valida despues de '-'"); RESULT = new TipoExpresiones("error"); :};
 
-expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der {: 
-                    if (!tiposIgualesNumericos(izq, der)) {
-                        System.err.println("Error semantico: La multiplicacion requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
+expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der {:
+                    if (izq == null || der == null) {
+                        RESULT = new TipoExpresiones ("error");
+                    } else if ("error".equals(izq.getTipo()) || "error".equals(der.getTipo())) {
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        RESULT = new TipoExpresiones(izq.tipoDato);
-                        System.out.println("\n Expresion en validacion -> expr prod multi \n");
+                        String tipoResultado = "int";
+                        if ("float".equals(izq.getTipo()) || "float".equals(der.getTipo())) {
+                            tipoResultado = "float";
+                        }
+
+                        String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                        String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+
+                        if (a1 == null){
+                            a1 = "null";
+                        }
+
+                        if (a2 == null){
+                            a2 = "null";
+                        }
+
+                        String t = TAC_Generator.newTemp();
+                        TAC_Generator.generarCuad ("*", a1, a2, t);
+
+                        TipoExpresiones res = new TipoExpresiones (tipoResultado);
+                        res.temp = t;
+                        RESULT = res;
                     }
+                    // if (!tiposIgualesNumericos(izq, der)) {
+                    //     System.err.println("Error semantico: La multiplicacion requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
+                    //     RESULT = new TipoExpresiones("error");
+                    // } else {
+                    //     RESULT = new TipoExpresiones(izq.tipoDato);
+                    //     System.out.println("\n Expresion en validacion -> expr prod multi \n");
+                    // }
                     :}
                     | expresionProducto:izq DIVISION expresionPotencia:der {: 
                         if (!tiposIgualesNumericos(izq, der)) {
@@ -1317,13 +1420,26 @@ expresionFactor ::= PAREN_I expresionAritmetica:expr PAREN_D {: RESULT = expr; S
                   | expresionAritmeticaUnariaNegativa:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> facuni nega \n"); :};
                 //   | error {: System.err.println("Error: Expresion aritmetica no valida"); :};
 
-expresionNumerica ::= INT_LITERAL:n {: RESULT = new TipoExpresiones("int", n); System.out.println("\n Expresion en validacion -> num int \n"); :}
+expresionNumerica ::= INT_LITERAL:n {: 
+                        RESULT = new TipoExpresiones("int", n); 
+                        System.out.println("\n Expresion en validacion -> num int \n"); 
+                        
+                        :}
                     | FLOAT_LITERAL:f  {: RESULT = new TipoExpresiones("float", f); System.out.println("\n Expresion en validacion -> num flo \n"); :}
                     | IDENTIFICADOR:id {: 
-                        
-                        RESULT = obtenerTipoIdentificador(id); 
+                        // Pruebas TAC:
+                        Token t = entornoActual != null ? entornoActual.buscar (id) : null;
+                        if (t == null) {
+                            System.err.println("Error semantico: El identificador '" + id + "' no ha sido declarado. Fila: " + idleft + ", Columna: " + idright);
+                            RESULT = new TipoExpresiones("error");
+                        } else {
+                            TipoExpresiones te = new TipoExpresiones (t.getTipo());
+                            te.temp = id;
+                            RESULT = te;
+                        }
+                        // RESULT = obtenerTipoIdentificador(id); 
                         System.out.println("\n Expresion en validacion -> num id \n");
-                    
+                        // RESULT = te;
                     :}
                     | funcionLlamada:func {: 
                         RESULT = obtenerTipoFuncion(funcionActual); 
