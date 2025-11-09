@@ -46,7 +46,7 @@ public class TAC_Generator {
             operador = "-";
         } else if (operador.equals("NEG")) { // No se aun como voy a representar la negación
             // Para el caso de negacion unaria
-            operador = "NEG";
+            operador = "NEG"; // aqui podria hacer el cambio de signo
             argumento2 = null; // No se usa en la negación
         }
         Cuad cuad = new Cuad (operador, argumento1, argumento2, resultado);

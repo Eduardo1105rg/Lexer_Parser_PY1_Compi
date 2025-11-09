@@ -1209,8 +1209,16 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        RESULT = new TipoExpresiones("boolean");
                         System.out.println("\n Expresion en validacion -> expr rela: and \n");
+                        String a1 = izq.temp != null ? izq.temp : (izq.valorB != null ? izq.valorB.toString() : "null");
+                        String a2 = der.temp != null ? der.temp : (der.valorB != null ? der.valorB.toString() : "null");
+                        String t = TAC_Generator.newTemp();
+                        izq.append(der);
+                        TAC_Generator.generarCuad("AND", a1, a2, t); // luego veo como representarlo
+                        TipoExpresiones res = new TipoExpresiones("boolean");
+                        res.cuads = izq.cuads;
+                        res.temp = t;
+                        RESULT = res;
                     }
                 :}
                 | expresionLogica:izq OR expresionRelacional:der {: 
@@ -1219,8 +1227,16 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        RESULT = new TipoExpresiones("boolean");
                         System.out.println("\n Expresion en validacion -> expr rela: or \n");
+                        String a1 = izq.temp != null ? izq.temp : (izq.valorB != null ? izq.valorB.toString() : "null");
+                        String a2 = der.temp != null ? der.temp : (der.valorB != null ? der.valorB.toString() : "null");
+                        String t = TAC_Generator.newTemp();
+                        izq.append(der);
+                        TAC_Generator.generarCuad("OR", a1, a2, t); // igual que arriba luego veo como representarlo
+                        TipoExpresiones res = new TipoExpresiones("boolean");
+                        res.cuads = izq.cuads;
+                        res.temp = t;
+                        RESULT = res;
                     }
                 :}
                 | NOT expresionLogica:exp {: 
@@ -1229,8 +1245,14 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        RESULT = new TipoExpresiones("boolean");
                         System.out.println("\n Expresion en validacion -> expr rela: not  \n");
+                        String a1 = exp.temp != null ? exp.temp : (exp.valorB != null ? exp.valorB.toString() : "null");
+                        String t = TAC_Generator.newTemp();
+                        TAC_Generator.generarCuadUnario("NOT", a1, t, null);
+                        TipoExpresiones res = new TipoExpresiones("boolean");
+                        res.cuads = exp.cuads;
+                        res.temp = t;
+                        RESULT = res;
                     }
                 :}
                 | expresionRelacional:exp {: // En teoria esta deveria de dejar pasar el valor directo

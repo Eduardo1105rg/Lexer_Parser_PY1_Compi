@@ -4,7 +4,7 @@ void principal є э ¿
     let float c = a * 5.0$
     let float d = єc - cэ ^ 2$
     let float e = d++ + 10.0$
-    let float u = -3.3$
-    let boolean f = a != c$
+    let float u = -e$
+    let boolean f = true @ false$
     return$
 ?
