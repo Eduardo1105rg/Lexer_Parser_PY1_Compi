@@ -558,6 +558,7 @@ principal ::= principalParteIzquierda bloque:blo {:
 // Se le agrega el result para que las producciones sepan mejor el valor semantico que van a tener.
 tipoDatoFuncion ::= INT {: RESULT = "int"; :}
                   | FLOAT {: RESULT = "float"; :}
+                  | CHAR {: RESULT = "char"; :}
                   | BOOLEAN {: RESULT = "boolean"; :};
 
 tipoDatoVariable ::= INT {: RESULT = "int"; :}
