@@ -1,0 +1,54 @@
+global int contador = 10$
+global float pi = 3.14$
+global boolean activo = true$
+global char inicial = 'A'$
+global string mensaje = "Hola"$
+
+
+int cuadrado є int n, char x22 э ¿
+    n++$
+    return n * n$
+?
+
+float promedio є float a, float b э ¿
+    |return єa + bэ / 2.0$
+    return promedio є a, bэ$
+?
+
+
+
+¡
+Comentario 1
+!
+
+void principal є э ¿
+    let int x = 23 + 2$
+    let float y = -2.5 * pi$
+    let boolean ok = false$
+    let string _Chale = "hola"$
+    let int resultado = є2 + 3э * 4 - 5$
+    let float division = 10.0 / 2.0$
+    let boolean mayor = 10 > 5$
+    let boolean igual = є2 + xэ == 5$
+    let boolean mixto = є3.0 < 4.5э @ є2 != 3э$
+    let int llamarFuncion = cuadradoє4, 'e'э$
+
+    let int[5] data = ¿23,23,5,6,resultado?$
+
+    let int no = data[1]$
+
+    let int valor = cuadradoє3, 'n'э$
+
+    decide of
+        єvalor > 10э -> ¿
+            let string _mensaje = "Mayor que 10"$
+        ?
+        єvalor == 9э -> ¿
+            let string _mensaje = "Igual a 9"$
+        ?
+    else ¿
+        let string _mensaje = "Menor que 9"$
+    ?
+    end decide$
+
+?
