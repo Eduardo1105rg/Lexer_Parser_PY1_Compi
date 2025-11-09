@@ -1,6 +1,6 @@
  
- string _s1_$
-let bool _b1_$
+global string _s1_$
+global bool _b1_$
 
  float func1 є char x22,char x22 э  ¿ |semantico borrar parametro
 

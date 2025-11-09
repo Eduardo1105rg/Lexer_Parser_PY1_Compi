@@ -482,6 +482,9 @@ non terminal TipoLista tipoLista; // Aqui indicamos que lo que vamos a devolver 
 non terminal Token decideParteIzquierda;
 
 non terminal seExprAritUni, seOutput, seInput, seFuncLlama;
+
+non terminal bloqueError;
+// non terminal outputError;
 // non terminal String operadorRelacional;
 // --- Fin de declaracion de nuevos no terminales. 
 
@@ -568,14 +571,15 @@ principal ::= principalParteIzquierda bloque:blo {:
 // Se le agrega el result para que las producciones sepan mejor el valor semantico que van a tener.
 tipoDatoFuncion ::= INT {: RESULT = "int"; :}
                   | FLOAT {: RESULT = "float"; :}
+                  | CHAR {: RESULT = "char"; :}
                   | BOOLEAN {: RESULT = "boolean"; :};
 
 tipoDatoVariable ::= INT {: RESULT = "int"; :}
                   | FLOAT {: RESULT = "float"; :}
                   | BOOLEAN {: RESULT = "boolean"; :}
                   | CHAR {: RESULT = "char"; :}
-                  | STRING {: RESULT = "string"; :}
-                   | error {: System.err.println("Error: tipo de variable debe ser int, float, boolean, char o string"); :};
+                  | STRING {: RESULT = "string"; :};
+                //    | error {: System.err.println("Error: tipo de variable debe ser int, float, boolean, char o string"); :};
 
 
 
@@ -653,6 +657,32 @@ bloqueInicio ::= LLAVE_I {:
     crearAmbito(); 
 :};
 
+bloqueError ::= error sentencias LLAVE_D:ld {: 
+                // Ambitos ambitoBloque = entornoActual;
+                // cerrarAmbito();
+                
+                System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿)."); 
+                // RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
+                // RESULT.setAmbitoLocal(entornoActual);
+            :}
+         | error LLAVE_D:ld {: 
+                // Ambitos ambitoBloque = entornoActual;
+                // cerrarAmbito();
+
+                System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿). "); 
+                // RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
+                // RESULT.setAmbitoLocal(ambitoBloque);
+            :}
+         | LLAVE_I:li sentencias error {: 
+                // Ambitos ambitoBloque = entornoActual;
+                // cerrarAmbito();
+
+                System.err.println(" -> Error: Los bloques deben de tener una llave de cierre (?). "); 
+                // RESULT = new Token("bloqueError", null, "local", null, "bloqueError", lileft, liright);
+                // RESULT.setAmbitoLocal(ambitoBloque);
+            :};
+
+
 /* Producciones de sentencias y bloques */
 bloque ::= bloqueInicio sentencias LLAVE_D:ld {: 
               // Guardar el entorno antes de cerrarlo
@@ -669,49 +699,67 @@ bloque ::= bloqueInicio sentencias LLAVE_D:ld {:
             //       funcionEnAnalisis.setAmbitoLocal(ambitoBloque);
             //   }
           :}
-        | bloqueInicio LLAVE_D:ld {: 
-                // mostrarTablaActual();
-              Ambitos ambitoBloque = entornoActual;
-              cerrarAmbito();
+        | bloqueError:Id {:
+                Ambitos ambitoBloque = entornoActual;
+                cerrarAmbito();
+        
+                RESULT = new Token("bloqueError", null, "local", null, "bloqueError", Idleft, Idright);
+                RESULT.setAmbitoLocal(ambitoBloque);
 
-              RESULT = new Token("bloque", null, "local", null, "bloque", ldleft, ldright);
-              RESULT.setAmbitoLocal(entornoActual);
+        :};
+        // | bloqueInicio LLAVE_D:ld {: 
+                // mostrarTablaActual();
+            //   Ambitos ambitoBloque = entornoActual;
+            //   cerrarAmbito();
+
+            //   RESULT = new Token("bloque", null, "local", null, "bloque", ldleft, ldright);
+            //   RESULT.setAmbitoLocal(entornoActual);
 
             //   if (funcionEnAnalisis != null) {
             //       funcionEnAnalisis.setAmbitoLocal(ambitoBloque);
             //   }
-          :}
+        //   :}
 
-         | error sentencias LLAVE_D:ld {: 
-                Ambitos ambitoBloque = entornoActual;
-                cerrarAmbito();
+        //  | error sentencias LLAVE_D:ld {: 
+        //         Ambitos ambitoBloque = entornoActual;
+        //         cerrarAmbito();
                 
-                System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿)."); 
-                RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
-                RESULT.setAmbitoLocal(entornoActual);
-            :}
-         | error LLAVE_D:ld {: 
-                Ambitos ambitoBloque = entornoActual;
-                cerrarAmbito();
+        //         System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿)."); 
+        //         RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
+        //         RESULT.setAmbitoLocal(entornoActual);
+        //     :}
+        //  | error LLAVE_D:ld {: 
+        //         Ambitos ambitoBloque = entornoActual;
+        //         cerrarAmbito();
 
-                System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿). "); 
-                RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
-                RESULT.setAmbitoLocal(ambitoBloque);
-            :}
-         | LLAVE_I:li sentencias error {: 
-                Ambitos ambitoBloque = entornoActual;
-                cerrarAmbito();
+        //         System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿). "); 
+        //         RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
+        //         RESULT.setAmbitoLocal(ambitoBloque);
+        //     :}
+        //  | LLAVE_I:li sentencias error {: 
+        //         Ambitos ambitoBloque = entornoActual;
+        //         cerrarAmbito();
 
-                System.err.println(" -> Error: Los bloques deben de tener una llave de cierre (?). "); 
-                RESULT = new Token("bloqueError", null, "local", null, "bloqueError", lileft, liright);
-                RESULT.setAmbitoLocal(ambitoBloque);
-            :};
+        //         System.err.println(" -> Error: Los bloques deben de tener una llave de cierre (?). "); 
+        //         RESULT = new Token("bloqueError", null, "local", null, "bloqueError", lileft, liright);
+        //         RESULT.setAmbitoLocal(ambitoBloque);
+        //     :};
+
+// bloqueError ::= error sentencias LLAVE_D
+//               | error LLAVE_D
+//               | LLAVE_I sentencias error ;
+// bloque ::= bloqueCorrecto
+//          | bloqueError ;
+
+
 
 // No tocar esta parte, por alguna razon si funciona y no dio el error de tokens inesperados, esto es brujeria.
 sentencias ::= /* vacío */
              | sentencias sentencia ;
 
-
+// Esta es para el trabajo con la parte de error:
+// sentenciasOpc ::= /* vacío */
+//                 | sentencias ;
 
 sentencia ::= var
             | varAsignacion  
@@ -832,10 +880,13 @@ output ::= output_inline {: RESULT = "output"; :}
          | output CONCATENACION_OUTPUT output_inline         
          | output error output_inline {: System.err.println(" -> Error: Se debe de definir el caracter de concatenacion (<<) para los outpout "); :};
 
-output_inline ::= OUTPUT PAREN_I expresion PAREN_D
-| error PAREN_I expresion PAREN_D {: System.err.println(" -> Error: Se debe de definir la palabra de (input) para indicar una salida en consola."); :};
+output_inline ::= OUTPUT PAREN_I expresion PAREN_D;
+                // | error PAREN_I expresion PAREN_D {: System.err.println(" -> Error: Se debe de definir la palabra de (output) para indicar una salida en consola."); :};
+                // | outputError;
 
-
+// outputError ::= error PAREN_I expresion PAREN_D {: 
+//     System.err.println(" -> Error: Se debe de definir la palabra 'output' para indicar una salida en consola."); 
+// :};
 
 /* -------------------- Estructuras de control ----------------------------- */
 estructruraControl ::= decide   {: pilaEstrucControl.pop(); :}
@@ -881,10 +932,10 @@ decide ::= decideParteIzquierda:deciP condiciones:condi END DECIDE:deci DELIMITA
 
             :} // Posiblemente requiramos crear una ambito especifico para el else.
          
-         | decideParteIzquierda error condiciones END DECIDE DELIMITADOR {: System.err.println(" -> Error: Se esperaba 'of' despues de 'decide'"); :}
-         | decideParteIzquierda error END DECIDE DELIMITADOR {: System.err.println(" -> Error: Condiciones no validas en estructura decide"); :}
-         | decideParteIzquierda condiciones error DECIDE DELIMITADOR  {: System.err.println(" -> Error: Se esperaba 'end' antes de 'decide'"); :}
-         | decideParteIzquierda condiciones END error DELIMITADOR {: System.err.println(" -> Error: Se esperaba 'decide' despues de 'end'"); :};
+         | decideParteIzquierda error condiciones END DECIDE DELIMITADOR {: System.err.println(" -> Error: Se esperaba 'of' despues de 'decide'"); cerrarAmbito(); :}
+         | decideParteIzquierda error END DECIDE DELIMITADOR {: System.err.println(" -> Error: Condiciones no validas en estructura decide"); cerrarAmbito(); :}
+         | decideParteIzquierda condiciones error DECIDE DELIMITADOR  {: System.err.println(" -> Error: Se esperaba 'end' antes de 'decide'"); cerrarAmbito();  :}
+         | decideParteIzquierda condiciones END error DELIMITADOR {: System.err.println(" -> Error: Se esperaba 'decide' despues de 'end'"); cerrarAmbito(); :};
 
 // Esta es la que se usa para DECIDE OF
 condiciones ::= condicion:cond FLECHA bloque:blo {: 
@@ -933,36 +984,46 @@ loop ::= loopInicio:loopIni sentencias EXIT WHEN condicion DELIMITADOR END LOOP 
 
     //    | loopInicio sentencias break EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR // Sentencias tambien tiene break, entonces si queremos hacer algo para que finalice debe de ser diferente.
 
-       | loopInicio error EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Bloque no valido en estructura loop"); :}
-       | loopInicio sentencias error WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'exit' antes de 'when'"); :}
-       | loopInicio sentencias EXIT error condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'when' despues de 'exit'"); :}
-       | loopInicio sentencias EXIT WHEN condicion DELIMITADOR error LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'end' antes de 'loop'"); :};
+    //    | loopInicio error EXIT WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Bloque no valido en estructura loop"); :} // Esto no se puede por que las sentencias ya tiene su propio error.
+    //    | loopInicio sentencias error WHEN condicion DELIMITADOR END LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'exit' antes de 'when'"); :} // Las sentencias ya tienen su propio error.
+        | loopInicio sentencias EXIT error condicion DELIMITADOR END LOOP DELIMITADOR {: 
+                System.err.println("Error: Se esperaba 'when' despues de 'exit'"); 
+                cerrarAmbito();
+            
+            :}
+        | loopInicio sentencias EXIT WHEN condicion DELIMITADOR error LOOP DELIMITADOR {: System.err.println("Error: Se esperaba 'end' antes de 'loop'"); cerrarAmbito(); :};
 
-forInt ::= FOR LET INT:tipo IDENTIFICADOR:id ASIGNACION expresionAritmetica:expr {:
+// El for debe de ser una asignacion y la variable debe de estar previamente creada
+forInt ::= FOR IDENTIFICADOR:id ASIGNACION expresionAritmetica:exp {:
                 crearAmbito(); // Crear el ambito.
                 pilaEstrucControl.push("for"); // Registrar el la pila que hay una nueva estructura.
+                Token token = entornoActual.buscar(id);
 
-                if (entornoActual.buscar(id) != null) {
-                    System.err.println(" -> Error semantico: la variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                // Aqui basicamente validamos que el id exista
+                if (token == null) {
+                    System.err.println(" -> Error semantico: La variable '" + id + "' no ha sido declarada para ser usada en el for. Fila: " + idleft + ", Columna: " + idright);
                     aumentarCountErroresSemanticos();
-                } else { 
-                    Token varFor = new Token (id, tipo, "local", null, "variable", idleft, idright );
-                    insertarNuevoToken(varFor);
+                } else if (!token.getTipo().equals(exp.tipoDato)){ 
+                    // Token varFor = new Token (id, tipo, "local", null, "variable", idleft, idright );
+                    // insertarNuevoToken(varFor);
+                    System.err.println(" -> Error semantico: Tipo incompatible en asignacion para el for. Se esperaba '" + token.getTipo() + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                    aumentarCountErroresSemanticos();
+
                 }
 
 
-                if (!"int".equals(expr.tipoDato)) {
-                    System.err.println(" -> Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
+                if (!"int".equals(exp.tipoDato)) {
+                    System.err.println(" -> Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + exp.tipoDato + "Fila: " + expleft + ", Columna: " + expright);
                     aumentarCountErroresSemanticos();
                 }
 
 
-            :}
-        | FOR LET INT error ASIGNACION expresionAritmetica {:
-            System.err.println("Error: Se esperaba identificador despues de 'for'");
-            crearAmbito(); // Crear el ambito.
-            pilaEstrucControl.push("for");
-        :};
+            :};
+        // | FOR   error ASIGNACION expresionAritmetica {:
+        //     System.err.println("Error: Se esperaba identificador despues de 'for'");
+        //     crearAmbito(); // Crear el ambito.
+        //     pilaEstrucControl.push("for");
+        // :};
 
 for ::= forInt:init STEP INT_LITERAL TO expresion:expr DO bloque:blo {:
 
@@ -1000,10 +1061,10 @@ for ::= forInt:init STEP INT_LITERAL TO expresion:expr DO bloque:blo {:
         :}
 
     //   | FOR LET INT error ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba identificador despues de 'for'"); :}
-      | forInt error INT_LITERAL TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba 'step' despues del identificador"); :}
-      | forInt STEP error TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba numero entero despues de 'step'"); :}
-      | forInt STEP INT_LITERAL error expresion DO bloque  {: System.err.println(" -> Error: Se esperaba 'to' o 'downto' en bucle for"); :}
-      | forInt STEP INT_LITERAL TO expresion error bloque  {: System.err.println(" -> Error: Se esperaba 'do' antes del bloque"); :};
+      | forInt error INT_LITERAL TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba 'step' despues del identificador"); cerrarAmbito(); :}
+      | forInt STEP error TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba numero entero despues de 'step'"); cerrarAmbito(); :}
+      | forInt STEP INT_LITERAL error expresion DO bloque  {: System.err.println(" -> Error: Se esperaba 'to' o 'downto' en bucle for"); cerrarAmbito(); :}
+      | forInt STEP INT_LITERAL TO expresion error bloque  {: System.err.println(" -> Error: Se esperaba 'do' antes del bloque"); cerrarAmbito(); :};
 
 /* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
 var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
@@ -1317,8 +1378,8 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 RESULT = res;
                             }
                         :}
-                      | expresionAritmetica:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: expr arit" + "Tipo final:" + expr.getTipo() + "\n"); :}
-                      | PAREN_I expresion:expr PAREN_D {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: parentesis" + "Tipo final:" + expr.getTipo() + "\n"); :}; /* Con esta en teoria deberia de volver a arriba. */
+                      | expresionAritmetica:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: expr arit" + "Tipo final:" + expr.getTipo() + "\n"); :};
+                      //| PAREN_I expresion:expr PAREN_D {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: parentesis" + "Tipo final:" + expr.getTipo() + "\n"); :}; /* Con esta en teoria deberia de volver a arriba. */
 
 
 
@@ -1547,7 +1608,7 @@ expresionPotencia ::= expresionFactor:base POTENCIA expresionPotencia:exp {:
                     | expresionFactor:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> po expr fac\n"); :};
 
 
-expresionFactor ::= PAREN_I expresionAritmetica:expr PAREN_D {: RESULT = expr; System.out.println("\n Expresion en validacion -> paren expr \n"); :}
+expresionFactor ::= PAREN_I expresion:expr PAREN_D {: RESULT = expr; System.out.println("\n Expresion en validacion -> expresionFactor: paren expr \n"); :}
                   | expresionNumerica:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> fac exp num \n"); :}
                   | expresionAritmeticaUnaria:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> fac uni \n"); :}
                   | expresionAritmeticaUnariaNegativa:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> facuni nega \n"); :};
