@@ -824,7 +824,6 @@ estructruraControl ::= decide   {: pilaEstrucControl.pop(); :}
                      | loop     {: pilaEstrucControl.pop(); :}
                      | for      {: pilaEstrucControl.pop(); :};
 
-
 decideParteIzquierda ::= DECIDE:deci OF {: 
                             // esta parte deberia ser mas bien para cuando se cierre el ambito.
                             Token estructura = new Token("otro_decide_" + contador++, "estructura", "local", null, "decide", decileft, deciright);
@@ -835,7 +834,6 @@ decideParteIzquierda ::= DECIDE:deci OF {:
                             RESULT = estructura;
                         :};
 
-
 // Aqui hay que agregar algo para agregar a la pila de estructura de control.
 decide ::= decideParteIzquierda:deciP condiciones:condi END DECIDE:deci DELIMITADOR {: 
                 // Token estructura = new Token("otro_decide_" + contador++, "estructura", "local", null, "decide", decileft, deciright);
@@ -843,7 +841,7 @@ decide ::= decideParteIzquierda:deciP condiciones:condi END DECIDE:deci DELIMITA
                 for (CondicionBloque cb : condi) {
                    // podrías guardar la lista en el token decide
                    bloques.addCondiBloque(cb);
-               }
+                }
                 
                 deciP.setBloqueDecide(bloques); // Guardamos la estructura interna.
                 deciP.setAmbitoLocal(entornoActual); // Este de aqui basicamente no se ocupa, puesto que guardamos las estrcuturas de los bloques por aparte.
@@ -1270,6 +1268,11 @@ expresionAritmetica ::= expresionSuma:expr {: RESULT = expr; System.out.println(
 
 
 expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
+                    if (!tiposIgualesNumericos(izq, der)) {
+                        System.err.println("Error semantico: La suma requiere tipos numericos iguales (int o float) valor. Fila: " + izqleft + ", Columna: " + izqright);
+                        RESULT = new TipoExpresiones("error");
+                    } else {
+                        System.out.println("\n Expresion en validacion -> expr suma: suma\n");
                         if (izq == null || der == null) {
                             RESULT = new TipoExpresiones("error");
                         } else if ("error".equals(izq.getTipo()) || "error".equals(der.getTipo())) {
@@ -1292,40 +1295,50 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                             }
 
                             String t = TAC_Generator.newTemp();
+                            izq.append(der);
                             TAC_Generator.generarCuad ("+", a1, a2, t);
 
                             TipoExpresiones res = new TipoExpresiones (tipoResultado);
                             res.temp = t;
                             RESULT = res;
-
                         }
-                        // if (!tiposIgualesNumericos(izq, der)) {
-                        //     System.err.println("Error semantico: La suma requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
-                        //     RESULT = new TipoExpresiones("error");
-                        // } else {
-                        //     // Pruebas TAC:
-                        //     // Buscamos los valores de las expresiones para construir un codigo TAC
-                        //     String t = TAC_Generator.newTemp();
-                        //     izq.append (der);
-                        //     TAC_Generator.generarCuad ("+", izq.temp != null ? izq.temp : valorHoja(izq),
-                        //                               der.temp != null ? der.temp : valorHoja (der), t);
-                            
-                        //     TipoExpresiones res = new TipoExpresiones (izq.tipoDato);
-                        //     res.cuads = izq.cuads;
-                        //     res.temp = t;
-                        //     RESULT = res;
-                        //     // Linea original:
-                        //     // RESULT = new TipoExpresiones(izq.tipoDato);
-                        //     System.out.println("\n Expresion en validacion -> expr suma: suma\n");
-                        // }
+                    }
                 :}
                 | expresionSuma:izq MENOS expresionProducto:der {: 
                         if (!tiposIgualesNumericos(izq, der)) {
-                            System.err.println("Error semantico: La resta requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
+                            System.err.println("Error semantico: La resta requiere tipos numericos iguales (int o float) valor. Fila: " + izqleft + ", Columna: " + izqright);
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            RESULT = new TipoExpresiones(izq.tipoDato);
                             System.out.println("\n Expresion en validacion -> expr suma: resta\n");
+                            if (izq == null || der == null) {
+                                RESULT = new TipoExpresiones("error");
+                            } else if ("error".equals(izq.getTipo()) || "error".equals(der.getTipo())) {
+                                RESULT = new TipoExpresiones("error");
+                            } else {
+                                String tipoResultado = "int";
+                                if ("float".equals(izq.getTipo()) || "float".equals(der.getTipo())) {
+                                    tipoResultado = "float";
+                                }
+
+                                String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                                String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+
+                                if (a1 == null){
+                                    a1 = "null";
+                                }
+
+                                if (a2 == null){
+                                    a2 = "null";
+                                }
+
+                                String t = TAC_Generator.newTemp();
+                                izq.append(der);
+                                TAC_Generator.generarCuad ("-", a1, a2, t);
+
+                                TipoExpresiones res = new TipoExpresiones (tipoResultado);
+                                res.temp = t;
+                                RESULT = res;
+                            }
                         }
                     :}
                 | expresionProducto:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr suma: expr prod \n"); :}
@@ -1333,49 +1346,57 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                 | expresionSuma MENOS error {: System.err.println("Error: Expresion no valida despues de '-'"); RESULT = new TipoExpresiones("error"); :};
 
 expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der {:
-                    if (izq == null || der == null) {
-                        RESULT = new TipoExpresiones ("error");
-                    } else if ("error".equals(izq.getTipo()) || "error".equals(der.getTipo())) {
+                    if (!tiposIgualesNumericos(izq, der)) {
+                        System.err.println("Error semantico: La multiplicacion requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        String tipoResultado = "int";
-                        if ("float".equals(izq.getTipo()) || "float".equals(der.getTipo())) {
-                            tipoResultado = "float";
+                        if (izq == null || der == null) {
+                            RESULT = new TipoExpresiones ("error");
+                        } else if ("error".equals(izq.getTipo()) || "error".equals(der.getTipo())) {
+                            RESULT = new TipoExpresiones("error");
+                        } else {
+                            String tipoResultado = "int";
+                            if ("float".equals(izq.getTipo()) || "float".equals(der.getTipo())) {
+                                tipoResultado = "float";
+                            }
+
+                            String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                            String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+
+                            if (a1 == null){
+                                a1 = "null";
+                            }
+
+                            if (a2 == null){
+                                a2 = "null";
+                            }
+
+                            String t = TAC_Generator.newTemp();
+                            TAC_Generator.generarCuad ("*", a1, a2, t);
+
+                            TipoExpresiones res = new TipoExpresiones (tipoResultado);
+                            res.temp = t;
+                            RESULT = res;
                         }
-
-                        String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
-                        String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
-
-                        if (a1 == null){
-                            a1 = "null";
-                        }
-
-                        if (a2 == null){
-                            a2 = "null";
-                        }
-
-                        String t = TAC_Generator.newTemp();
-                        TAC_Generator.generarCuad ("*", a1, a2, t);
-
-                        TipoExpresiones res = new TipoExpresiones (tipoResultado);
-                        res.temp = t;
-                        RESULT = res;
                     }
-                    // if (!tiposIgualesNumericos(izq, der)) {
-                    //     System.err.println("Error semantico: La multiplicacion requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
-                    //     RESULT = new TipoExpresiones("error");
-                    // } else {
-                    //     RESULT = new TipoExpresiones(izq.tipoDato);
-                    //     System.out.println("\n Expresion en validacion -> expr prod multi \n");
-                    // }
                     :}
                     | expresionProducto:izq DIVISION expresionPotencia:der {: 
                         if (!tiposIgualesNumericos(izq, der)) {
                             System.err.println("Error semantico: La division requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            RESULT = new TipoExpresiones("float"); // Este hay que revisarlo ya que si hay casos donde da int
-                            System.out.println("\n Expresion en validacion -> expr prod div normal \n");
+                            System.out.println("\n Expresion en validacion -> expr prod div entera \n");
+                            String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                            String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+                            if (a1 == null) a1 = "null";
+                            if (a2 == null) a2 = "null";
+                            String t = TAC_Generator.newTemp();
+                            izq.append(der);
+                            TAC_Generator.generarCuad("/", a1, a2, t);
+                            TipoExpresiones res = new TipoExpresiones("float");
+                            res.cuads = izq.cuads;
+                            res.temp = t;
+                            RESULT = res;
                         }
                     :}
                     | expresionProducto:izq DIVISION_ENTERA expresionPotencia:der {: 
@@ -1383,18 +1404,37 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             System.err.println("Error semantico: La division entera solo se permite entre enteros. Fila: " + izqleft + ", Columna: " + izqright);
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            RESULT = new TipoExpresiones("int");
                             System.out.println("\n Expresion en validacion -> expr prod div entera \n");
+                            String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                            String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+                            if (a1 == null) a1 = "null";
+                            if (a2 == null) a2 = "null";
+                            String t = TAC_Generator.newTemp();
+                            izq.append(der);
+                            TAC_Generator.generarCuad("//", a1, a2, t);
+                            TipoExpresiones res = new TipoExpresiones("int");
+                            res.cuads = izq.cuads;
+                            res.temp = t;
+                            RESULT = res;
                         }
                     :}
                     | expresionProducto:izq MODULO expresionPotencia:der {: 
                         if (!"int".equals(izq.tipoDato) || !"int".equals(der.tipoDato)) {
                             System.err.println("Error semantico: El modulo solo se permite entre enteros. Fila: " + izqleft + ", Columna: " + izqright);
-
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            RESULT = new TipoExpresiones("int");
                             System.out.println("\n Expresion en validacion -> expr prod modulo \n");
+                            String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                            String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+                            if (a1 == null) a1 = "null";
+                            if (a2 == null) a2 = "null";
+                            String t = TAC_Generator.newTemp();
+                            izq.append(der);
+                            TAC_Generator.generarCuad("%", a1, a2, t);
+                            TipoExpresiones res = new TipoExpresiones("int");
+                            res.cuads = izq.cuads;
+                            res.temp = t;
+                            RESULT = res;
                         }
                     :}
                     | expresionPotencia:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr prod exp poten\n"); :};
@@ -1402,14 +1442,23 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
 
 // Para este hay que validar si el exponente y la base son enteros y solo enteros.
 expresionPotencia ::= expresionFactor:base POTENCIA expresionPotencia:exp {: 
-                        if (!validarTipoEsperado("int|float", base) || !validarTipoEsperado("int", exp)) {
-                            System.err.println("Error semantico: Las potentencia debe de ser base int o float y el exponente debe ser int. Tipos definidos: Base -> '" + base.tipoDato + "' y Exponente -> '" + exp.tipoDato + "'." + "Linea: " + baseleft + ", Columna: " + baseright);
-                            RESULT = new TipoExpresiones("error");
-                        } else {
-                            String tipoFinal = (base.tipoDato.equals("float")) ? "float" : "int";
-                            RESULT = new TipoExpresiones(tipoFinal);
-                            System.out.println("\n Expresion en validacion -> po ba po exp\n");
-                        }
+                    if (base == null || exp == null || "error".equals(base.getTipo()) || "error".equals(exp.getTipo())) {
+                        RESULT = new TipoExpresiones("error");
+                    } else {
+                        System.out.println("\n Expresion en validacion -> expr prod potencia \n");
+                        String a1 = base.temp != null ? base.temp : (base.valorI != null ? base.valorI.toString() : (base.valorF != null ? base.valorF.toString() : base.valorS));
+                        String a2 = exp.temp != null ? exp.temp : (exp.valorI != null ? exp.valorI.toString() : (exp.valorF != null ? exp.valorF.toString() : exp.valorS));
+                        if (a1 == null) a1 = "null";
+                        if (a2 == null) a2 = "null";
+                        String t = TAC_Generator.newTemp();
+                        base.append(exp);
+                        TAC_Generator.generarCuad("^", a1, a2, t);
+                        String tipoFinal = ("float".equals(base.tipoDato) || "float".equals(exp.tipoDato)) ? "float" : "int";
+                        TipoExpresiones res = new TipoExpresiones(tipoFinal);
+                        res.cuads = base.cuads;
+                        res.temp = t;
+                        RESULT = res;
+                    }
                     :}
                     | expresionFactor:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> po expr fac\n"); :};
 
@@ -1489,9 +1538,12 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                     System.err.println("Error semantico: El operador '++' no es valido para tipo '" + tipo.tipoDato + "'." + "Linea: " + idleft + ", Columna: " + idright);
                                     RESULT = new TipoExpresiones("error");
                                 } else {
-                                            System.out.println("\n Expresion en validacion -> Unaria incremento.\n");
-
-                                    RESULT = tipo;
+                                    System.out.println("\n Expresion en validacion -> Unaria incremento.\n");
+                                    String a1 = id;
+                                    String t = TAC_Generator.newTemp();
+                                    TAC_Generator.generarCuadUnario ("++", a1, t);
+                                    TipoExpresiones res = new TipoExpresiones (tipo.tipoDato);
+                                    RESULT = res;
                                 }
                             :}
                             | IDENTIFICADOR:id DECREMENTO {:
