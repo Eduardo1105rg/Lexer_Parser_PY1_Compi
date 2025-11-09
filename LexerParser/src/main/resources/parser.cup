@@ -216,7 +216,16 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
     // Esto es para validar el tipo de datos esperado en las expresiones.
     public boolean validarTipoEsperado(String esperado, TipoExpresiones tipoReal) {
         if (tipoReal == null || "error".equals(tipoReal.tipoDato)) return false;
-        return esperado.equals(tipoReal.tipoDato);
+        // return esperado.equals(tipoReal.tipoDato);
+
+        // Con esta parte de aqui ya acepta esto "int|float", para que valide los dos a la vez.
+        String[] tipos = esperado.split("\\|");
+        for (String t : tipos) {
+            if (t.equals(tipoReal.tipoDato)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Funcion para validar si el tipo de dos argumentos de una expresionn son de tipo iguales y que solo sean numericos, esto podria separarse para dar mensajes mas explicitos.
@@ -252,12 +261,20 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
 
 /* Parsers */
 parser code {:
-    Ambitos entornoActual = null;
+    Ambitos entornoActual = null; // Para el entorno que seria basicamente lo que son cada uno de los ambitos de cada una de las partes del codigo leido.
+
+    private int countErroresSemanticos = 0; // Para ir contando la cantidad de errores semanticos.
 
     private int errorContador = 0;
 
     public int getErrorContador() {
         return errorContador;
+    }
+
+    // Funcion para obtener todos los errores semanticos que se hayan encontrado.
+
+    public int getCountErroresSemanticos () {
+        return countErroresSemanticos;
     }
 
     public void syntax_error(Symbol cur_token) {
@@ -300,9 +317,10 @@ parser code {:
     public void mostrarTS() {
         entornoActual.mostrarTodosLosAmbitos(entornoActual);
     }
-    // public void mostrarTablaSimbolos() {
-    //     mostrarTodosLosAmbitos();
-    // }
+
+    public void aumentarCountErroresSemanticos () {
+        countErroresSemanticos++;
+    }
 
 
 
@@ -511,22 +529,25 @@ start with programa;
 programa ::= varGlobal programa
            | funciones principal {: 
                 if (buscarFuncion("principal") == null) {
-                    System.err.println("Error semantico: no se ha definido la funcion principal.");
+                    System.err.println(" -> Error semantico: no se ha definido la funcion principal.");
+                    aumentarCountErroresSemanticos();
                 }
                 // mostrarTS();
             :} 
            | principal {: 
                 if (buscarFuncion("principal") == null) {
-                    System.err.println("Error semantico: no se ha definido la funcion principal.");
+                    System.err.println(" -> Error semantico: no se ha definido la funcion principal.");
+                    aumentarCountErroresSemanticos();
                 }
                 // mostrarTS();
-            :}
-           | error programa {: System.err.println("Error: Declaracion global o funcion no valida"); :};
+            :};
+        //    | error programa {: System.err.println(" -> Error: Declaracion global o funcion no valida"); :};
 
 principalParteIzquierda ::= VOID PRINCIPAL:pri PAREN_I PAREN_D {: 
                             Token principal = new Token("principal", "void", "global", null, "funcion", prileft, priright);
                             if (!insertarNuevoToken(principal)) {
-                                System.err.println("Error semantico: funcion 'principal' ya declarada.");
+                                System.err.println(" -> Error semantico: funcion 'principal' ya declarada.");
+                                aumentarCountErroresSemanticos();
                             }
 
 
@@ -569,7 +590,8 @@ listaFunciones ::= funcion
 funcionParteIzquierda ::= tipoDatoFuncion:tipo IDENTIFICADOR:ID PAREN_I  {: 
                         Token funcion = new Token(ID, tipo, "global", null, "funcion", IDleft, IDright);
                         if (!insertarNuevoToken(funcion)) {
-                            System.err.println("Error semantico: funcion '" + ID + "' ya declarada.");
+                            System.err.println(" -> Error semantico: funcion '" + ID + "' ya declarada.");
+                            aumentarCountErroresSemanticos();
                         }
 
                         System.out.println("\n >> Reconociendo una funcion 1. \n");
@@ -584,20 +606,21 @@ funcionParteIzquierda ::= tipoDatoFuncion:tipo IDENTIFICADOR:ID PAREN_I  {:
 funcion ::= funcionParteIzquierda params PAREN_D bloque:blo {: 
             insertarNuevoToken(blo);
             cerrarAmbito(); // Cerramos el ambito local de una funcion.
-            System.out.println("\n >> Cerando el reconociendo una funcion 1. \n");
+            System.out.println("\n >> Creando el reconociendo una funcion 1. \n");
         :}
         | funcionParteIzquierda PAREN_D bloque:blo {: 
             insertarNuevoToken(blo);
-
             cerrarAmbito(); 
-            System.out.println("\n >> Cerando el reconociendo una funcion 1. \n");
-        :}; // Fin de produccion.
+            System.out.println("\n >> Creando el reconociendo una funcion 1. \n");
+        :}
+        | funcionParteIzquierda params PAREN_D bloque:blo error {: System.err.println(" -> Error sintectico, se encontro un elemento inesperado despues del la funcion."); insertarNuevoToken(blo); cerrarAmbito(); :}
+        | funcionParteIzquierda PAREN_D bloque:blo error {: System.err.println(" -> Error sintectico, se encontro un elemento inesperado despues del la funcion."); insertarNuevoToken(blo); cerrarAmbito(); :}; // Fin de produccion.
 
 
 // >>>>>>>>>>Parte de los parametros de una funcion
 params ::= param
          | params COMA param
-         | error COMA param{: System.err.println("Error: No puede haber una (,) sola al inicio de los parametros."); :};
+         | error COMA param{: System.err.println(" -> Error: No puede haber una (,) sola al inicio de los parametros."); :};
 
 // Definirle el valos de formas mas explicita para que puedan ser leidos.
 tipoDatoParametro ::= INT {: RESULT = "int"; :}
@@ -610,16 +633,18 @@ tipoDatoParametro ::= INT {: RESULT = "int"; :}
 param ::= tipoDatoParametro:tipo IDENTIFICADOR:ID {: 
           Token parametro = new Token(ID, tipo, "parametro", null, "parametro", IDleft, IDright);
           if (!insertarNuevoToken(parametro)) {
-              System.err.println("Error semantico: parametro '" + ID + "' ya declarado.");
+              System.err.println(" -> Error semantico: parametro '" + ID + "' ya declarado.");
+              aumentarCountErroresSemanticos();
           }
         :}
       | tipoLista:tipo IDENTIFICADOR:ID {: //Despues se tiene que hacer algo para trabajar con lo del tamaño.
           Token parametro = new Token(ID, tipo.tipoBase, "parametro", null, "parametro", IDleft, IDright);
           if (!insertarNuevoToken(parametro)) {
-              System.err.println("Error semantico: parametro '" + ID + "' ya declarado.");
+              System.err.println(" -> Error semantico: parametro '" + ID + "' ya declarado.");
+              aumentarCountErroresSemanticos();
           }
         :}
-      | error IDENTIFICADOR {: System.err.println("Error: Para los parametros de una funcion se debe de indicar su tipo de dato."); :};
+      | error IDENTIFICADOR {: System.err.println(" -> Error: Para los parametros de una funcion se debe de indicar su tipo de dato."); :};
 
 
 // -------------------------- Seccion del bloque primario de lo que son las funciones.
@@ -661,7 +686,7 @@ bloque ::= bloqueInicio sentencias LLAVE_D:ld {:
                 Ambitos ambitoBloque = entornoActual;
                 cerrarAmbito();
                 
-                System.err.println("Error: Los bloques deben de tener una llave de apertura (¿)."); 
+                System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿)."); 
                 RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
                 RESULT.setAmbitoLocal(entornoActual);
             :}
@@ -669,7 +694,7 @@ bloque ::= bloqueInicio sentencias LLAVE_D:ld {:
                 Ambitos ambitoBloque = entornoActual;
                 cerrarAmbito();
 
-                System.err.println("Error: Los bloques deben de tener una llave de apertura (¿). "); 
+                System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿). "); 
                 RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
                 RESULT.setAmbitoLocal(ambitoBloque);
             :}
@@ -677,7 +702,7 @@ bloque ::= bloqueInicio sentencias LLAVE_D:ld {:
                 Ambitos ambitoBloque = entornoActual;
                 cerrarAmbito();
 
-                System.err.println("Error: Los bloques deben de tener una llave de cierre (?). "); 
+                System.err.println(" -> Error: Los bloques deben de tener una llave de cierre (?). "); 
                 RESULT = new Token("bloqueError", null, "local", null, "bloqueError", lileft, liright);
                 RESULT.setAmbitoLocal(ambitoBloque);
             :};
@@ -686,19 +711,6 @@ bloque ::= bloqueInicio sentencias LLAVE_D:ld {:
 sentencias ::= /* vacío */
              | sentencias sentencia ;
 
-// sentencia ::= var
-//             | varAsignacion  
-//             | varCyAsignacion
-//             | lista
-//             | estructruraControl
-//             | funcionLlamada DELIMITADOR
-//             | return
-//             | break
-//             | input DELIMITADOR
-//             | output DELIMITADOR
-//             // | output_inline DELIMITADOR
-//             | modificarElementoLista
-//             | expresionAritmeticaUnaria DELIMITADOR;
 
 
 sentencia ::= var
@@ -724,8 +736,9 @@ seExprAritUni ::= expresionAritmeticaUnaria DELIMITADOR;
 funcionLlamadaInicio ::= IDENTIFICADOR:ID PAREN_I {: 
                       Token funcion = buscarFuncion(ID);
                       if (funcion == null) {
-                          System.err.println("Error semantico: funcion '" + ID + "' no declarada.");
+                          System.err.println(" -> Error semantico: funcion '" + ID + "' no declarada.");
                           funcionActual = null;
+                          aumentarCountErroresSemanticos();
                       } else {
                           System.out.println("Llamada a funcion '" + ID + "' valida.");
                           funcionActual = funcion;
@@ -736,19 +749,19 @@ funcionLlamadaInicio ::= IDENTIFICADOR:ID PAREN_I {:
 funcionLlamada ::= funcionLlamadaInicio argumentos:args PAREN_D {: 
 
                       if (funcionActual == null) {
-                          System.err.println("Error: No se puede validardar los argumentos de la funcion, debido a que la funcion  buscada no esta declarada.");
-                          
+                          System.err.println(" -> Error semantico: No se puede validardar los argumentos de la funcion, debido a que la funcion  buscada no esta declarada." + "Fila: " + argsleft + ", Columna: " + argsright);
+                          aumentarCountErroresSemanticos();
                       } else {
 
                         List<String> argumentos = (List<String>) ((Symbol)args).value;
                         List<String> parametrosEsperados = obtenerTiposParametros(funcionActual);
 
                         if (argumentos.size() != parametrosEsperados.size()) {
-                            System.err.println("Error semantico: funcion '" + funcionActual.getNombre() + "' esperaba " + parametrosEsperados.size() + " argumentos, pero recibio " + argumentos.size());
+                            System.err.println(" -> Error semantico: funcion '" + funcionActual.getNombre() + "' esperaba " + parametrosEsperados.size() + " argumentos, pero recibio " + argumentos.size() + "Fila: " + argsleft + ", Columna: " + argsright);
                         } else {
                             for (int i = 0; i < argumentos.size(); i++) {
                                 if (!argumentos.get(i).equals(parametrosEsperados.get(i))) {
-                                    System.err.println("Error semantico: argumento " + (i+1) + " de funcion '" + funcionActual.getNombre() + "' esperaba tipo '" + parametrosEsperados.get(i) + "', pero recibio '" + argumentos.get(i) + "'");
+                                    System.err.println(" -> Error semantico: argumento " + (i+1) + " de funcion '" + funcionActual.getNombre() + "' esperaba tipo '" + parametrosEsperados.get(i) + "', pero recibio '" + argumentos.get(i) + "'" + "Fila: " + argsleft + ", Columna: " + argsright);
                                 }
                             }
                         }
@@ -767,13 +780,14 @@ argumentos ::= expresion:expr {:
                   ((List<String>) ((Symbol)prev).value).add(expr.getTipo()); //((Symbol)expr).value.toString()
                   RESULT = new Symbol(sym.ARGUMENTOS, ((Symbol)prev).value);
               :}
-             | error COMA expresion  {: System.err.println("Error: Argumento no valido antes de ','"); :}
-             | argumentos COMA error {: System.err.println("Error: Se esperaba expresion despues de ','"); :}
-             | argumentos error expresion {: System.err.println("Error: Se esperaba ',' entre argumentos"); :};
+             | error COMA expresion  {: System.err.println(" -> Error: Argumento no valido antes de ','"); :}
+             | argumentos COMA error {: System.err.println(" -> Error: Se esperaba expresion despues de ','"); :}
+             | argumentos error expresion {: System.err.println(" -> Error: Se esperaba ',' entre argumentos"); :};
              
-return ::= RETURN DELIMITADOR {: 
+return ::= RETURN:ret DELIMITADOR {: 
             if (!"void".equals(funcionEnAnalisis.getTipo())) {
-                System.err.println("Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar un valor de tipo '" + funcionEnAnalisis.getTipo() + "'.");
+                System.err.println(" -> Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar un valor de tipo '" + funcionEnAnalisis.getTipo() + "'." + "Fila: " + retleft + ", Columna: " + retright);
+                aumentarCountErroresSemanticos();
             }
         :}
          | RETURN expresion:expr DELIMITADOR {: 
@@ -781,30 +795,34 @@ return ::= RETURN DELIMITADOR {:
                 String tipoFuncion = funcionEnAnalisis.getTipo();
 
                 if ("void".equals(tipoFuncion)) {
-                    System.err.println("Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' no debe retornar ningun valor.");
+                    System.err.println(" -> Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' no debe retornar ningun valor." + "Fila: " + exprleft + ", Columna: " + exprright);
+                    aumentarCountErroresSemanticos();
                 } else if (!tipoExpr.equals(tipoFuncion)) {
-                    System.err.println("Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar tipo '" + tipoFuncion + "', pero se retorno tipo '" + tipoExpr + "'.");
-                }
+                    System.err.println(" -> Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar tipo '" + tipoFuncion + "', pero se retorno tipo '" + tipoExpr + "'." + "Fila: " + exprleft + ", Columna: " + exprright);
+                    aumentarCountErroresSemanticos();
+                }   
             :}
-         | RETURN expresion error {: System.err.println("Error: Se esperaba un delimitador '$'"); :}
-         | RETURN error {: System.err.println("Error: Se esperaba un delimitador '$'"); :};
+         | RETURN expresion error {: System.err.println(" -> Error: Se esperaba un delimitador '$'"); :}
+         | RETURN error {: System.err.println(" -> Error: Se esperaba un delimitador '$'"); :};
 
-break ::= BREAK DELIMITADOR {: 
+break ::= BREAK:bre DELIMITADOR {: 
             if (pilaEstrucControl.isEmpty()) {
-                System.err.println("Error semantico: 'break' fuera de una estructura de control.");
+                System.err.println(" -> Error semantico: 'break' fuera de una estructura de control." + "Fila: " + breleft + ", Columna: " + breright);
+                aumentarCountErroresSemanticos();
             }
         :};
 
 /*FIX: Se debe hacer algo para que cuando el cup lea un IDENTIFICADOR -> PAREN_I detecte que es input, no una llamada a función*/
 input ::= INPUT PAREN_I tipoDatoInput:tipo PAREN_D {:
                 if (!"int".equals(tipo) && !"float".equals(tipo)) {
-                    System.err.println("Error semantico: tipo '" + tipo + "' no valido para input. Solo se permite int o float. Fila: " + tipoleft + ", Columna: " + tiporight);
+                    System.err.println(" -> Error semantico: tipo '" + tipo + "' no valido para input. Solo se permite int o float. Fila: " + tipoleft + ", Columna: " + tiporight);
                     RESULT = "error";
+                    aumentarCountErroresSemanticos();
                 } else {
                     RESULT = tipo; // Devolvemos el tipo esperado.
                 }
             :}
-        | INPUT PAREN_I error PAREN_D {: System.err.println("Error: Tipo de dato no valido para input, debe ser int o float."); :};
+        | INPUT PAREN_I error PAREN_D {: System.err.println(" -> Error: Tipo de dato no valido para input, debe ser int o float."); :};
 
 tipoDatoInput ::= INT {: RESULT = "int"; :}
                 | FLOAT {: RESULT = "float"; :};
@@ -812,10 +830,10 @@ tipoDatoInput ::= INT {: RESULT = "int"; :}
 // Ouput para imprimir los datos.
 output ::= output_inline {: RESULT = "output"; :}
          | output CONCATENACION_OUTPUT output_inline         
-         | output error output_inline {: System.err.println("Error: Se debe de definir el caracter de concatenacion (<<) para los outpout "); :};
+         | output error output_inline {: System.err.println(" -> Error: Se debe de definir el caracter de concatenacion (<<) para los outpout "); :};
 
 output_inline ::= OUTPUT PAREN_I expresion PAREN_D
-| error PAREN_I expresion PAREN_D {: System.err.println("Error: Se debe de definir la palabra de (input) para indicar una salida en consola."); :};
+| error PAREN_I expresion PAREN_D {: System.err.println(" -> Error: Se debe de definir la palabra de (input) para indicar una salida en consola."); :};
 
 
 
@@ -863,10 +881,10 @@ decide ::= decideParteIzquierda:deciP condiciones:condi END DECIDE:deci DELIMITA
 
             :} // Posiblemente requiramos crear una ambito especifico para el else.
          
-         | decideParteIzquierda error condiciones END DECIDE DELIMITADOR {: System.err.println("Error: Se esperaba 'of' despues de 'decide'"); :}
-         | decideParteIzquierda error END DECIDE DELIMITADOR {: System.err.println("Error: Condiciones no validas en estructura decide"); :}
-         | decideParteIzquierda condiciones error DECIDE DELIMITADOR  {: System.err.println("Error: Se esperaba 'end' antes de 'decide'"); :}
-         | decideParteIzquierda condiciones END error DELIMITADOR {: System.err.println("Error: Se esperaba 'decide' despues de 'end'"); :};
+         | decideParteIzquierda error condiciones END DECIDE DELIMITADOR {: System.err.println(" -> Error: Se esperaba 'of' despues de 'decide'"); :}
+         | decideParteIzquierda error END DECIDE DELIMITADOR {: System.err.println(" -> Error: Condiciones no validas en estructura decide"); :}
+         | decideParteIzquierda condiciones error DECIDE DELIMITADOR  {: System.err.println(" -> Error: Se esperaba 'end' antes de 'decide'"); :}
+         | decideParteIzquierda condiciones END error DELIMITADOR {: System.err.println(" -> Error: Se esperaba 'decide' despues de 'end'"); :};
 
 // Esta es la que se usa para DECIDE OF
 condiciones ::= condicion:cond FLECHA bloque:blo {: 
@@ -883,15 +901,16 @@ condiciones ::= condicion:cond FLECHA bloque:blo {:
 condicion ::= PAREN_I expresion:expr PAREN_D {: // Esto probablemente tenga una forma diferente despues, la parte de expr va a ser diferente y se tendra que cambiar esta validacion.
                     String tipo = expr.getTipo();
                     if (!"boolean".equals(tipo)) {
-                        System.err.println("Error semantico: la condicion en 'decide' debe ser de tipo boolean, pero se recibio '" + tipo + "'");
+                        System.err.println(" -> Error semantico: la condicion en 'decide' debe ser de tipo boolean, pero se recibio '" + tipo + "'" + "Fila: " + exprleft + ", Columna: " + exprright);
                         RESULT = new TipoExpresiones("error");
+                        aumentarCountErroresSemanticos();
                     } else {
                         RESULT = new TipoExpresiones(tipo);
                     }
                 :}
-            | error expresion PAREN_D {: System.err.println("Error: Se esperaba parentesis de apertura 'є' en condicion"); RESULT = new TipoExpresiones("error"); :}
-            | PAREN_I expresion error {: System.err.println("Error: Se esperaba parentesis de cierre 'э' en condicion"); RESULT = new TipoExpresiones("error"); :}
-            | PAREN_I error PAREN_D {: System.err.println("Error: Expresion no valida en condicion"); RESULT = new TipoExpresiones("error"); :};
+            | error expresion PAREN_D {: System.err.println(" -> Error: Se esperaba parentesis de apertura 'є' en condicion"); RESULT = new TipoExpresiones("error"); :}
+            | PAREN_I expresion error {: System.err.println(" -> Error: Se esperaba parentesis de cierre 'э' en condicion"); RESULT = new TipoExpresiones("error"); :}
+            | PAREN_I error PAREN_D {: System.err.println(" -> Error: Expresion no valida en condicion"); RESULT = new TipoExpresiones("error"); :};
 
 
 loopInicio ::= LOOP {: 
@@ -924,7 +943,8 @@ forInt ::= FOR LET INT:tipo IDENTIFICADOR:id ASIGNACION expresionAritmetica:expr
                 pilaEstrucControl.push("for"); // Registrar el la pila que hay una nueva estructura.
 
                 if (entornoActual.buscar(id) != null) {
-                    System.err.println("Error semantico: la variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                    System.err.println(" -> Error semantico: la variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                    aumentarCountErroresSemanticos();
                 } else { 
                     Token varFor = new Token (id, tipo, "local", null, "variable", idleft, idright );
                     insertarNuevoToken(varFor);
@@ -932,7 +952,8 @@ forInt ::= FOR LET INT:tipo IDENTIFICADOR:id ASIGNACION expresionAritmetica:expr
 
 
                 if (!"int".equals(expr.tipoDato)) {
-                    System.err.println("Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
+                    System.err.println(" -> Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
+                    aumentarCountErroresSemanticos();
                 }
 
 
@@ -946,7 +967,8 @@ forInt ::= FOR LET INT:tipo IDENTIFICADOR:id ASIGNACION expresionAritmetica:expr
 for ::= forInt:init STEP INT_LITERAL TO expresion:expr DO bloque:blo {:
 
             if (!"int".equals(expr.tipoDato)) {
-                System.err.println("Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
+                System.err.println(" -> Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
+                aumentarCountErroresSemanticos();
             }
 
 
@@ -963,7 +985,8 @@ for ::= forInt:init STEP INT_LITERAL TO expresion:expr DO bloque:blo {:
         :}
       | forInt:init STEP INT_LITERAL DOWNTO expresion:expr DO bloque:blo {:
             if (!"int".equals(expr.tipoDato)) {
-                System.err.println("Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
+                System.err.println(" -> Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
+                aumentarCountErroresSemanticos();
             }
             // Crear el token del for y registrarlo en el entorno.
             Token estructura = new Token("otro_for_" + contadorFor++, "estructura", "local", null, "for", initleft, initright);
@@ -976,30 +999,35 @@ for ::= forInt:init STEP INT_LITERAL TO expresion:expr DO bloque:blo {:
             insertarNuevoToken(estructura);
         :}
 
-    //   | FOR LET INT error ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion DO bloque  {: System.err.println("Error: Se esperaba identificador despues de 'for'"); :}
-      | forInt error INT_LITERAL TO expresion DO bloque  {: System.err.println("Error: Se esperaba 'step' despues del identificador"); :}
-      | forInt STEP error TO expresion DO bloque  {: System.err.println("Error: Se esperaba numero entero despues de 'step'"); :}
-      | forInt STEP INT_LITERAL error expresion DO bloque  {: System.err.println("Error: Se esperaba 'to' o 'downto' en bucle for"); :}
-      | forInt STEP INT_LITERAL TO expresion error bloque  {: System.err.println("Error: Se esperaba 'do' antes del bloque"); :};
+    //   | FOR LET INT error ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba identificador despues de 'for'"); :}
+      | forInt error INT_LITERAL TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba 'step' despues del identificador"); :}
+      | forInt STEP error TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba numero entero despues de 'step'"); :}
+      | forInt STEP INT_LITERAL error expresion DO bloque  {: System.err.println(" -> Error: Se esperaba 'to' o 'downto' en bucle for"); :}
+      | forInt STEP INT_LITERAL TO expresion error bloque  {: System.err.println(" -> Error: Se esperaba 'do' antes del bloque"); :};
 
 /* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
 var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
             if (entornoActual.buscar(id) != null) {
-                System.err.println("Error semantico: la variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                System.err.println(" -> Error semantico: la variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                aumentarCountErroresSemanticos();
             } else {
                 // nombre, tipo, ambito, valor, categoria, linea, columna
                 Token tokenVar = new Token(id, tipo, "local", null, "variable", idleft, idright);
                 insertarNuevoToken(tokenVar);
                 System.out.println("\n >> Definicion var registrada. var \n");
             }
-        :}; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
+        :}
+        | LET tipoDatoVariable:tipo error DELIMITADOR {: System.err.println(" -> Error sintactico: Se debe de colocar un identificador al definir una variable." + "Fila: " + tipoleft + ", Columna: " + tiporight); :};
+        //| LET error IDENTIFICADOR:di DELIMITADOR {: System.err.println(" -> Error sintactico: Se debe de definir el tipo de dato al crear una variable." + "Fila: " + idleft + ", Columna: " + idright)); :}; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
 
 varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
                     Token token = entornoActual.buscar(id);
                     if (token == null) {
-                        System.err.println("Error semantico: la variable '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+                        System.err.println(" -> Error semantico: La variable '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+                        aumentarCountErroresSemanticos();
                     } else if (!token.getTipo().equals(exp.tipoDato)) {
-                        System.err.println("Error semantico: Tipo incompatible en asignacion. Se esperaba '" + token.getTipo() + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                        System.err.println(" -> Error semantico: Tipo incompatible en asignacion. Se esperaba '" + token.getTipo() + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                        aumentarCountErroresSemanticos();
                     } else {
                         // Generamos TAC: Si la expresión producjo temporales usamos el ultimo temp, si es hoja usamos el valor directo.
                         String fuente = (exp.temp != null) ? exp.temp : null;
@@ -1032,10 +1060,12 @@ varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {:
                  
 varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
                         if (entornoActual.buscar(id) != null) {
-                            System.err.println("Error semantico: la variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                            System.err.println(" -> Error semantico: La variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                            aumentarCountErroresSemanticos();
 
                         } else if (!tipo.equals(exp.tipoDato)) {
-                            System.err.println("Error semantico: el tipo de la variable '" + id + "' no es compatible con el tipo de la expresion. Se esperaba '" + tipo + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                            System.err.println(" -> Error semantico: El tipo de la variable '" + id + "' no es compatible con el tipo de la expresion. Se esperaba '" + tipo + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                            aumentarCountErroresSemanticos();
                         } else {
                             // nombre, tipo, ambito, valor, categoria, linea, columna
                             Token tokenLocal = new Token(id, tipo, "local", null, "variable", idleft, idright); //<- Se tiene que cambiar esto para para guardar el valor, pero se tiene que modificar desde expresion.
@@ -1070,35 +1100,10 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
 
 /* FIX: ERROR en global para que detecte 'global tipo identificador...' */
 /* FIXED: Se agrega produ de error en falta de global */
-// varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
-//                     if (entornoActual.buscar(id) != null) {
-//                         System.err.println("Error semantico: La variable global '" + id + "' ya fue declarada."  + "Fila: " + idleft + ", Columna: " + idright);
-//                     } else {
-//                         //String nombre, String tipo, String ambito, Object valor, String categoria, int linea, int columna
-//                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
-//                         insertarNuevoToken(tokenGlobal);
-//                         System.out.println("\n >> Var globar registrada. \n");
-//                     }
-//                 :}
-//             | GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
-//                     if (entornoActual.buscar(id) != null) {
-//                         System.err.println("-> Error semantico: la variable global '" + id + "' ya fue declarada." + "Fila: " + idleft + ", Columna: " + idright);
-
-//                     } else if (!tipo.equals(exp.tipoDato)) {
-//                         System.err.println("-> Error semantico: El tipo de la variable global no es compatible con el tipo de la expresion que se le asigna. Se esperaba '" + tipo + "', pero se recibió '" + exp.tipoDato + "'." + "Fila: " + idleft + ", Columna: " + idright);
-                    
-//                     } else {
-//                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
-//                         insertarNuevoToken(tokenGlobal);
-//                         System.out.println("\n >> Var globar registrada. \n");
-
-//                     }
-//                 :}
-//             | error tipoDatoVariable IDENTIFICADOR DELIMITADOR {: System.err.println("Error: Se esperaba la palabra 'global' al inicio de la declaracion"); :};
-
 varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
                     if (entornoActual.buscar(id) != null) {
                         System.err.println("-> Error semantico: La variable global '" + id + "' ya fue declarada."  + "Fila: " + idleft + ", Columna: " + idright);
+                        aumentarCountErroresSemanticos();
                     } else {
                         //String nombre, String tipo, String ambito, Object valor, String categoria, int linea, int columna
                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
@@ -1110,20 +1115,23 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
             | GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
                     if (entornoActual.buscar(id) != null) {
                         System.err.println("-> Error semantico: la variable global '" + id + "' ya fue declarada." + "Fila: " + idleft + ", Columna: " + idright);
+                        aumentarCountErroresSemanticos();
 
                     } else if (!tipo.equals(exp.tipoDato)) {
                         System.err.println("-> Error semantico: El tipo de la variable global no es compatible con el tipo de la expresion que se le asigna. Se esperaba '" + tipo + "', pero se recibió '" + exp.tipoDato + "'." + "Fila: " + idleft + ", Columna: " + idright);
-                    
+                        aumentarCountErroresSemanticos();
                     } else {
                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
                         insertarNuevoToken(tokenGlobal);
                         System.out.println("\n >> Var globar con expresion registrada. \n");
 
                     }
-                :};
+                :}
                 // Estos errores estan dando shift reduce, probablemente hay alguna otra expresion que tambien los tenga.
-            //| error tipoDatoVariable IDENTIFICADOR DELIMITADOR {: System.err.println("Error: Se esperaba la palabra 'global' al inicio de la declaracion"); :};
-
+            // | error tipoDatoVariable IDENTIFICADOR DELIMITADOR {: System.err.println("Error: Se esperaba la palabra 'global' al inicio de la declaracion"); :};
+            | GLOBAL error IDENTIFICADOR DELIMITADOR {: System.err.println(" -> Error sintactico: se debe de definir el tipo de dato para la variable global."); :}
+            | GLOBAL tipoDatoVariable error DELIMITADOR {: System.err.println(" -> Error sintactico: Se debe de definir una identificador para la variable global."); :}
+            | GLOBAL tipoDatoVariable IDENTIFICADOR error {: System.err.println(" -> Error sintactico: Se debe de colocar un delimitador al definir una variable global."); :};
 
 
 
@@ -1136,7 +1144,8 @@ expresion ::= expresionLogica:exp {: RESULT = exp; System.out.println("\n Expres
 /* Modificar las derivacion para expresion logica con el fin de que pueda volver a arriba:  expresionLogica AND expresionLogica| expresionLogica OR expresionLogica*/
 expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {: 
                     if (!"boolean".equals(izq.tipoDato) || !"boolean".equals(der.tipoDato)) {
-                        System.err.println("Error semantico: El operador 'AND' requiere expresiones booleanas." + "Fila: " + izqleft + ", Columna: " + izqright);
+                        System.err.println(" -> Error semantico: El operador 'AND' requiere expresiones booleanas." + "Fila: " + izqleft + ", Columna: " + izqright);
+                        aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
                         RESULT = new TipoExpresiones("boolean");
@@ -1145,7 +1154,8 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                 :}
                 | expresionLogica:izq OR expresionRelacional:der {: 
                     if (!"boolean".equals(izq.tipoDato) || !"boolean".equals(der.tipoDato)) {
-                        System.err.println("Error semantico: operador 'OR' requiere expresiones booleanas." + "Fila: " + izqleft + ", Columna: " + izqright);
+                        System.err.println(" -> Error semantico: operador 'OR' requiere expresiones booleanas." + "Fila: " + izqleft + ", Columna: " + izqright);
+                        aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
                         RESULT = new TipoExpresiones("boolean");
@@ -1154,7 +1164,8 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                 :}
                 | NOT expresionLogica:exp {: 
                     if (!"boolean".equals(exp.tipoDato)) {
-                        System.err.println("Error semantico: operador 'NOT' requiere expresion booleana." + "Fila: " + expleft + ", Columna: " + expright);
+                        System.err.println(" -> Error semantico: operador 'NOT' requiere expresion booleana." + "Fila: " + expleft + ", Columna: " + expright);
+                        aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
                         RESULT = new TipoExpresiones("boolean");
@@ -1187,7 +1198,8 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
 
 expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:  // En esto podriamos separar las validaciones para que den errores mas explicitos.
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, "==")) {
-                                System.err.println("Error semantico: La comparacion '==' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                System.err.println(" -> Error semantico: La comparacion '==' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
@@ -1196,7 +1208,8 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                         :}
                         | expresionAritmetica:izq DIFERENTE expresionAritmetica:der {: 
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, "!=")) {
-                                System.err.println("Error semantico: La comparación '!=' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                System.err.println(" -> Error semantico: La comparación '!=' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
@@ -1205,8 +1218,8 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                         :}
                         | expresionAritmetica:izq MENOR expresionAritmetica:der {: 
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, "<")) {
-                                System.err.println("Error semantico: La comparación '<' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato +"'." + "Fila: " + izqleft + ", Columna: " + izqright);
-                                
+                                System.err.println(" -> Error semantico: La comparación '<' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato +"'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                aumentarCountErroresSemanticos();
                                 
                                 RESULT = new TipoExpresiones("error");
                             } else {
@@ -1216,7 +1229,8 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                         :}
                         | expresionAritmetica:izq MAYOR expresionAritmetica:der {: 
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, ">")) {
-                                System.err.println("Error semantico: La comparacion '>' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                System.err.println(" -> Error semantico: La comparacion '>' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
@@ -1225,7 +1239,8 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                         :}
                         | expresionAritmetica:izq MENOR_IGUAL expresionAritmetica:der {: 
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, "<=")) {
-                                System.err.println("Error semantico: La comparacion '<=' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                System.err.println(" -> Error semantico: La comparacion '<=' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
@@ -1234,7 +1249,8 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                         :}
                         | expresionAritmetica:izq MAYOR_IGUAL expresionAritmetica:der {: 
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, ">=")) {
-                                System.err.println("Error semantico: La comparacion '>=' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                System.err.println(" -> Error semantico: La comparacion '>=' no es valida entre tipos '" + izq.tipoDato + "' y '" + der.tipoDato + "'." + "Fila: " + izqleft + ", Columna: " + izqright);
+                                aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
                                 RESULT = new TipoExpresiones("boolean");
@@ -1275,6 +1291,7 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                         System.out.println("\n Expresion en validacion -> expr suma: suma\n");
                         if (izq == null || der == null) {
                             RESULT = new TipoExpresiones("error");
+                            aumentarCountErroresSemanticos();
                         } else if ("error".equals(izq.getTipo()) || "error".equals(der.getTipo())) {
                             RESULT = new TipoExpresiones("error");
                         } else {
@@ -1306,7 +1323,8 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                 :}
                 | expresionSuma:izq MENOS expresionProducto:der {: 
                         if (!tiposIgualesNumericos(izq, der)) {
-                            System.err.println("Error semantico: La resta requiere tipos numericos iguales (int o float) valor. Fila: " + izqleft + ", Columna: " + izqright);
+                            System.err.println(" -> Error semantico: La resta requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
+                            aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
                             System.out.println("\n Expresion en validacion -> expr suma: resta\n");
@@ -1342,12 +1360,13 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                         }
                     :}
                 | expresionProducto:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr suma: expr prod \n"); :}
-                | expresionSuma MAS error {: System.err.println("Error: Expresion no valida despues de '+'"); RESULT = new TipoExpresiones("error"); :}
-                | expresionSuma MENOS error {: System.err.println("Error: Expresion no valida despues de '-'"); RESULT = new TipoExpresiones("error"); :};
+                | expresionSuma MAS error {: System.err.println(" -> Error: Expresion no valida despues de '+'"); RESULT = new TipoExpresiones("error"); :}
+                | expresionSuma MENOS error {: System.err.println(" -> Error: Expresion no valida despues de '-'"); RESULT = new TipoExpresiones("error"); :};
 
 expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der {:
                     if (!tiposIgualesNumericos(izq, der)) {
-                        System.err.println("Error semantico: La multiplicacion requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
+                        System.err.println(" -> Error semantico: La multiplicacion requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
+                        aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
                         if (izq == null || der == null) {
@@ -1382,7 +1401,8 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                     :}
                     | expresionProducto:izq DIVISION expresionPotencia:der {: 
                         if (!tiposIgualesNumericos(izq, der)) {
-                            System.err.println("Error semantico: La division requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
+                            System.err.println(" -> Error semantico: La division requiere tipos numericos iguales (int o float). Fila: " + izqleft + ", Columna: " + izqright);
+                            aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
                             System.out.println("\n Expresion en validacion -> expr prod div entera \n");
@@ -1401,7 +1421,8 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                     :}
                     | expresionProducto:izq DIVISION_ENTERA expresionPotencia:der {: 
                         if (!"int".equals(izq.tipoDato) || !"int".equals(der.tipoDato)) {
-                            System.err.println("Error semantico: La division entera solo se permite entre enteros. Fila: " + izqleft + ", Columna: " + izqright);
+                            System.err.println(" -> Error semantico: La division entera solo se permite entre enteros. Fila: " + izqleft + ", Columna: " + izqright);
+                            aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
                             System.out.println("\n Expresion en validacion -> expr prod div entera \n");
@@ -1420,7 +1441,8 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                     :}
                     | expresionProducto:izq MODULO expresionPotencia:der {: 
                         if (!"int".equals(izq.tipoDato) || !"int".equals(der.tipoDato)) {
-                            System.err.println("Error semantico: El modulo solo se permite entre enteros. Fila: " + izqleft + ", Columna: " + izqright);
+                            System.err.println(" -> Error semantico: El modulo solo se permite entre enteros. Fila: " + izqleft + ", Columna: " + izqright);
+                            aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
                             System.out.println("\n Expresion en validacion -> expr prod modulo \n");
@@ -1444,6 +1466,8 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
 expresionPotencia ::= expresionFactor:base POTENCIA expresionPotencia:exp {: 
                     if (base == null || exp == null || "error".equals(base.getTipo()) || "error".equals(exp.getTipo())) {
                         RESULT = new TipoExpresiones("error");
+                        System.err.println(" -> Error semantico: Las potentencia debe de ser base int o float y el exponente debe ser int. Tipos definidos: Base -> '" + base.tipoDato + "' y Exponente -> '" + exp.tipoDato + "'." + "Linea: " + baseleft + ", Columna: " + baseright);
+                        aumentarCountErroresSemanticos();
                     } else {
                         System.out.println("\n Expresion en validacion -> expr prod potencia \n");
                         String a1 = base.temp != null ? base.temp : (base.valorI != null ? base.valorI.toString() : (base.valorF != null ? base.valorF.toString() : base.valorS));
@@ -1524,9 +1548,9 @@ expresionNumerica ::= INT_LITERAL:n {:
                     :}
 
                     | INT_LITERAL:n IDENTIFICADOR error
-                      {: System.err.println("Error: Numero seguido de identificador no es valido (ej: 2f5)"); RESULT = new TipoExpresiones("erro",n);:}
+                      {: System.err.println(" -> Error: Numero seguido de identificador no es valido (ej: 2f5)"); RESULT = new TipoExpresiones("erro",n);:}
                     | FLOAT_LITERAL:n IDENTIFICADOR error
-                      {: System.err.println("Error: Numero flotante seguido de identificador no es valido"); RESULT = new TipoExpresiones("error", n); :}; 
+                      {: System.err.println(" -> Error: Numero flotante seguido de identificador no es valido"); RESULT = new TipoExpresiones("error", n); :}; 
                     // Fin de la expresion.
 
 
@@ -1535,7 +1559,8 @@ expresionNumerica ::= INT_LITERAL:n {:
 expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                 TipoExpresiones tipo = obtenerTipoIdentificador(id);
                                 if (!validarTipoEsperado("int|float", tipo)) {
-                                    System.err.println("Error semantico: El operador '++' no es valido para tipo '" + tipo.tipoDato + "'." + "Linea: " + idleft + ", Columna: " + idright);
+                                    System.err.println(" -> Error semantico: El operador '++' no es valido para tipo '" + tipo.tipoDato + "'." + "Linea: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                     RESULT = new TipoExpresiones("error");
                                 } else {
                                     System.out.println("\n Expresion en validacion -> Unaria incremento.\n");
@@ -1549,7 +1574,8 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                             | IDENTIFICADOR:id DECREMENTO {:
                                 TipoExpresiones tipo = obtenerTipoIdentificador(id);
                                 if (!validarTipoEsperado("int|float", tipo)) {
-                                    System.err.println("Error semantico: El operador '--' no es valido para tipo '" + tipo.tipoDato + "'." + "Linea: " + idleft + ", Columna: " + idright);
+                                    System.err.println(" -> Error semantico: El operador '--' no es valido para tipo '" + tipo.tipoDato + "'." + "Linea: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                     RESULT = new TipoExpresiones("error");
                                 } else {
                                     RESULT = tipo;
@@ -1560,7 +1586,8 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
 
 expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica:expr {: 
                                         if (!validarTipoEsperado("int|float", expr)) {
-                                            System.err.println("Error semantico: operador para pasar a negativo una operacion no es valido para tipo '" + expr.tipoDato + "''." + "Linea: " + exprleft + ", Columna: " + exprright);
+                                            System.err.println(" -> Error semantico: operador para pasar a negativo una operacion no es valido para tipo '" + expr.tipoDato + "''." + "Linea: " + exprleft + ", Columna: " + exprright);
+                                            aumentarCountErroresSemanticos();
                                             RESULT = new TipoExpresiones("error");
                                         } else {
                                             System.out.println("\n Expresion en validacion -> Unaria negativa.\n");
@@ -1575,7 +1602,8 @@ lista ::= declaracionLista
 
 declaracionLista ::= LET tipoLista:tipo IDENTIFICADOR:id DELIMITADOR {: 
                     if (entornoActual.buscar(id) != null) {
-                        System.err.println("Error semantico: la lista '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                        System.err.println(" -> Error semantico: la lista '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                        aumentarCountErroresSemanticos();
                     } else {
                         // nombre, tipoBase, ambito, valor, categoria, linea, columna
                         Token tokenLista = new Token(id, tipo.tipoBase, "local", null, "lista", idleft, idright);
@@ -1586,13 +1614,15 @@ declaracionLista ::= LET tipoLista:tipo IDENTIFICADOR:id DELIMITADOR {:
 
 creacionYAsignacionLista ::= LET tipoLista:tipo IDENTIFICADOR:id ASIGNACION LLAVE_I elementos:elems LLAVE_D DELIMITADOR {: 
                                 if (entornoActual.buscar(id) != null) {
-                                    System.err.println("Error semantico: La lista '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                                    System.err.println(" -> Error semantico: La lista '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                 
                                 } else if (!elems.tipoDato.equals(tipo.tipoBase)) {
-                                    System.err.println("Error semantico: Los elementos de la lista '" + id + "' no coinciden con el tipo declarado. Se esperaba '" + tipo.tipoBase + "', pero se recibio '" + elems.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
-                               
+                                    System.err.println(" -> Error semantico: Los elementos de la lista '" + id + "' no coinciden con el tipo declarado. Se esperaba '" + tipo.tipoBase + "', pero se recibio '" + elems.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                 } else if (tipo.tamano != null && elems.tamano > tipo.tamano) {
-                                    System.err.println("Error semantico: la lista '" + id + "' excede el tamaño declarado. Se esperaba maximo " + tipo.tamano + " elementos, pero se recibieron " + elems.tamano + ". Fila: " + idleft + ", Columna: " + idright);
+                                    System.err.println(" -> Error semantico: La lista '" + id + "' excede el tamaño declarado. Se esperaba maximo " + tipo.tamano + " elementos, pero se recibieron " + elems.tamano + ". Fila: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                 } else {
                                     Token tokenLista = new Token(id, tipo.tipoBase, "local", null, "lista", idleft, idright);
                                     tipo.setTamano(elems.tamano); // Modificamos el tamaño de la lista por si la definieron como []
@@ -1609,7 +1639,8 @@ elementos ::= elementoLista:elem {:
             :}
             | elementos:lst COMA elementoLista:elem {: 
                 if (!lst.tipoDato.equals(elem.tipoDato)) { 
-                    System.err.println("Error semantico: Todos los elementos de la lista deben ser del mismo tipo. Se esperaba '" + lst.tipoDato + "', pero se recibio '" + elem.tipoDato + "'. Fila: " + elemleft + ", Columna: " + elemright);
+                    System.err.println(" -> Error semantico: Todos los elementos de la lista deben ser del mismo tipo. Se esperaba '" + lst.tipoDato + "', pero se recibio '" + elem.tipoDato + "'. Fila: " + elemleft + ", Columna: " + elemright);
+                    aumentarCountErroresSemanticos();
                     RESULT = new TipoExpresiones("error");
                 } else {
                     lst.tipos.add(elem.tipoDato);
@@ -1626,23 +1657,24 @@ elementoLista ::= expresionAritmetica:op {:
                     tipos.add(op.tipoDato);
                     RESULT = new TipoExpresiones(op.tipoDato, tipos, 1); 
                 :}; /* Este deberia ser expresion aritmetica en ves de -> INT_LITERAL*/
-                // | CHAR_LITERAL
-                // | IDENTIFICADOR; /* FIXED: El elemento en lista deberia poder permitir identificadores validos*/
 
 /* FIX: El elemento en lista deberia poder permitir identificadores validos*/
 modificarElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:indice CORCHETE_D ASIGNACION elementoLista:elem DELIMITADOR {: 
                                 Token token = entornoActual.buscar(id);
                                 if (token == null) {
 
-                                    System.err.println("Error semantico: La lista '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+                                    System.err.println(" -> Error semantico: La lista '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                     RESULT = new TipoExpresiones("error");
 
                                 } else if (!"lista".equals(token.getCategoria())) {
-                                    System.err.println("Error semantico: el identificador '" + id + "' no corresponde a una lista. Fila: " + idleft + ", Columna: " + idright);
+                                    System.err.println(" -> Error semantico: el identificador '" + id + "' no corresponde a una lista. Fila: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                     RESULT = new TipoExpresiones("error");
                                     
                                 } else if (!"int".equals(indice.tipoDato)) {
-                                    System.err.println("Error semantico: El indice de la lista '" + id + "' debe ser de tipo int, pero se recibio '" + indice.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                                    System.err.println(" -> Error semantico: El indice de la lista '" + id + "' debe ser de tipo int, pero se recibio '" + indice.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                     RESULT = new TipoExpresiones("error");
 
                                 } else {
@@ -1655,7 +1687,8 @@ modificarElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:indic
                                     //     RESULT = new TipoExpresiones("error");} else
 
                                     if (!elem.tipoDato.equals(tipoLista.tipoBase)) {
-                                        System.err.println("Error semantico: El tipo del elemento asignado no coincide con el tipo base de la lista '" + id + "'. Se esperaba '" + tipoLista.tipoBase + "', pero se recibio '" + elem.tipoDato + "'.");
+                                        System.err.println(" _> Error semantico: El tipo del elemento asignado no coincide con el tipo base de la lista '" + id + "'. Se esperaba '" + tipoLista.tipoBase + "', pero se recibio '" + elem.tipoDato + "'.");
+                                        aumentarCountErroresSemanticos();
                                         RESULT = new TipoExpresiones("error");
 
                                     } else {
@@ -1669,15 +1702,18 @@ modificarElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:indic
 obtenerElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:op CORCHETE_D {: 
                                 Token token = entornoActual.buscar(id);
                                 if (token == null) {
-                                    System.err.println("Error semantico: lLa lista '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+                                    System.err.println(" -> Error semantico: lLa lista '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                     RESULT = new TipoExpresiones("error");
 
                                 } else if (!"lista".equals(token.getCategoria())) {
-                                    System.err.println("Error semantico: El identificador '" + id + "' no corresponde a una lista. Fila: " + idleft + ", Columna: " + idright);
+                                    System.err.println(" -> Error semantico: El identificador '" + id + "' no corresponde a una lista. Fila: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                     RESULT = new TipoExpresiones("error");
 
                                 } else if (!"int".equals(op.tipoDato)) {
-                                    System.err.println("Error semantico: El indice de la lista '" + id + "' debe ser de tipo int, pero se recibio '" + op.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                                    System.err.println(" -> Error semantico: El indice de la lista '" + id + "' debe ser de tipo int, pero se recibio '" + op.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                     RESULT = new TipoExpresiones("error");
 
                                 } else {
@@ -1695,7 +1731,7 @@ obtenerElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:op CORC
                                     // }
                                 }
                             :}
-                        | error CORCHETE_I expresionAritmetica CORCHETE_D {: System.err.println("Error: Nombre de lista no valido"); RESULT = new TipoExpresiones("error"); :};
+                        | error CORCHETE_I expresionAritmetica CORCHETE_D {: System.err.println(" -> Error: Nombre de lista no valido"); RESULT = new TipoExpresiones("error"); :};
 
 tipoLista ::= INT CORCHETE_I CORCHETE_D {: 
                 TipoLista tipoL = new TipoLista("int", null);
