@@ -1202,8 +1202,18 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                RESULT = new TipoExpresiones("boolean");
                                 System.out.println("\n Expresion en validacion -> expr rela: igual\n");
+                                String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                                String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+                                if (a1 == null) a1 = "null";
+                                if (a2 == null) a2 = "null";
+                                String t = TAC_Generator.newTemp();
+                                izq.append(der);
+                                TAC_Generator.generarCuad("==", a1, a2, t);
+                                TipoExpresiones res = new TipoExpresiones("boolean");
+                                res.cuads = izq.cuads;
+                                res.temp = t;
+                                RESULT = res;
                             }
                         :}
                         | expresionAritmetica:izq DIFERENTE expresionAritmetica:der {: 
@@ -1212,8 +1222,18 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                RESULT = new TipoExpresiones("boolean");
                                 System.out.println("\n Expresion en validacion -> expr rela: diferente \n");
+                                String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                                String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+                                if (a1 == null) a1 = "null";
+                                if (a2 == null) a2 = "null";
+                                String t = TAC_Generator.newTemp();
+                                izq.append(der);
+                                TAC_Generator.generarCuad("!=", a1, a2, t);
+                                TipoExpresiones res = new TipoExpresiones("boolean");
+                                res.cuads = izq.cuads;
+                                res.temp = t;
+                                RESULT = res;
                             }
                         :}
                         | expresionAritmetica:izq MENOR expresionAritmetica:der {: 
@@ -1223,8 +1243,18 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                RESULT = new TipoExpresiones("boolean");
                                 System.out.println("\n Expresion en validacion -> expr rela: menor\n");
+                                String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                                String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+                                if (a1 == null) a1 = "null";
+                                if (a2 == null) a2 = "null";
+                                String t = TAC_Generator.newTemp();
+                                izq.append(der);
+                                TAC_Generator.generarCuad ("<", a1, a2, t);
+                                TipoExpresiones res = new TipoExpresiones("boolean");
+                                res.cuads = izq.cuads;
+                                res.temp = t;
+                                RESULT = res;
                             }
                         :}
                         | expresionAritmetica:izq MAYOR expresionAritmetica:der {: 
@@ -1233,8 +1263,18 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                RESULT = new TipoExpresiones("boolean");
                                 System.out.println("\n Expresion en validacion -> expr rela: mayor\n");
+                                String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                                String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+                                if (a1 == null) a1 = "null";
+                                if (a2 == null) a2 = "null";
+                                String t = TAC_Generator.newTemp();
+                                izq.append(der);
+                                TAC_Generator.generarCuad (">", a1, a2, t);
+                                TipoExpresiones res = new TipoExpresiones("boolean");
+                                res.cuads = izq.cuads;
+                                res.temp = t;
+                                RESULT = res;
                             }
                         :}
                         | expresionAritmetica:izq MENOR_IGUAL expresionAritmetica:der {: 
@@ -1243,8 +1283,18 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                RESULT = new TipoExpresiones("boolean");
                                 System.out.println("\n Expresion en validacion -> expr rela: menor igual\n");
+                                String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                                String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+                                if (a1 == null) a1 = "null";
+                                if (a2 == null) a2 = "null";
+                                String t = TAC_Generator.newTemp();
+                                izq.append(der);
+                                TAC_Generator.generarCuad ("<=", a1, a2, t);
+                                TipoExpresiones res = new TipoExpresiones("boolean");
+                                res.cuads = izq.cuads;
+                                res.temp = t;
+                                RESULT = res;
                             }
                         :}
                         | expresionAritmetica:izq MAYOR_IGUAL expresionAritmetica:der {: 
@@ -1253,8 +1303,18 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                RESULT = new TipoExpresiones("boolean");
                                 System.out.println("\n Expresion en validacion -> expr rela: mayor igual\n");
+                                String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
+                                String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
+                                if (a1 == null) a1 = "null";
+                                if (a2 == null) a2 = "null";
+                                String t = TAC_Generator.newTemp();
+                                izq.append(der);
+                                TAC_Generator.generarCuad (">=", a1, a2, t);
+                                TipoExpresiones res = new TipoExpresiones("boolean");
+                                res.cuads = izq.cuads;
+                                res.temp = t;
+                                RESULT = res;
                             }
                         :}
                       | expresionAritmetica:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: expr arit" + "Tipo final:" + expr.getTipo() + "\n"); :}
@@ -1558,16 +1618,19 @@ expresionNumerica ::= INT_LITERAL:n {:
 // Faltan trabajar estas para que se validen semanticamente.
 expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                 TipoExpresiones tipo = obtenerTipoIdentificador(id);
+                                System.out.println("Tipo obtenido para id '" + id + "': " + tipo.tipoDato);
                                 if (!validarTipoEsperado("int|float", tipo)) {
                                     System.err.println(" -> Error semantico: El operador '++' no es valido para tipo '" + tipo.tipoDato + "'." + "Linea: " + idleft + ", Columna: " + idright);
                                     aumentarCountErroresSemanticos();
                                     RESULT = new TipoExpresiones("error");
                                 } else {
+                                    // Depende del tipo int o float se genera cuad diferente
                                     System.out.println("\n Expresion en validacion -> Unaria incremento.\n");
-                                    String a1 = id;
+                                    TipoExpresiones res = new TipoExpresiones(tipo.tipoDato); 
+                                    String a1 = id; // el identificador como operando
                                     String t = TAC_Generator.newTemp();
-                                    TAC_Generator.generarCuadUnario ("++", a1, t);
-                                    TipoExpresiones res = new TipoExpresiones (tipo.tipoDato);
+                                    TAC_Generator.generarCuadUnario("++", a1, t, tipo.tipoDato);
+                                    res.temp = t;
                                     RESULT = res;
                                 }
                             :}
@@ -1579,19 +1642,34 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                     RESULT = new TipoExpresiones("error");
                                 } else {
                                     RESULT = tipo;
-                                            System.out.println("\n Expresion en validacion -> Unaria decremento. \n");
-
+                                    System.out.println("\n Expresion en validacion -> Unaria decremento. \n");
+                                    TipoExpresiones res = new TipoExpresiones(tipo.tipoDato); 
+                                    String a1 = id; // el identificador como operando
+                                    String t = TAC_Generator.newTemp();
+                                    TAC_Generator.generarCuadUnario("--", a1, t, tipo.tipoDato);
+                                    res.temp = t;
+                                    RESULT = res;
                                 }
                             :};
 
 expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica:expr {: 
-                                        if (!validarTipoEsperado("int|float", expr)) {
+                                        if (!validarTipoEsperado("int|float", expr) || expr == null || "error".equals(expr.getTipo())) {
                                             System.err.println(" -> Error semantico: operador para pasar a negativo una operacion no es valido para tipo '" + expr.tipoDato + "''." + "Linea: " + exprleft + ", Columna: " + exprright);
                                             aumentarCountErroresSemanticos();
                                             RESULT = new TipoExpresiones("error");
                                         } else {
                                             System.out.println("\n Expresion en validacion -> Unaria negativa.\n");
-                                            RESULT = expr;
+                                            // El argumento es número (int o float)
+                                            String a1 = expr.temp != null ? expr.temp : (expr.valorI != null ? expr.valorI.toString() : (expr.valorF != null ? expr.valorF.toString() : expr.valorS));
+                                            if (a1 == null) {
+                                                a1 = "null";
+                                            }
+                                            String t = TAC_Generator.newTemp();
+                                            TAC_Generator.generarCuadUnario ("NEG", a1, t, expr.tipoDato); // voy a ver como manejo la negacion en representacion TAC
+                                            TipoExpresiones res = new TipoExpresiones(expr.tipoDato);
+                                            res.cuads = expr.cuads;
+                                            res.temp = t;
+                                            RESULT = res;
                                         }
                                     :};
 

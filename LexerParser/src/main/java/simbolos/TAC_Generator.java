@@ -30,8 +30,26 @@ public class TAC_Generator {
         cuadGlobales.add(cuad);
     }
 
-    public static void generarCuadUnario (String operador, String argumento1, String resultado) {
-        Cuad cuad = new Cuad (operador, argumento1, null, resultado);
+    public static void generarCuadUnario (String operador, String argumento1, String resultado, String tipo) {
+        // Para Post ++ o Post --
+        // Convertimos ++a o --a en una suma o resta a 1
+        String argumento2 = null;
+        if (tipo.equals("int")) {
+            argumento2 = "1";
+        } else if (tipo.equals("float")) {
+            argumento2 = "1.0";
+        }
+        // Luego de normalizar el arg 2:
+        if (operador.equals("++")) {
+            operador = "+";
+        } else if (operador.equals("--")) {
+            operador = "-";
+        } else if (operador.equals("NEG")) { // No se aun como voy a representar la negación
+            // Para el caso de negacion unaria
+            operador = "NEG";
+            argumento2 = null; // No se usa en la negación
+        }
+        Cuad cuad = new Cuad (operador, argumento1, argumento2, resultado);
         cuadGlobales.add(cuad);
     }
 
