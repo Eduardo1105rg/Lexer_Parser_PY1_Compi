@@ -1005,7 +1005,9 @@ var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                 insertarNuevoToken(tokenVar);
                 System.out.println("\n >> Definicion var registrada. var \n");
             }
-        :}; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
+        :}
+        | LET tipoDatoVariable:tipo error DELIMITADOR {: System.err.println(" -> Error sintactico: Se debe de colocar un identificador al definir una variable." + "Fila: " + tipoleft + ", Columna: " + tiporight); :};
+        //| LET error IDENTIFICADOR:di DELIMITADOR {: System.err.println(" -> Error sintactico: Se debe de definir el tipo de dato al crear una variable." + "Fila: " + idleft + ", Columna: " + idright)); :}; /* | LET tipoDatoVariable IDENTIFICADOR ASIGNACION expresion DELIMITADOR    -- Se cambio esto por que era lo mismo */
 
 varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
                     Token token = entornoActual.buscar(id);
@@ -1071,10 +1073,12 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                         System.out.println("\n >> Var globar con expresion registrada. \n");
 
                     }
-                :};
+                :}
                 // Estos errores estan dando shift reduce, probablemente hay alguna otra expresion que tambien los tenga.
-            //| error tipoDatoVariable IDENTIFICADOR DELIMITADOR {: System.err.println("Error: Se esperaba la palabra 'global' al inicio de la declaracion"); :};
-
+            // | error tipoDatoVariable IDENTIFICADOR DELIMITADOR {: System.err.println("Error: Se esperaba la palabra 'global' al inicio de la declaracion"); :};
+            | GLOBAL error IDENTIFICADOR DELIMITADOR {: System.err.println(" -> Error sintactico: se debe de definir el tipo de dato para la variable global."); :}
+            | GLOBAL tipoDatoVariable error DELIMITADOR {: System.err.println(" -> Error sintactico: Se debe de definir una identificador para la variable global."); :}
+            | GLOBAL tipoDatoVariable IDENTIFICADOR error {: System.err.println(" -> Error sintactico: Se debe de colocar un delimitador al definir una variable global."); :};
 
 
 
@@ -1428,6 +1432,7 @@ creacionYAsignacionLista ::= LET tipoLista:tipo IDENTIFICADOR:id ASIGNACION LLAV
                                     aumentarCountErroresSemanticos();
                                 } else if (tipo.tamano != null && elems.tamano > tipo.tamano) {
                                     System.err.println(" -> Error semantico: La lista '" + id + "' excede el tamaño declarado. Se esperaba maximo " + tipo.tamano + " elementos, pero se recibieron " + elems.tamano + ". Fila: " + idleft + ", Columna: " + idright);
+                                    aumentarCountErroresSemanticos();
                                 } else {
                                     Token tokenLista = new Token(id, tipo.tipoBase, "local", null, "lista", idleft, idright);
                                     tipo.setTamano(elems.tamano); // Modificamos el tamaño de la lista por si la definieron como []
