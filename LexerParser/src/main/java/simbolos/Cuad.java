@@ -14,6 +14,22 @@ public class Cuad {
     }
 
     public String toString() {
+        if ("LABEL".equals(operador))
+            return resultado + ":";
+        if ("FUNC_BEGIN".equals(operador))
+            return "FUNC " + argumento1 + " BEGIN";
+        if ("FUNC_END".equals(operador))
+            return "FUNC " + argumento1 + " END";
+        if ("PARAM".equals(operador))
+            return "PARAM " + argumento1;
+        if ("POP_PARAM".equals(operador))
+            return "POP_PARAM " + argumento1 + " -> " + resultado;
+        if ("CALL".equals(operador)) {
+            if (resultado == null) return "CALL " + argumento1 + ", " + argumento2;
+            return resultado + " = CALL " + argumento1 + ", " + argumento2;
+        }
+        if ("RET".equals(operador))
+            return "RET " + argumento1;
         if ("=".equals(operador))
             return resultado + " = " + argumento1;
         if (operador.equals("IF_FALSE"))
