@@ -1,6 +1,57 @@
 global int g1$
+global float g2 = 3.5$
+global boolean listo = true$
+global string msg = "hola"$
+global char c0 = 'Z'$
+
+int suma є int a, int b э ¿
+    let int r = a + b$
+    return r$
+?
 
 void principal є э ¿
     let int i = input є int э$
+    let float f$
+    let boolean b$
+    let string s = "start"$
+    let char ch = 'A'$
+
+    output є "Inicio de principal" э $
     output є "i = " << i << ", g1 = " << g1 э $
+    b = єi == 3э$
+    output є "b = " << b э $
+
+    decide of
+        є i > 10 э -> ¿
+            output є "i > 10" э $
+        ?
+        є i == 10 э -> ¿
+            output є "i == 10" э $
+        ?
+    else ¿
+        output є "i < 10" э $
+    ?
+    end decide$
+
+    loop
+        output є "loop i = " << i э $
+        i = i + 1$
+    exit when є i == 3 э$
+    end loop$
+
+    f = input є float э$
+    output є "f = " << f э $
+
+    i++$
+    output є "i despues de ++ = " << i э $
+    let int neg$
+    neg = -i$
+    output є "neg = " << neg э $
+
+    g1 = g1 + i$
+    output є "g1 = " << g1 << ", ch = " << ch << ", msg = " << s э $
+
+    suma є i, 2 э$
+
+    output є "Fin de principal" э $
 ?
