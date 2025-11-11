@@ -145,6 +145,16 @@ public class TAC_Generator {
         add(cuad);
     }
 
+    public static void generarPrint (String valor) {
+        Cuad cuad = new Cuad ("PRINT", valor, null, null);
+        add(cuad);
+    }
+
+    public static void generarRead (String tipo, String destino) {
+        Cuad cuad = new Cuad ("READ", tipo, null, destino);
+        add(cuad);
+    }
+
     public static String getUltimaEtiqueta () {
         List<Cuad> lista = pilaBuffers.isEmpty() ? cuadGlobales : pilaBuffers.peek();
         for (int i = lista.size() - 1; i >= 0; i--) {

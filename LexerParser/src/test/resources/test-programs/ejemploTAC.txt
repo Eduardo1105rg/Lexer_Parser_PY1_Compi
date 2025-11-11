@@ -1,7 +1,6 @@
+global int g1$
+
 void principal є э ¿
-    let int i = 0$
-    loop
-        i = i + 1$
-    exit when є i == 3 э$ 
-    end loop$
+    let int i = input є int э$
+    output є "i = " << i << ", g1 = " << g1 э $
 ?
