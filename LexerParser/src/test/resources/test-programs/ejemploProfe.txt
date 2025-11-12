@@ -1,6 +1,7 @@
 global string _s1_$
 
-float _mi_  є int _dif_, int _otra_ э ¿
+float _mi_  є
+ int _dif_, int _otra_ э ¿
     let int _var_2$
     let int _var_$
     let float _var2_ = 0.0$
