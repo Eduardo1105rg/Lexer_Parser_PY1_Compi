@@ -410,11 +410,10 @@ parser code {:
     public void report_error(String message, Object info) {
     }
 
-    public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+    public void unrecovered_syntax_error(Symbol cur_token) {
         System.err.println("Error sintactico no recuperable en linea " + (cur_token != null ? cur_token.left : -1)
                 + ", columna " + (cur_token != null ? cur_token.right : -1)
                 + ": " + obtenerInfoToken(cur_token));
-        throw new Exception("Fin del analisis por error sintactico grave.");
     }
 
     public void mostrarTS() {

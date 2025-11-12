@@ -33,9 +33,6 @@ public class App {
 
             p.mostrarTS();
 
-            // Pruebas de TAC
-            TAC_Generator.imprimirCuads(consolaOriginal);
-
             // Luego de analisis sintactico:
             consolaOriginal.println("Errores lexicos: " + lexer.getErrorContador());
             consolaOriginal.println("Errores sintacticos: " + p.getErrorContador());
@@ -46,8 +43,11 @@ public class App {
             int errores = p.getErrorContador() + lexer.getErrorContador();
             if (errores == 0 && erroresSemanTicos == 0) {
                 consolaOriginal.println("El archivo fue reconocido por la gramatica.");
+                // Pruebas de TAC
+                TAC_Generator.imprimirCuads(consolaOriginal);
+                TAC_Generator.imprimirCuadsToFile("tac_output.txt");
             } else {
-                consolaOriginal.println("El archivo fue analizado con " + errores + " errores.");
+                consolaOriginal.println("El archivo fue analizado con " + (errores+erroresSemanTicos) + " errores.");
             }
 
             // p.mostrarTablaSimbolos();

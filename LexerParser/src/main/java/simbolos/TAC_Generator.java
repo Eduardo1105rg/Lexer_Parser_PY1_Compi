@@ -166,9 +166,24 @@ public class TAC_Generator {
 
     public static void imprimirCuads (PrintStream out) {
         out.println("======== TAC Generado =============");
+        // Escribir en archivo el resultado TAC:
         for (Cuad cuad : cuadGlobales) {
             out.println(cuad.toString());
         }
     
+    }
+
+    public static String imprimirCuadsToFile(String rutaArchivo) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("======== TAC Generado =============\n");
+        for (Cuad cuad : cuadGlobales) {
+            sb.append(cuad.toString()).append('\n');
+        }
+        try (PrintStream ps = new PrintStream(rutaArchivo, "UTF-8")) {
+            ps.print(sb.toString());
+        } catch (Exception e) {
+            System.err.println("Error al escribir TAC en archivo: " + e.getMessage());
+        }
+        return sb.toString();
     }
 }
