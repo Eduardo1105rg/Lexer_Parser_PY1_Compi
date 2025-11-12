@@ -1,7 +1,7 @@
 global int g1$
-global float g2 = 3.5$
+global float g2 = 2.5$
 global boolean listo = true$
-global string msg = "hola"$
+global string msg = "Inicio"$
 global char c0 = 'Z'$
 
 int suma є int a, int b э ¿
@@ -11,25 +11,29 @@ int suma є int a, int b э ¿
 
 void principal є э ¿
     let int i = input є int э$
-    let float f$
+    let int k$
+    let float f = 3.5$
     let boolean b$
-    let string s = "start"$
-    let char ch = 'A'$
+    let string s = "listas"$
+    let char ch = '!'$
 
-    output є "Inicio de principal" э $
-    output є "i = " << i << ", g1 = " << g1 э $
-    b = єi == 3э$
-    output є "b = " << b э $
+    let int[3] datos$
+    let int[] nums = ¿ 10, 20, 30 ?$
 
+    datos[0] = 5$
+    datos[1] = nums[2]$
+    k = 1$
+    datos[k] = datos[k] + 2$
+
+    output є "nums[2] = " << nums[2] << ", datos[1] = " << datos[1] э $
+
+    b = i == 3$
     decide of
-        є i > 10 э -> ¿
-            output є "i > 10" э $
-        ?
-        є i == 10 э -> ¿
-            output є "i == 10" э $
+        є b э -> ¿
+            output є "i == 3" э $
         ?
     else ¿
-        output є "i < 10" э $
+        output є "i != 3" э $
     ?
     end decide$
 
@@ -39,19 +43,7 @@ void principal є э ¿
     exit when є i == 3 э$
     end loop$
 
-    f = input є float э$
-    output є "f = " << f э $
-
-    i++$
-    output є "i despues de ++ = " << i э $
-    let int neg$
-    neg = -i$
-    output є "neg = " << neg э $
-
-    g1 = g1 + i$
-    output є "g1 = " << g1 << ", ch = " << ch << ", msg = " << s э $
-
-    suma є i, 2 э$
-
-    output є "Fin de principal" э $
+    let int res = suma є i, datos[0] э$
+    output є "res = " << res << ", ch = " << ch << ", msg = " << s э $
+    output є "Fin" э $
 ?

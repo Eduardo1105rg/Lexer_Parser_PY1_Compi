@@ -56,6 +56,15 @@ public class Cuad {
         if ("GOTO".equals(operador)) {
             return "GOTO " + resultado;
         }
+        if ("ALLOC".equals(operador)) {
+            return resultado + " = ALLOC " + argumento1 + " " + argumento2;
+        }
+        if ("GET".equals(operador)) {
+            return resultado + " = " + argumento1 + "[" + argumento2 + "]";
+        }
+        if ("SET".equals(operador)) {
+            return argumento1 + "[" + argumento2 + "] = " + resultado;
+        }
         if (argumento2 == null) {
             return resultado + " = " + operador + " " + argumento1;
         }

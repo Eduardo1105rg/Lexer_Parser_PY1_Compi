@@ -138,6 +138,25 @@ public class TAC_Generator {
         Cuad cuad = new Cuad("CALL", nombre, Integer.toString(nargs), destino);
         add(cuad);
     }
+    // Generacion para listas
+    public static void generarAlloc(String id, String tipo, int tam) {
+        Cuad c = new Cuad("ALLOC", tipo, Integer.toString(tam), id);
+        add(c);
+    }
+
+    public static String generarGet(String id, String idxTemp) {
+        // idxtemp es el index temporal
+        String t = newTemp();
+        Cuad c = new Cuad("GET", id, idxTemp, t);
+        add(c);
+        return t;
+    }
+
+    public static void generarSet(String id, String idxTemp, String valor) {
+        Cuad c = new Cuad("SET", id, idxTemp, valor);
+        add(c);
+    }
+    // Fin de listas
 
     // No sé si realmete se ocupe generar un retorno pero por si acaso lo dejamo
     public static void generarReturn(String valor) {

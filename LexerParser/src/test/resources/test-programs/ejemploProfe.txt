@@ -1,67 +1,70 @@
 global string _s1_$
 
+float _mi_  є int _dif_, int _otra_ э ¿
+    let int _var_2$
+    let int _var_$
+    let float _var2_ = 0.0$
 
-float _mi_  є int _dif_, char _otra_  ¿   
-	let int _otra_$
-	let string _str_="Hola $~&|?$& э  mundo"$
-	for  _i_=20 step -2 downto 0 do  | puede dar sintactico
-	 ¿ 
-		loop
-		  	_var_2 = _var_2 - 1$ |semantico
-			_var_ = _var_ - 1$ |semantico
-		exit when є _var2_>12.2 @ Σ є12> є 34+35 ээ  э $ |semantico
-		end loop$
-		else ->  ¿  | sintactico
-			input є _var2_ э $
-			break$
-		 ? 
+    loop
+        _var_2 = _var_2 - 1$
+        _var_ = _var_ - 1$
+        _var2_ = _var2_ + 1.0$
+    exit when є _var2_ > 12.2 э$
+    end loop$
 
-		decide   of
-		є _var_==0 э  ->
-		 ¿ 
-			output є "entra al if" э $
-		 ?
-		end decide$
-		decide   of 
-		true ->  
-		 ¿ 
-			output є _var_ э $
-		 ? 
-		else ->
-		 ¿ 
-			decide   of  |semantico _otra_
-				_otra_ == 1 -> ¿ 
-					output є "!|" э $ ?
-				else -> ¿ | sintactico
-					_otra_ = -10.5 * -1.9$ ?
-				_otra_ == 2 -> ¿
-					_otra_ = 10$
-					break$ ?
-			end  decide  $
+    decide of
+        є _var_ == 0 э -> ¿
+            output є "entra al if" э $
+        ?
+    end decide$
 
-			decide   of  |semantico _otra2_
-				_otra2_ == 10 -> ¿ 
-					output є "un case" э $ ?
-			end  decide  $ 
-		 ?
-		 end  decide  $
-	 ? 
-	return 1$ |semantico
-  ? 
+    decide of
+        є true э -> ¿
+            output є _var_ э $
+        ?
+    else ¿
+        decide of
+            є _otra_ == 1 э -> ¿
+                output є "!|" э $
+            ?
+            є _otra_ == 2 э -> ¿
+                _otra_ = 10$
+            ?
+        end decide$
 
- bool _miOtraFun_  є  э   ¿ 
-	return -5.6$ |semantico
-  ? 
+        decide of
+            є _dif_ == 10 э -> ¿
+                output є "un case" э $
+            ?
+        end decide$
+    ?
+	end decide$
+    return 1.0$
+?
 
+boolean _miOtraFun_  є  э   ¿
+    return false$
+?
 
-void principal є int arg э  ¿ | semantico tipo int, sintactico?
-	_arr_[67+_i_++] = -0.01$  | semantico
-	let bool _b1_$ |semantico
-	let string _s1_$ |semantico
-	input є _s1_ э $ |semantico
-	output є _b1_ э $ |semantico
-	output є true э $ |semantico
-	output є -6.7 э $
-	return$  |sintactico
-	return 1+_f_ є  э $
- ? 
+void principal є  э  ¿
+    let boolean _b1_$
+
+    let int[3] _arr_$
+    _arr_[0] = 1$
+    _arr_[1] = 2$
+    _arr_[2] = 3$
+
+    let int _i_ = 20$
+    let int _step_ = 2$
+
+    loop
+        output є "i = " << _i_ э $
+        _i_ = _i_ - _step_$
+    exit when є _i_ < 0 э$
+    end loop$
+
+    output є _b1_ э $
+    output є true э $
+    output є -6.7 э $
+    return$
+?

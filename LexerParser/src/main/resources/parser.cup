@@ -50,6 +50,7 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
   Stack<String> pilaForStartLabels = new Stack<>();
   Stack<String> pilaForExitLabels  = new Stack<>();
   String forVarControlNombre = null;
+  List<TipoExpresiones> elementosBuffer = new ArrayList<>(); // un buffer temporal para los elementos de una lista procesandose
   int contador = 0; // Esto es para ayudar a generar el token de los identificadores del decide.
 
   int contadorFor = 0;
@@ -2105,6 +2106,9 @@ declaracionLista ::= LET tipoLista:tipo IDENTIFICADOR:id DELIMITADOR {:
                         Token tokenLista = new Token(id, tipo.tipoBase, "local", null, "lista", idleft, idright);
                         tokenLista.setTipoLista(tipo);
                         insertarNuevoToken(tokenLista);
+                        if (tipo.tamano != null) {
+                            TAC_Generator.generarAlloc (id, tipo.tipoBase, tipo.tamano); // Con esto se busca hacer como un alloc dependiendo del tipo
+                        }
                     }
                 :};
 
@@ -2124,110 +2128,109 @@ creacionYAsignacionLista ::= LET tipoLista:tipo IDENTIFICADOR:id ASIGNACION LLAV
                                     tipo.setTamano(elems.tamano); // Modificamos el tamaño de la lista por si la definieron como []
                                     tokenLista.setTipoLista(tipo);
                                     insertarNuevoToken(tokenLista);
+                                    // Set por cada elemento de lista
+                                    for (int i = 0 ; i<elems.tamano ; i++) {
+                                        TipoExpresiones elem = elementosBuffer.get(i);
+                                        String valor = operandoString (elem);
+                                        if (valor == null || "null".equals(valor)){
+                                            // No me acuerdo los tipos exactos permitidos pero ponemos default en todos
+                                            if ("int".equals(tipo.tipoBase))
+                                                valor = "0";
+                                            else if ("float".equals(tipo.tipoBase)) 
+                                                valor = "0.0";
+                                            else if ("boolean".equals(tipo.tipoBase)) 
+                                                valor = "false";
+                                            else if ("char".equals(tipo.tipoBase)) 
+                                                valor = "'\\0'";
+                                            else if ("string".equals(tipo.tipoBase)) 
+                                                valor = "\"\"";
+                                            else valor = "0";                                        
+                                        }
+                                        TAC_Generator.generarSet (id, Integer.toString(i), valor);
+                                    }
+                                    elementosBuffer.clear(); // para limpiar el buffer temporal
                                 }
                             :};
 
-elementos ::= elementoLista:elem {: 
-                // Primer elemento: inicializamos la lista de tipos
-                List<String> tipos = new ArrayList<>();
-                tipos.add(elem.tipoDato);
-                RESULT = new TipoExpresiones(elem.tipoDato, tipos, 1);
+elementos ::= elementoLista:elem {:
+                ArrayList<TipoExpresiones> lista = new ArrayList<>();
+                lista.add(elem);
+                elementosBuffer = lista;
+
+                // Un paquete con tipo y tamaño para la creacion
+                TipoExpresiones tipoTamaño = new TipoExpresiones(elem.getTipo());
+                tipoTamaño.tamano = 1;
+                RESULT = tipoTamaño;
             :}
-            | elementos:lst COMA elementoLista:elem {: 
-                if (!lst.tipoDato.equals(elem.tipoDato)) { 
-                    System.err.println(" -> Error semantico: Todos los elementos de la lista deben ser del mismo tipo. Se esperaba '" + lst.tipoDato + "', pero se recibio '" + elem.tipoDato + "'. Fila: " + elemleft + ", Columna: " + elemright);
+            | elementos:prev COMA elementoLista:elem {:
+                elementosBuffer.add(elem);
+                if (!prev.getTipo().equals(elem.getTipo())) {
+                    System.err.println(" -> Error semantico: lista heterogenea. Se esperaba '" + prev.getTipo() + "', recibio '" + elem.getTipo() + "'");
                     aumentarCountErroresSemanticos();
-                    RESULT = new TipoExpresiones("error");
-                } else {
-                    lst.tipos.add(elem.tipoDato);
-                    lst.tamano++;
-                    RESULT = lst;
+                    prev.tipoDato = "error";
                 }
+                prev.tamano++;
+                RESULT = prev;
             :};
 
 
 /* Este deberia ser expresion aritmetica en ves de -> INT_LITERAL*/
-elementoLista ::= expresionAritmetica:op {: 
-                    // Guardamos cada uno de los elementos de la lista.
-                    List<String> tipos = new ArrayList<>();
-                    tipos.add(op.tipoDato);
-                    RESULT = new TipoExpresiones(op.tipoDato, tipos, 1); 
-                :}; /* Este deberia ser expresion aritmetica en ves de -> INT_LITERAL*/
+elementoLista ::= expresionAritmetica:op {:
+    RESULT = op;
+:};
 
-/* FIX: El elemento en lista deberia poder permitir identificadores validos*/
-modificarElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:indice CORCHETE_D ASIGNACION elementoLista:elem DELIMITADOR {: 
-                                Token token = entornoActual.buscar(id);
-                                if (token == null) {
-
-                                    System.err.println(" -> Error semantico: La lista '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+modificarElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:indice CORCHETE_D ASIGNACION elementoLista:elem DELIMITADOR {:
+                            Token tk = entornoActual.buscar(id);
+                            if (tk == null || !"lista".equals(tk.getCategoria())) {
+                                System.err.println(" -> Error semantico: '" + id + "' no es una lista declarada.");
+                                aumentarCountErroresSemanticos();
+                            } else {
+                                if (!"int".equals(indice.getTipo())) {
+                                    System.err.println(" -> Error semantico: el indice para lista '" + id + "' debe ser int, recibido '" + indice.getTipo() + "'");
                                     aumentarCountErroresSemanticos();
-                                    RESULT = new TipoExpresiones("error");
-
-                                } else if (!"lista".equals(token.getCategoria())) {
-                                    System.err.println(" -> Error semantico: el identificador '" + id + "' no corresponde a una lista. Fila: " + idleft + ", Columna: " + idright);
-                                    aumentarCountErroresSemanticos();
-                                    RESULT = new TipoExpresiones("error");
-                                    
-                                } else if (!"int".equals(indice.tipoDato)) {
-                                    System.err.println(" -> Error semantico: El indice de la lista '" + id + "' debe ser de tipo int, pero se recibio '" + indice.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
-                                    aumentarCountErroresSemanticos();
-                                    RESULT = new TipoExpresiones("error");
-
-                                } else {
-                                    TipoLista tipoLista = token.getTipoLista();
-                                    Integer tamano = tipoLista.tamano;
-
-                                    // Validacion de rango
-                                    // if (tamano != null && (indice.valor < 0 || indice.valor >= tamano)) {
-                                    //     System.err.println("Error semantico: El indice " + indice.valor + " esta fuera del rango de la lista '" + id + "'. Tamano maximo: " + (tamano-1));
-                                    //     RESULT = new TipoExpresiones("error");} else
-
-                                    if (!elem.tipoDato.equals(tipoLista.tipoBase)) {
-                                        System.err.println(" _> Error semantico: El tipo del elemento asignado no coincide con el tipo base de la lista '" + id + "'. Se esperaba '" + tipoLista.tipoBase + "', pero se recibio '" + elem.tipoDato + "'.");
-                                        aumentarCountErroresSemanticos();
-                                        RESULT = new TipoExpresiones("error");
-
-                                    } else {
-                                        // Asignacion valida
-                                        RESULT = new TipoExpresiones(tipoLista.tipoBase);
-                                    }
                                 }
-                            :}
-                         | error CORCHETE_I expresionAritmetica CORCHETE_D ASIGNACION elementoLista DELIMITADOR {: System.err.println("Error: Nombre de lista no valido"); RESULT = new TipoExpresiones("error"); :};
-
-obtenerElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:op CORCHETE_D {: 
-                                Token token = entornoActual.buscar(id);
-                                if (token == null) {
-                                    System.err.println(" -> Error semantico: lLa lista '" + id + "' no ha sido declarada. Fila: " + idleft + ", Columna: " + idright);
+                                TipoLista tl = tk.getTipoLista();
+                                if (tl != null && tl.tipoBase != null && !tl.tipoBase.equals(elem.getTipo())) {
+                                    System.err.println(" -> Error semantico: asignacion incompatible en lista '" + id + "'. Se esperaba '" + tl.tipoBase + "', recibio '" + elem.getTipo() + "'");
                                     aumentarCountErroresSemanticos();
-                                    RESULT = new TipoExpresiones("error");
-
-                                } else if (!"lista".equals(token.getCategoria())) {
-                                    System.err.println(" -> Error semantico: El identificador '" + id + "' no corresponde a una lista. Fila: " + idleft + ", Columna: " + idright);
-                                    aumentarCountErroresSemanticos();
-                                    RESULT = new TipoExpresiones("error");
-
-                                } else if (!"int".equals(op.tipoDato)) {
-                                    System.err.println(" -> Error semantico: El indice de la lista '" + id + "' debe ser de tipo int, pero se recibio '" + op.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
-                                    aumentarCountErroresSemanticos();
-                                    RESULT = new TipoExpresiones("error");
-
-                                } else {
-                                    TipoLista tipoLista = token.getTipoLista();
-                                    Integer tamano = tipoLista.tamano;
-
-                                    // Validacion de rango
-                                    // if (tamano != null && (op.valor < 0 || op.valor >= tamano)) {
-                                    //     System.err.println("Error semantico: El indice " + op.valor + " esta fuera del rango de la lista '" + id + "'. Tamano maximo: " + (tamano - 1));
-                                    //     RESULT = new TipoExpresiones("error");
-
-                                    // } else {
-                                        // Propagar el tipo base de la lista
-                                        RESULT = new TipoExpresiones(tipoLista.tipoBase);
-                                    // }
                                 }
-                            :}
-                        | error CORCHETE_I expresionAritmetica CORCHETE_D {: System.err.println(" -> Error: Nombre de lista no valido"); RESULT = new TipoExpresiones("error"); :};
+                                // Generacion de TAC set
+                                String idx = operandoString(indice);
+                                if (idx == null || "null".equals(idx)) idx = indice.temp;
+                                String val = operandoString(elem);
+                                if (val == null || "null".equals(val)) val = elem.temp;
+                                simbolos.TAC_Generator.generarSet(id, idx, val);
+                            }
+                            RESULT = elem;
+                        :};
+
+obtenerElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:op CORCHETE_D {:
+                        Token tk = entornoActual.buscar(id);
+                        if (tk == null || !"lista".equals(tk.getCategoria())) {
+                            System.err.println(" -> Error semantico: '" + id + "' no es una lista declarada.");
+                            aumentarCountErroresSemanticos();
+                            RESULT = new TipoExpresiones("error");
+                        } else {
+                            if (!"int".equals(op.getTipo())) {
+                                System.err.println(" -> Error semantico: el indice para lista '" + id + "' debe ser int, recibido '" + op.getTipo() + "'");
+                                aumentarCountErroresSemanticos();
+                            } else if (tk.getTipoLista() != null && tk.getTipoLista().tamano != null && op.valorI != null) {
+                                int max = tk.getTipoLista().tamano;
+                                if (op.valorI < 0 || op.valorI >= max) {
+                                    System.err.println(" -> Advertencia: posible acceso fuera de rango en '" + id + "' indice " + op.valorI);
+                                }
+                            }
+                            // Generacin de TAC get 
+                            String idx = operandoString(op);
+                            if (idx == null || "null".equals(idx)) idx = op.temp;
+                            String tRes = simbolos.TAC_Generator.generarGet(id, idx);
+
+                            String tipoBase = (tk.getTipoLista() != null && tk.getTipoLista().tipoBase != null) ? tk.getTipoLista().tipoBase : tk.getTipo();
+                            TipoExpresiones r = new TipoExpresiones(tipoBase);
+                            r.temp = tRes;
+                            RESULT = r;
+                        }
+                    :};
 
 tipoLista ::= INT CORCHETE_I CORCHETE_D {: 
                 TipoLista tipoL = new TipoLista("int", null);
