@@ -1347,47 +1347,6 @@ for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
             insertarNuevoToken(estructura);
         :};
 
-// for ::= forInt:init STEP INT_LITERAL TO expresion:expr DO bloque:blo {:
-
-//             if (!"int".equals(expr.tipoDato)) {
-//                 System.err.println(" -> Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
-//                 aumentarCountErroresSemanticos();
-//             }
-
-
-//             // Crear el token del for y registrarlo en el entorno.
-//             Token estructura = new Token("otro_for_" + contadorFor++, "estructura", "local", null, "for", initleft, initright);
-//             // Registrar el bloque.
-//             insertarNuevoToken(blo);
-//             estructura.setAmbitoLocal(entornoActual);
-
-//             // Cerrar el entorno.
-//             cerrarAmbito();
-//             insertarNuevoToken(estructura);
-//         :}
-//       | forInt:init STEP INT_LITERAL DOWNTO expresion:expr DO bloque:blo {:
-//             if (!"int".equals(expr.tipoDato)) {
-//                 System.err.println(" -> Error semantico: La expresion que se define en el for debe ser tipo int, pero se recibio -> " + expr.tipoDato + "Fila: " + exprleft + ", Columna: " + exprright);
-//                 aumentarCountErroresSemanticos();
-//             }
-//             // Crear el token del for y registrarlo en el entorno.
-//             Token estructura = new Token("otro_for_" + contadorFor++, "estructura", "local", null, "for", initleft, initright);
-//             // Registrar el bloque.
-//             insertarNuevoToken(blo);
-//             estructura.setAmbitoLocal(entornoActual);
-
-//             // Cerrar el entorno.
-//             cerrarAmbito();
-//             insertarNuevoToken(estructura);
-//         :}
-
-//     //   | FOR LET INT error ASIGNACION expresionAritmetica STEP INT_LITERAL TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba identificador despues de 'for'"); :}
-//       | forInt error INT_LITERAL TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba 'step' despues del identificador"); cerrarAmbito(); :}
-//       | forInt STEP error TO expresion DO bloque  {: System.err.println(" -> Error: Se esperaba numero entero despues de 'step'"); cerrarAmbito(); :}
-//       | forInt STEP INT_LITERAL error expresion DO bloque  {: System.err.println(" -> Error: Se esperaba 'to' o 'downto' en bucle for"); cerrarAmbito(); :}
-//       | forInt STEP INT_LITERAL TO expresion error bloque  {: System.err.println(" -> Error: Se esperaba 'do' antes del bloque"); cerrarAmbito(); :};
-
-/* Producciones de declaraciones y variables con DELIMITADOR (pendiente) */
 var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {: 
             if (entornoActual.buscar(id) != null) {
                 System.err.println(" -> Error semantico: la variable '" + id + "' ya fue declarada. Fila: " + idleft + ", Columna: " + idright);
