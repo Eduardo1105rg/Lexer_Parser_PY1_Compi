@@ -46,6 +46,8 @@ public class App {
                 // Pruebas de TAC
                 TAC_Generator.imprimirCuads(consolaOriginal);
                 TAC_Generator.imprimirCuadsToFile("tac_output.txt");
+                // Imprimimos tabla de simbolos final
+                p.mostrarTS();
             } else {
                 consolaOriginal.println("El archivo fue analizado con " + (errores+erroresSemanTicos) + " errores.");
             }
