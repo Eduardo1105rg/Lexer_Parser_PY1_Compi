@@ -13,16 +13,16 @@ d. Número de carnet de los estudiantes:
 	Yosimar - [2023147365]
 
 e. Número de proyecto programado :
-	#2.
+	#3.
 
 f. Fecha de entrega:
-	12-11-2025
+	27-11-2025
 
 g. Estatus de la entrega (debe ser CONGRUENTE con la solución entregada): 
 	[Excelente]
 
-f. Enlace al repositorio del proyecto:
+h. Enlace al repositorio del proyecto:
 	https://github.com/Eduardo1105rg/Lexer_Parser_PY1_Compi
 
-g. Enlace de video explicativo:
-	https://drive.google.com/file/d/1-KyMWFrNPMNXN9G2cO56AVAxxivGOzLy/view?usp=sharing
+i. Enlace de video explicativo:
+	
