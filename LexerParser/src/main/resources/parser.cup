@@ -28,6 +28,10 @@ import simbolos.Cuad;
 import simbolos.TAC_Generator;
 
 
+// Import utils.
+import utils.ObtenerValorEnString;
+
+
 /* Aqui vamos a definir lo que se va a ejecutar al reducir una produccion o algo asi. (Es diferente del 'parser code')*/
 action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi de momento.
 
@@ -72,35 +76,12 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
     }
   }
 
+  // Funcion para obtener el valor de un tipo de expresion dependiedo de si es null o no, esta hace una llamada a la clase 
+  // que contiene la logica de la funcion.
   private String operandoString (TipoExpresiones expr) {
-      if (expr == null) 
-        return "null";
-      if (expr.temp != null) 
-        return expr.temp;
-      if (expr.valorI != null) 
-        return expr.valorI.toString();
-      if (expr.valorF != null) 
-        return expr.valorF.toString();
-      if (expr.valorB != null) 
-        return expr.valorB ? "true" : "false";
-      if (expr.valorS != null) {
-          String s = expr.valorS.replace("\\", "\\\\").replace("\"", "\\\"");
-          return "\"" + s + "\""; // Para que sea "string"
-      }
-      if (expr.valorC != null) {
-          char c = expr.valorC;
-          String cs;
-          switch (c) {
-              case '\\': cs = "\\\\"; break;
-              case '\'': cs = "\\'"; break;
-              case '\n': cs = "\\n"; break;
-              case '\t': cs = "\\t"; break;
-              case '\r': cs = "\\r"; break;
-              default: cs = String.valueOf(c);
-          }
-          return "'" + cs + "'";
-      }
-      return "null";
+    
+    // Llamar a la funcion en utils para obtener el valor, la logica es la misma a la que estaba aqui.
+    return ObtenerValorEnString.operandoString(expr);
   }
 
 
@@ -194,34 +175,6 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
         return tipos;
     }
 
-    // public void mostrarTodosLosAmbitosV1() {
-    //     System.out.println("╔════════════════════════════════════════════════════════════════════════════╗");
-    //     System.out.println("║                    TABLA DE SÍMBOLOS EN TODOS LOS AMBITOS                  ║");
-    //     System.out.println("╠════════════════════════════════════════════════════════════════════════════╣");
-    //     System.out.printf("║ %-15s │ %-10s │ %-10s │ %-10s │ %-10s │ %-5s │ %-5s ║\n",
-    //                     "Nombre", "Tipo", "Categoria", "Ambito", "Valor", "Linea", "Col");
-    //     System.out.println("╠════════════════════════════════════════════════════════════════════════════╣");
-
-    //     int nivel = 0;
-    //     for (Ambitos ambito = entornoActual; ambito != null; ambito = ambito.getAnterior()) {
-    //         System.out.println("\n>> Ambito con " + ambito.getTablaActual().size() + " tokens. \n");
-    //         String nombreAmbito = "\nNivel_" + nivel;
-    //         for (Token t : ambito.getTablaActual().values()) {
-    //             System.out.printf("║ %-15s │ %-10s │ %-10s │ %-10s │ %-10s │ %-5d │ %-5d ║\n",
-    //                             t.getNombre(), t.getTipo(), t.getCategoria(),
-    //                             nombreAmbito, String.valueOf(t.getValor()),
-    //                             t.getLinea(), t.getColumna());
-    //         }
-    //         nivel++;
-    //     }
-
-    //     System.out.println("╚════════════════════════════════════════════════════════════════════════════╝");
-    // }
-
-
-
-
-
     // Para obtener el tipo de dato de un identificador, principalmente variables.
     public TipoExpresiones obtenerTipoIdentificador(String nombre) {
         for (Ambitos ambito = entornoActual; ambito != null; ambito = ambito.getAnterior()) {
@@ -303,6 +256,13 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
             default:
                 return false;
         }
+    }
+
+
+    // Funcion para mostrar los mensajes de prints, recive el mensaje que se desee mostrar y hace un print. Esto es principalmente
+    // para los mensajes de print que son para hacer debug.
+    public void mostrarMensaje(String mensaje) {
+        System.out.println(mensaje); // Esta parte es la que se debe de comentar para cuando no se quiere mostrar nada.
     }
 
 
@@ -1505,7 +1465,7 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
 
 
 // /* ##### Seccion para las expresiones ######*/
-expresion ::= expresionLogica:exp {: RESULT = exp; System.out.println("\n Expresion en validacion -> expresion completa: inicio de la derivacion" + "Tipo final:" + exp.getTipo() + "\n"); :};
+expresion ::= expresionLogica:exp {: RESULT = exp; mostrarMensaje("\n Expresion en validacion -> expresion completa: inicio de la derivacion" + "Tipo final:" + exp.getTipo() + "\n"); :};
 
 
 /* Modificar las derivacion para expresion logica con el fin de que pueda volver a arriba:  expresionLogica AND expresionLogica| expresionLogica OR expresionLogica*/
@@ -1515,7 +1475,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        System.out.println("\n Expresion en validacion -> expr rela: and \n");
+                        mostrarMensaje("\n Expresion en validacion -> expr rela: and \n");
                         String a1 = izq.temp != null ? izq.temp : (izq.valorB != null ? izq.valorB.toString() : "null");
                         String a2 = der.temp != null ? der.temp : (der.valorB != null ? der.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
@@ -1533,7 +1493,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        System.out.println("\n Expresion en validacion -> expr rela: or \n");
+                        mostrarMensaje("\n Expresion en validacion -> expr rela: or \n");
                         String a1 = izq.temp != null ? izq.temp : (izq.valorB != null ? izq.valorB.toString() : "null");
                         String a2 = der.temp != null ? der.temp : (der.valorB != null ? der.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
@@ -1551,7 +1511,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        System.out.println("\n Expresion en validacion -> expr rela: not  \n");
+                        mostrarMensaje("\n Expresion en validacion -> expr rela: not  \n");
                         String a1 = exp.temp != null ? exp.temp : (exp.valorB != null ? exp.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
                         TAC_Generator.generarCuadUnario("NOT", a1, t, null);
@@ -1563,27 +1523,15 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                 :}
                 | expresionRelacional:exp {: // En teoria esta deveria de dejar pasar el valor directo
                     // if (!"boolean".equals(exp.tipoDato)) {
-                    //     System.err.println("Error semántico: expresion relacional no válida como lógica.");
+                    //     System.err.println("Error semantico: expresion relacional no valida como logica.");
                     //     RESULT = new TipoExpresiones("error", null);
                     // } else {
                         RESULT = exp;
-                        System.out.println("\n Expresion en validacion -> expr logi: expr rela\n");
+                        mostrarMensaje("\n Expresion en validacion -> expr logi: expr rela\n");
                     // }
                 :};
 
                   
-
-/* Los de expresionAritmetica no se pueden cambiar ya que los operadores de mayores y menore solo funcionan con estos. Asi */
-// expresionRelacional ::= expresionRelacional operadorRelacional expresionAritmetica
-//                       | expresionAritmetica
-//                       | PAREN_I expresion PAREN_D;
-
-// operadorRelacional ::= IGUAL {: RESULT = "=="; :}
-//                      | DIFERENTE {: RESULT = "!="; :}
-//                      | MENOR {: RESULT = "<"; :}
-//                      | MAYOR {: RESULT = ">"; :}
-//                      | MENOR_IGUAL {: RESULT = "<="; :}
-//                      | MAYOR_IGUAL {: RESULT = ">="; :};
 
 expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:  // En esto podriamos separar las validaciones para que den errores mas explicitos.
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, "==")) {
@@ -1591,7 +1539,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: igual\n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: igual\n");
                                 String a1 = operandoString (izq);
                                 String a2 = operandoString (der);
                                 String t = TAC_Generator.newTemp();
@@ -1609,7 +1557,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: diferente \n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: diferente \n");
                                 String a1 = operandoString(izq);
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
@@ -1627,7 +1575,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: menor\n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: menor\n");
                                 String a1 = operandoString(izq);
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
@@ -1645,7 +1593,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: mayor\n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: mayor\n");
                                 String a1 = operandoString(izq);
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
@@ -1663,7 +1611,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: menor igual\n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: menor igual\n");
                                 String a1 = operandoString(izq);
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
@@ -1681,7 +1629,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: mayor igual\n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: mayor igual\n");
                                 String a1 = operandoString(izq);
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
@@ -1693,7 +1641,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 RESULT = res;
                             }
                         :}
-                      | expresionAritmetica:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: expr arit" + "Tipo final:" + expr.getTipo() + "\n"); :};
+                      | expresionAritmetica:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> expre rela: expr arit" + "Tipo final:" + expr.getTipo() + "\n"); :};
                       //| PAREN_I expresion:expr PAREN_D {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: parentesis" + "Tipo final:" + expr.getTipo() + "\n"); :}; /* Con esta en teoria deberia de volver a arriba. */
 
 
@@ -1716,7 +1664,7 @@ expresionBooleana ::= TRUE{:
 
 /* >> Expresiones aritmeticas */
 
-expresionAritmetica ::= expresionSuma:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr arit: inicip expr arit " + "Tipo final:" + expr.getTipo() + "\n");  :};
+expresionAritmetica ::= expresionSuma:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> expr arit: inicip expr arit " + "Tipo final:" + expr.getTipo() + "\n");  :};
 
 
 expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
@@ -1724,7 +1672,7 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                         System.err.println("Error semantico: La suma requiere tipos numericos iguales (int o float) valor. Fila: " + izqleft + ", Columna: " + izqright);
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        System.out.println("\n Expresion en validacion -> expr suma: suma\n");
+                        mostrarMensaje("\n Expresion en validacion -> expr suma: suma\n");
                         if (izq == null || der == null) {
                             RESULT = new TipoExpresiones("error");
                             aumentarCountErroresSemanticos();
@@ -1763,7 +1711,7 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            System.out.println("\n Expresion en validacion -> expr suma: resta\n");
+                            mostrarMensaje("\n Expresion en validacion -> expr suma: resta\n");
                             if (izq == null || der == null) {
                                 RESULT = new TipoExpresiones("error");
                             } else if ("error".equals(izq.getTipo()) || "error".equals(der.getTipo())) {
@@ -1795,7 +1743,7 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                             }
                         }
                     :}
-                | expresionProducto:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr suma: expr prod \n"); :}
+                | expresionProducto:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> expr suma: expr prod \n"); :}
                 | expresionSuma MAS error {: System.err.println(" -> Error: Expresion no valida despues de '+'"); RESULT = new TipoExpresiones("error"); :}
                 | expresionSuma MENOS error {: System.err.println(" -> Error: Expresion no valida despues de '-'"); RESULT = new TipoExpresiones("error"); :};
 
@@ -1841,7 +1789,7 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            System.out.println("\n Expresion en validacion -> expr prod div entera \n");
+                            mostrarMensaje("\n Expresion en validacion -> expr prod div entera \n");
                             String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
@@ -1861,7 +1809,7 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            System.out.println("\n Expresion en validacion -> expr prod div entera \n");
+                            mostrarMensaje("\n Expresion en validacion -> expr prod div entera \n");
                             String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
@@ -1881,7 +1829,7 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            System.out.println("\n Expresion en validacion -> expr prod modulo \n");
+                            mostrarMensaje("\n Expresion en validacion -> expr prod modulo \n");
                             String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
@@ -1905,7 +1853,7 @@ expresionPotencia ::= expresionFactor:base POTENCIA expresionPotencia:exp {:
                         System.err.println(" -> Error semantico: Las potentencia debe de ser base int o float y el exponente debe ser int. Tipos definidos: Base -> '" + base.tipoDato + "' y Exponente -> '" + exp.tipoDato + "'." + "Linea: " + baseleft + ", Columna: " + baseright);
                         aumentarCountErroresSemanticos();
                     } else {
-                        System.out.println("\n Expresion en validacion -> expr prod potencia \n");
+                        mostrarMensaje("\n Expresion en validacion -> expr prod potencia \n");
                         String a1 = base.temp != null ? base.temp : (base.valorI != null ? base.valorI.toString() : (base.valorF != null ? base.valorF.toString() : base.valorS));
                         String a2 = exp.temp != null ? exp.temp : (exp.valorI != null ? exp.valorI.toString() : (exp.valorF != null ? exp.valorF.toString() : exp.valorS));
                         if (a1 == null) a1 = "null";
@@ -1931,7 +1879,7 @@ expresionFactor ::= PAREN_I expresion:expr PAREN_D {: RESULT = expr; System.out.
 
 expresionNumerica ::= INT_LITERAL:n {: 
                         RESULT = new TipoExpresiones("int", n); 
-                        System.out.println("\n Expresion en validacion -> num int \n"); 
+                        mostrarMensaje("\n Expresion en validacion -> num int \n"); 
                         
                         :}
                     | FLOAT_LITERAL:f  {: RESULT = new TipoExpresiones("float", f); System.out.println("\n Expresion en validacion -> num flo \n"); :}
@@ -1947,12 +1895,12 @@ expresionNumerica ::= INT_LITERAL:n {:
                             RESULT = te;
                         }
                         // RESULT = obtenerTipoIdentificador(id); 
-                        System.out.println("\n Expresion en validacion -> num id \n");
+                        mostrarMensaje("\n Expresion en validacion -> num id \n");
                         // RESULT = te;
                     :}
                     | funcionLlamada:func {: 
                         RESULT = obtenerTipoFuncion(funcionActual); 
-                        System.out.println("\n Expresion en validacion -> num func\n");
+                        mostrarMensaje("\n Expresion en validacion -> num func\n");
                     :}
                     | obtenerElementoLista:ob {: 
                         // RESULT = obtenerTipoElementoLista(ob); 
@@ -1967,7 +1915,7 @@ expresionNumerica ::= INT_LITERAL:n {:
                         // if (!validarTipoEsperado("int|float", charExp)) {
                         //     System.err.println("Error semantico: tipo '" + charExp.tipoDato + "' no valido en expresion numerica.");
                         // }
-                        System.out.println("\n Expresion en validacion -> char \n");
+                        mostrarMensaje("\n Expresion en validacion -> char \n");
                         RESULT = charExp;
                     :}
                     | expresionString:strExp {: 
@@ -1975,14 +1923,14 @@ expresionNumerica ::= INT_LITERAL:n {:
                         //     System.err.println("Error semantico: tipo '" + strExp.tipoDato + "' no valido en expresion numerica.");
                         // }
                         RESULT = strExp;
-                        System.out.println("\n Expresion en validacion -> String\n");
+                        mostrarMensaje("\n Expresion en validacion -> String\n");
                     :}
                     | expresionBooleana:boolExp {: 
                         // if (!validarTipoEsperado("int|float", boolExp)) {
                         //     System.err.println("Error semantico: tipo '" + boolExp.tipoDato + "' no valido en expresion numerica.");
                         // }
                         RESULT = boolExp;
-                        System.out.println("\n Expresion en validacion -> expr booneana\n");
+                        mostrarMensaje("\n Expresion en validacion -> expr booneana\n");
                     :}
 
                     | INT_LITERAL:n IDENTIFICADOR error
@@ -2003,7 +1951,7 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                     RESULT = new TipoExpresiones("error");
                                 } else {
                                     // Depende del tipo int o float se genera cuad diferente
-                                    System.out.println("\n Expresion en validacion -> Unaria incremento.\n");
+                                    mostrarMensaje("\n Expresion en validacion -> Unaria incremento.\n");
                                     TipoExpresiones res = new TipoExpresiones(tipo.tipoDato); 
                                     String a1 = id; // el identificador como operando
                                     String t = TAC_Generator.newTemp();
@@ -2020,7 +1968,8 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                     RESULT = new TipoExpresiones("error");
                                 } else {
                                     RESULT = tipo;
-                                    System.out.println("\n Expresion en validacion -> Unaria decremento. \n");
+                                    mostrarMensaje("\n Expresion en validacion -> Unaria decremento. \n");
+
                                     TipoExpresiones res = new TipoExpresiones(tipo.tipoDato); 
                                     String a1 = id; // el identificador como operando
                                     String t = TAC_Generator.newTemp();
@@ -2029,6 +1978,8 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                     RESULT = res;
                                 }
                             :};
+// Fin de la expresion unaria.
+
 
 expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica:expr {: 
                                         if (!validarTipoEsperado("int|float", expr) || expr == null || "error".equals(expr.getTipo())) {
@@ -2036,8 +1987,11 @@ expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica:expr {:
                                             aumentarCountErroresSemanticos();
                                             RESULT = new TipoExpresiones("error");
                                         } else {
-                                            System.out.println("\n Expresion en validacion -> Unaria negativa.\n");
-                                            // El argumento es número (int o float)
+                                            //System.out.println("\n Expresion en validacion -> Unaria negativa.\n");
+                                            mostrarMensaje("\n Expresion en validacion -> Unaria negativa.\n");
+
+
+                                            // El argumento es numero (int o float)
                                             String a1 = expr.temp != null ? expr.temp : (expr.valorI != null ? expr.valorI.toString() : (expr.valorF != null ? expr.valorF.toString() : expr.valorS));
                                             if (a1 == null) {
                                                 a1 = "null";
