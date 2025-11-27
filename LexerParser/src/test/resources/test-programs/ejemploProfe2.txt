@@ -1,75 +1,70 @@
- 
-global string _s1_$
-global bool _b1_$
 
- float func1 є char x22,char x22 э  ¿ |semantico borrar parametro
+global string _s1_$ | -> Aqui se corrigio un sintactico
 
-	let int numero$ let char letra$
-	numero = 10$
-	letra = 'a'$
-	output є numero э $
-	output є letra э $
-	let int numS = numero - 1 * numero + numero $
-	output є numS э $
+float _mi_  є int _dif_, char _otra_ э ¿  |sintactico  э 
+	let int _otra_$
+	let string _str_="Hola $~&|?$& э  mundo"$
+	for  _i_=20 step -2 downto 0 do  | puede dar sintactico
+	 ¿ 
+		loop
+		  	_var_2 = _var_2 - 1$ |semantico
+			_var_ = _var_ - 1$ |semantico
+		exit when є _var2_>12.2 @ є12> єΣє 34+35 эээ  э $ |semantico NOT
+		end loop$
 
-	let float=-0.01$ |error sintactico
-	let char _x22_='a'$ ¡semantico x22!
-	let char _miChar_='!'  |error sintactico
-	let char _miChar2_='!!'$ |sintactico-semantico
-	let int _x30_=-1$
-	let bool _x40_=false$
-	let char _x50_[1000] = ¿4,5?$
-	let string _x50_="Hola a todos los que est[a] haciendo un compilador nuevo¿n"$
-	decide of
-	є x22<=45 @ var>5.6 э ->  ¿  |semantico x22, var
-		let int y$
-		x22=10$
-		let char ch33='a'$
+		| De esta parte de aqui falta toda la estructura del DECIDE OF
+		¡else ->  ¿  | sintactico
+			input є _var2_ э $
+			break$
+		 ? !
+
+		decide   of
+		є _var_==0 э  ->
+		 ¿ 
+			output є "entra al if" э $
+		 ?
+		end decide$
+		decide   of 
+		є true э ->  | A este le faltan parentesis y por eso da error sintactico
+		 ¿ 
+			output є _var_ э $
+		 ? 
+		else | ->   La fecla no la usa el else, nada mas pasa al bloque.
+		 ¿ 
+			decide   of  |semantico _otra_
+				є _otra_  == 1э -> ¿ | lo de _otra_ estaba sin parentesis y eso no es valido para nuestro lenguaje
+					output є "!|" э $ ? 
+				є _otra_  == 2 э -> ¿
+					_otra_ = 10$
+					break$ ?
+				else  ¿ | sintactico: Se quita la flecha y se intercambia posisiones con la condicion anterior.
+					_otra_ = -10.5 * -1.9$ ?
+			end  decide  $
+
+			decide   of  |semantico _otra2_
+				є _otra2_ == 10 э -> ¿ 
+					output є "un case" э $ ?
+			end  decide  $ 
+		 ?
+		 end  decide  $
 	 ? 
-	є x24>=var>5.6 э ->  ¿
-		let int y$
-		x22=10$
-		let char ch33='a'$
-	? 
-	else -> ¿ 
-		let int y$ |no error duplicado en if-else
-		let string str2="sdff"$
-	 ?
-	end decide$ 
-	for   _i_=0 step 1 to 10 do  ¿ output є _i_ э $ ?  |semantico i y j puede dar error sintactico
-	output є "Hola mundo" э $
-	input є _x22_ э $
-	return -5.6$|cambio en retorno genera semantico
- ?  
-
- bool _func2_  є bool _b1_, int _i1_ э   ¿ 
-	let int $ |sintactico
-	return$ |generar error con -5.6 y con i1
-  ?  
-
-string _func3_  є  э   ¿  |semantico string
-	let string _b1_$
-	return _b1_$ 
+	return 1$ |semantico
   ? 
 
-void principal є  э  ¿ 
-¡
-Comentario 1
-!
-	let char miChar='!'$
-	let char miChar2='!!'$ |sintactico
-	let string str1="Mi string 1"$
-	let float fl1$
-	let float fl1=56.6$ |semantico fl1
-	let int in1=fl1--- -14%in1 +++ 7 / 15$ |semantico fl1, in1, semantico division
-	let float fl2=3.7 ^ fl1+ є 45.6 % 76 э $ |semantico literal 76
-	
-|comentario 2
-	arr = 10 - arr[67] * func1  є hola, true, "hola mundo", 4.5, 'a' э $ |semantico func1, retorno func1
-	fl1 = 4.5%miChar^-0.005$ |semantico miChar
-	miFunc є miFunc є  э ,'a' э $ |semantico miFunc, hola
-	let bool bl0 = 6.7 != 8.9$ |ok
-	bl0 = true != false$ |ok
-	let bool bl1 = in1 >= fl1 ~ false @ Σ є func2 є 3,in1 э  > 56 э $ |semantico in1 >= fl1, func2
-	return   bl1$ |semantico
+ boolean _miOtraFun_  є  э   ¿ 
+	return -5.6$ |semantico
+  ? 
+
+ void principal є э  ¿ | semantico tipo int, sintactico? de aqui se tiene un parametro en el principal y este no acepta parametros.
+	_arr_[67+_i_++] = -0.01$  | semantico
+	let boolean _b1_$ |semantico
+	let string _s1_$ |semantico
+
+	|input є _s1_ э $ |semantico -> El input del profe es diferente al de nosotros, el de nostros es de asignacion y requiere del tipo.
+	let int entrada = input є int э$ | Este es el correcto.
+	output є _b1_ э $ |semantico
+	output є true э $ |semantico
+	output є -6.7 э $
+	return$  |sintactico
+	return 1+_f_ є  э $
  ? 
