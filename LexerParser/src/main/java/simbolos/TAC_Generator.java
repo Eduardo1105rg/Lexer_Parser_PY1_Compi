@@ -88,8 +88,8 @@ public class TAC_Generator {
         add(cuad);
     }
 
-    public static void generarCuadAsignacion (String argumento1, String resultado) {
-        Cuad cuad = new Cuad ("=", argumento1, null, resultado);
+    public static void generarCuadAsignacion (String argumento1, String resultado, String tipo) {
+        Cuad cuad = new Cuad ("=", argumento1, null, resultado, tipo); // t0 = a1 + a2 tipo
         add(cuad);
     }
 
@@ -129,8 +129,8 @@ public class TAC_Generator {
     }
 
     // PopParam: Manejo de parámetros para funciones
-    public static void generarPopParam(int index, String id) {
-        Cuad cuad = new Cuad("POP_PARAM", Integer.toString(index), null, id);
+    public static void generarPopParam(int index, String id, String tipo) { // meterle tipo
+        Cuad cuad = new Cuad("POP_PARAM", Integer.toString(index), null, id, tipo);
         add(cuad);
     }
 

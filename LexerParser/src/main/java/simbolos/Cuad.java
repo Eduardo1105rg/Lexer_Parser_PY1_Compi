@@ -28,7 +28,7 @@ public class Cuad {
 
     @Override
     public String toString() {
-        String suf = (tipo != null) ? " {" + tipo + "}" : ""; // Un sufiko si tiene tipo
+        String suf = (tipo != null) ? tipo.toString() : ""; // Un sufiko si tiene tipo
         if ("LABEL".equals(operador)){
             return resultado + ":";
         }
@@ -43,7 +43,7 @@ public class Cuad {
             return "PARAM " + argumento1;
         }
         if ("POP_PARAM".equals(operador)) {
-            return "POP_PARAM " + argumento1 + " -> " + resultado;
+            return "POP_PARAM " + argumento1 + " -> " + resultado + " -> " + tipo;
         }
         if ("CALL".equals(operador)) {
             return (resultado == null)
@@ -83,6 +83,6 @@ public class Cuad {
         if (argumento2 == null) {
             return resultado + " = " + operador + " " + argumento1;
         }
-        return resultado + " = " + argumento1 + " " + operador + " " + argumento2 + suf;
+        return resultado + " = " + argumento1 + " " + operador + " " + argumento2 + " -> " + suf;
     }
 }

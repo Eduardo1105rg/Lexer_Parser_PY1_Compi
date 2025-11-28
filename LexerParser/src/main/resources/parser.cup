@@ -744,7 +744,7 @@ param ::= tipoDatoParametro:tipo IDENTIFICADOR:ID {:
               System.err.println(" -> Error semantico: parametro '" + ID + "' ya declarado.");
               aumentarCountErroresSemanticos();
           }
-          TAC_Generator.generarPopParam (indiceParametroActual++, ID); // Se luga el parametro al indice
+          TAC_Generator.generarPopParam (indiceParametroActual++, ID, tipo.toString()); // Se luga el parametro al indice
         :}
       | tipoLista:tipo IDENTIFICADOR:ID {: //Despues se tiene que hacer algo para trabajar con lo del tamaño.
           Token parametro = new Token(ID, tipo.tipoBase, "parametro", null, "parametro", IDleft, IDright);
@@ -752,7 +752,7 @@ param ::= tipoDatoParametro:tipo IDENTIFICADOR:ID {:
               System.err.println(" -> Error semantico: parametro '" + ID + "' ya declarado.");
               aumentarCountErroresSemanticos();
           }
-          TAC_Generator.generarPopParam (indiceParametroActual++, ID);
+          TAC_Generator.generarPopParam (indiceParametroActual++, ID, tipo.toString());
         :}
       | error IDENTIFICADOR {: System.err.println(" -> Error: Para los parametros de una funcion se debe de indicar su tipo de dato."); :};
 
@@ -1241,7 +1241,7 @@ forInt ::= FOR IDENTIFICADOR:id ASIGNACION expresionAritmetica:exp {:
                 // TAC inicial
                 String ini = operandoString(exp);
                 if (ini == null || "null".equals(ini)) ini = "0";
-                TAC_Generator.generarCuadAsignacion(ini, id); // id = ini
+                TAC_Generator.generarCuadAsignacion(ini, id, "int"); // id = ini
                 forVarControlNombre = id;
             :};
         // | FOR   error ASIGNACION expresionAritmetica {:
@@ -1282,7 +1282,7 @@ for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
 
             String tInc = TAC_Generator.newTemp();
             TAC_Generator.generarCuad("+", var, step.toString(), tInc);
-            TAC_Generator.generarCuadAsignacion(tInc, var);
+            TAC_Generator.generarCuadAsignacion(tInc, var, "int");
 
             TAC_Generator.generarCuadSaltoIncondicional(pilaForStartLabels.peek());
             TAC_Generator.generarLabel(pilaForExitLabels.peek());
@@ -1330,7 +1330,7 @@ for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
 
             String tDec = TAC_Generator.newTemp();
             TAC_Generator.generarCuad("-", var, step.toString(), tDec);
-            TAC_Generator.generarCuadAsignacion(tDec, var);
+            TAC_Generator.generarCuadAsignacion(tDec, var, "int");
 
             TAC_Generator.generarCuadSaltoIncondicional(pilaForStartLabels.peek());
             TAC_Generator.generarLabel(pilaForExitLabels.peek());
@@ -1355,7 +1355,7 @@ var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                 // nombre, tipo, ambito, valor, categoria, linea, columna
                 Token tokenVar = new Token(id, tipo, "local", null, "variable", idleft, idright);
                 insertarNuevoToken(tokenVar);
-                TAC_Generator.generarCuadAsignacion (valorDefault (tipo), id);
+                TAC_Generator.generarCuadAsignacion (valorDefault (tipo), id, tipo.toString());
                 System.out.println("\n >> Definicion var registrada. var \n");
 
             }
@@ -1392,7 +1392,7 @@ varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {:
                         if (fuente == null) {
                             System.err.println ("Error: No se pudo obtener el valor de la expresion para asignar a la variable '" + id + "'. Fila: " + idleft + ", Columna: " + idright);
                         } else {
-                            TAC_Generator.generarCuadAsignacion (fuente, id);
+                            TAC_Generator.generarCuadAsignacion (fuente, id, exp.tipoDato.toString());
                         }
                         //token.setValor(exp.valor); // actualizar el valor de la variable
                         // token.setValor(null);
@@ -1421,11 +1421,11 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
                                 if (fuente == null || "null".equals(fuente)) {
                                     fuente = valorDefault(tipo);
                                 }
-                                TAC_Generator.generarCuadAsignacion(fuente, id);
+                                TAC_Generator.generarCuadAsignacion(fuente, id, tipo.toString());
                             } else {
                                 System.err.println(" -> Error semantico: El tipo de la variable '" + id + "' no es compatible con el tipo de la expresion. Se esperaba '" + tipo + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
                                 aumentarCountErroresSemanticos();
-                                TAC_Generator.generarCuadAsignacion(valorDefault(tipo), id);
+                                TAC_Generator.generarCuadAsignacion(valorDefault(tipo), id, tipo.toString());
                             }
 
                             System.out.println("\n >> Variable local registrada. varCyAsignacion \n");
@@ -1450,7 +1450,7 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
                         if (entornoActual.insertarNuevoToken(tokenGlobal)) {
                             String def = valorDefault(tipo);
-                            TAC_Generator.generarCuadAsignacion(def, id);
+                            TAC_Generator.generarCuadAsignacion(def, id, tipo.toString());
                         }
                         System.out.println("\n >> Var globar registrada. \n");
                     }
@@ -1488,7 +1488,7 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                             if (fuente == null) {
                                 fuente = valorDefault (tipo);
                             }
-                            TAC_Generator.generarCuadAsignacion (fuente, id);
+                            TAC_Generator.generarCuadAsignacion (fuente, id, tipo.toString());
                         }
                         System.out.println("\n >> Var globar con expresion registrada. \n");
 
