@@ -1,0 +1,85 @@
+global string _s1_$
+global boolean _b1_$
+global int w$
+float func1 є float x22,char x23 э  ¿ |semantico borrar parametro
+
+	let int numero$ let char letra$
+	numero = 10$
+	letra = 'a'$
+	output є numero э $
+	output є letra э $
+	let int numS = numero - 1 * numero + numero $
+	output є numS э $
+
+	let float f=-0.01$ |rror sintactico
+	let char x24='a'$ ¡semantico x22!
+	let char _miChar_='!'$  |error sintactico
+	let char _miChar2_='!'$ |sintactico-semantico
+	let int _x30_=-1$
+	let boolean _x40_=false$
+	let int[1000] _x50_ = ¿4,5?$
+	let string _x51_="Hola a todos los que est[a] haciendo un compilador nuevo¿n"$
+	decide of
+	є w<=45 @ f>5.6 э ->  ¿  |semantico x22, var
+		let int y$
+		x23='e'$
+		let char ch33='a'$
+	 ? 
+	є є24 >= 3э э ->  ¿
+		let int y$
+		x23='f'$
+		let char ch33='a'$
+	? 
+	else ¿ 
+		let int y$ |no error duplicado en if-else
+		let string str2="sdff"$
+	 ?
+	end decide$ 
+	let int _i_$
+	for   _i_=0 step 1 to 10 do  ¿ output є _i_ э $ ?  |semantico i y j puede dar error sintactico
+	output є "Hola mundo" э $
+	w = input є int э $
+	return -5.6$|cambio en retorno genera semantico
+ ?  
+
+ boolean _func2_  є boolean _b2_, int _i1_ э   ¿ 
+	let int idValido $ |sintactico
+	return false@true$ |generar error con -5.6 y con i1
+  ?  
+
+int _func3_  є  э   ¿  |semantico string
+	let string _b2_$
+	return 2$ 
+  ? 
+
+void principal є  э  ¿ 
+¡
+Comentario 1
+!
+	let char miChar='!'$
+	let char miChar2='!'$ |sintactico
+	let string str1="Mi string 1"$
+	let float fl1$
+	let float fl2=56.6$ |semantico fl1
+	let int in1=w--- -14^w + 7 // 15$ |semantico fl1, in1, semantico division
+	let float fl3=3.7 ^ w+ є 4.5 * 7.6 э $ |semantico literal 76
+	
+|comentario 2
+	let int[1000] arr = ¿4,5?$
+	w = 10 - arr[67+w] * _func3_  є  э $ |semantico func1, retorno func1
+	fl1 = 4.5+ 1.3 ^ -23$ |semantico miChar
+	func1 є func1 є  э ,'a'э $ |semantico miFunc, hola   -> Este tiene el error de que no se valida que si el parametro es una funcion que se validen los argumentos de esta.
+	let boolean bl0 = 6.7 != 8.9$ |ok
+	bl0 = true != false$ |ok
+	let boolean bl1 = in1 >= w ~ false @  є_func3_ є  э >3 э $ |semantico in1 >= fl1, func2
+
+	loop
+		bl0 = true != false$
+		let int _i_$
+		for   _i_=0 step 1 to 10 do  ¿ output є _i_ э $ ?
+		output є true э$
+	exit when є in1 >= w ~ false @  є_func3_ є  э >3 э э $ |semantico NOT
+	end loop$
+
+	return$ |semantico
+ ? 

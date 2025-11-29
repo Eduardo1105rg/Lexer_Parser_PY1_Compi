@@ -9,7 +9,7 @@ import java.io.PrintStream;
 
 public class App {
     public static void main(String[] args) {
-         if (args.length == 0) {
+        if (args.length == 0) {
             System.err.println("Uso: java parser.App <archivo_fuente>");
             System.exit(1);
         }
@@ -19,11 +19,11 @@ public class App {
             utils.ManejoArchivos.iniciar("tokens.txt");
             // Esto es para registrar los tokens y lexemas en un archivo.
 
-            PrintStream consolaOriginal = System.out; // Esto es para salvar la conosola 
+            PrintStream consolaOriginal = System.out; // Esto es para salvar la conosola
 
-            // PrintStream out = new PrintStream("tokens.txt"); // COn esto redirigimos la salida de toda la consola hacia el archivo, por eso si debemos 
+            // PrintStream out = new PrintStream("tokens.txt"); // COn esto redirigimos la
+            // salida de toda la consola hacia el archivo, por eso si debemos
             // System.setOut(out);
-
 
             FileReader file = new FileReader(args[0]);
             Lexer lexer = new Lexer(file);
@@ -31,7 +31,7 @@ public class App {
 
             p.parse();
 
-            p.mostrarTS();
+            // p.mostrarTS();
 
             // Luego de analisis sintactico:
             consolaOriginal.println("Errores lexicos: " + lexer.getErrorContador());
@@ -49,7 +49,7 @@ public class App {
                 // Imprimimos tabla de simbolos final
                 p.mostrarTS();
             } else {
-                consolaOriginal.println("El archivo fue analizado con " + (errores+erroresSemanTicos) + " errores.");
+                consolaOriginal.println("El archivo fue analizado con " + (errores + erroresSemanTicos) + " errores.");
             }
 
             // p.mostrarTablaSimbolos();

@@ -7,8 +7,6 @@ public class ObtenerValorEnString {
     public static String operandoString(TipoExpresiones expr) {
         if (expr == null)
             return "null";
-        if (expr.temp != null)
-            return expr.temp;
         if (expr.valorI != null)
             return expr.valorI.toString();
         if (expr.valorF != null)
@@ -43,6 +41,8 @@ public class ObtenerValorEnString {
             }
             return "'" + cs + "'";
         }
+        if (expr.temp != null) // Esta parte tambien es de la correccion.
+            return expr.temp;
         return "null";
     }
 }
