@@ -51,6 +51,8 @@ public class Cuad {
                 : resultado + " = CALL " + argumento1 + ", " + argumento2;
         }
         if ("RET".equals(operador)) {
+            if (argumento1 == null)
+                return "RET";
             return "RET " + argumento1;
         }
         if ("PRINT".equals(operador)) {

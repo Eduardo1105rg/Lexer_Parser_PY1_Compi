@@ -41,7 +41,11 @@ public class TAC_Generator {
     public static void unir (List<Cuad> cuads) {
         if (cuads == null || cuads.isEmpty())
             return;
-        cuadGlobales.addAll(cuads);
+        if (pilaBuffers.isEmpty()) {
+            cuadGlobales.addAll(cuads);
+        } else {
+            pilaBuffers.peek().addAll(cuads);
+        }
     }
 
     /**

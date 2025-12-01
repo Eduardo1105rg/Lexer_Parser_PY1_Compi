@@ -942,6 +942,8 @@ return ::= RETURN:ret DELIMITADOR {:
                 System.err.println(" -> Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar un valor de tipo '" + funcionEnAnalisis.getTipo() + "'." + "Fila: " + retleft + ", Columna: " + retright);
                 aumentarCountErroresSemanticos();
             }
+            // Generación tac -> RET
+            TAC_Generator.generarReturn (null);
         :}
          | RETURN expresion:expr DELIMITADOR {: 
                 String tipoExpr = expr.getTipo(); // suponiendo que expresion devuelve un String con el tipo, pero creo que devolvera una clase con otros datos.
@@ -954,6 +956,9 @@ return ::= RETURN:ret DELIMITADOR {:
                     System.err.println(" -> Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar tipo '" + tipoFuncion + "', pero se retorno tipo '" + tipoExpr + "'." + "Fila: " + exprleft + ", Columna: " + exprright);
                     aumentarCountErroresSemanticos();
                 }   
+                // Generacion TAC
+                String valorRet = operandoString (expr);
+                TAC_Generator.generarReturn (valorRet);
             :}
          | RETURN expresion error {: System.err.println(" -> Error: Se esperaba un delimitador '$'"); :}
          | RETURN error {: System.err.println(" -> Error: Se esperaba un delimitador '$'"); :};
@@ -1134,19 +1139,17 @@ loopInicio ::= LOOP {:
                 // para que una vez que finalice el loop, agreguemos al entorno padre el token
 
                 crearAmbito(); // Crear el ambito.
+                String lStart = TAC_Generator.newEtiqueta();
+                String lExit = TAC_Generator.newEtiqueta();
                 pilaEstrucControl.push("loop"); // Registrar el la pila que hay una nueva estructura.
+                pilaLoopStartLabels.push(lStart);
+                pilaLoopExitLabels.push(lExit);
+
+                TAC_Generator.generarLabel(lStart); // L_start
+                TAC_Generator.iniciarBuffer();
             :};
 
-loop ::= loopInicio:loopIni {:
-                    // Se preparan las etiquetas y el buffer para el body
-                    String L_start = TAC_Generator.newEtiqueta();
-                    String L_exit  = TAC_Generator.newEtiqueta();
-                    pilaLoopStartLabels.push(L_start);
-                    pilaLoopExitLabels.push(L_exit);
-
-                    TAC_Generator.generarLabel(L_start);
-                    TAC_Generator.iniciarBuffer();
-                :} sentencias EXIT WHEN condicion:cond DELIMITADOR END LOOP DELIMITADOR {:
+loop ::= loopInicio:loopIni sentencias EXIT WHEN condicion:cond DELIMITADOR END LOOP DELIMITADOR {:
                 // Mantenemos el cuerpo del loop
                 List<Cuad> cuerpo = TAC_Generator.finalizarBuffer();
                 TAC_Generator.unir(cuerpo);
@@ -1164,18 +1167,13 @@ loop ::= loopInicio:loopIni {:
                 }
 
                 // exit when cond  => si cond TRUE, salir; si FALSE, repetir
-                TAC_Generator.generarCuadIf(tCond, pilaLoopExitLabels.peek());      // IF cond GOTO L_exit
-                TAC_Generator.generarCuadSaltoIncondicional(pilaLoopStartLabels.peek()); // GOTO L_start
-                TAC_Generator.generarLabel(pilaLoopExitLabels.peek());              // L_exit:
-                if (!pilaLoopExitLabels.isEmpty()) {
-                    pilaLoopExitLabels.pop();
-                }
-                if (!pilaLoopStartLabels.isEmpty()) {
-                    pilaLoopStartLabels.pop();
-                }
-                if (!pilaEstrucControl.isEmpty()) {
-                    pilaEstrucControl.pop();
-                }
+                simbolos.TAC_Generator.generarCuad("IF", tCond, null, pilaLoopExitLabels.peek());
+                simbolos.TAC_Generator.generarCuadSaltoIncondicional(pilaLoopStartLabels.peek());
+                simbolos.TAC_Generator.generarLabel(pilaLoopExitLabels.peek());
+
+                pilaLoopStartLabels.pop();
+                pilaLoopExitLabels.pop();
+                pilaEstrucControl.pop();
                 Token estructura = new Token("otro_loop_" + (contadorLoop++), "estructura", "local", null, "loop", loopInileft, loopIniright);
                 estructura.setAmbitoLocal(entornoActual);
                 cerrarAmbito();
@@ -1199,9 +1197,13 @@ forInt ::= FOR IDENTIFICADOR:id ASIGNACION expresionAritmetica:exp {:
                     aumentarCountErroresSemanticos();
                 }
                 // TAC inicial
-                String ini = operandoString(exp);
-                if (ini == null || "null".equals(ini)) ini = "0";
-                TAC_Generator.generarCuadAsignacion(ini, id, "int"); // id = ini
+                String initVal = operandoString(exp);
+                simbolos.TAC_Generator.generarCuadAsignacion(initVal, id, exp.getTipo());
+
+                String fStart = simbolos.TAC_Generator.newEtiqueta();
+                String fExit  = simbolos.TAC_Generator.newEtiqueta();
+                pilaForStartLabels.push(fStart);
+                pilaForExitLabels.push(fExit);
                 forVarControlNombre = id;
             :};
         // | FOR   error ASIGNACION expresionAritmetica {:
@@ -1222,33 +1224,31 @@ for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
                 System.err.println(" -> Error semantico: limite del for debe ser int, recibido: " + lim.getTipo());
                 aumentarCountErroresSemanticos();
             }
-            String L_start = TAC_Generator.newEtiqueta();
-            String L_exit  = TAC_Generator.newEtiqueta();
-            pilaForStartLabels.push(L_start);
-            pilaForExitLabels.push(L_exit);
-            TAC_Generator.generarLabel(L_start);
+            String fStart = pilaForStartLabels.peek();
+            String fExit  = pilaForExitLabels.peek();
+            TAC_Generator.generarLabel(fStart);
+            String limValue = operandoString(lim);
+            String tCond = TAC_Generator.newTemp();
+            simbolos.TAC_Generator.generarCuad("<=", forVarControlNombre, limValue, tCond);
+            simbolos.TAC_Generator.generarCuadIfFalse(tCond, fExit);
+
             TAC_Generator.iniciarBuffer();
         :} bloque:blo {:
-            List<Cuad> cuerpo = TAC_Generator.finalizarBuffer();
-            TAC_Generator.unir(cuerpo);
+            List<Cuad> bodyFor = simbolos.TAC_Generator.finalizarBuffer();
+            simbolos.TAC_Generator.unir(bodyFor);
 
-            String var = forVarControlNombre;
-            String endVal = operandoString(lim);
-            if (endVal == null || "null".equals(endVal)) endVal = "0";
+            // step
+            String stepLit = step.toString();
+            String tInc = simbolos.TAC_Generator.newTemp();
+            simbolos.TAC_Generator.generarCuad("+", forVarControlNombre, stepLit, tInc);
+            simbolos.TAC_Generator.generarCuadAsignacion(tInc, forVarControlNombre, "int");
 
-            String tCond = TAC_Generator.newTemp();
-            TAC_Generator.generarCuad("<=", var, endVal, tCond);
-            TAC_Generator.generarCuadIfFalse(tCond, pilaForExitLabels.peek());
+            // Bucle del for
+            simbolos.TAC_Generator.generarCuadSaltoIncondicional(pilaForStartLabels.peek());
+            simbolos.TAC_Generator.generarLabel(pilaForExitLabels.peek());
 
-            String tInc = TAC_Generator.newTemp();
-            TAC_Generator.generarCuad("+", var, step.toString(), tInc);
-            TAC_Generator.generarCuadAsignacion(tInc, var, "int");
-
-            TAC_Generator.generarCuadSaltoIncondicional(pilaForStartLabels.peek());
-            TAC_Generator.generarLabel(pilaForExitLabels.peek());
-
-            pilaForExitLabels.pop();
             pilaForStartLabels.pop();
+            pilaForExitLabels.pop();
             pilaEstrucControl.pop();
             forVarControlNombre = null;
 
@@ -1315,7 +1315,7 @@ var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                 // nombre, tipo, ambito, valor, categoria, linea, columna
                 Token tokenVar = new Token(id, tipo, "local", null, "variable", idleft, idright);
                 insertarNuevoToken(tokenVar);
-                TAC_Generator.generarCuadAsignacion (valorDefault (tipo), id, tipo.toString());
+                //TAC_Generator.generarCuadAsignacion (valorDefault (tipo), id, tipo.toString());
                 System.out.println("\n >> Definicion var registrada. var \n");
 
             }
