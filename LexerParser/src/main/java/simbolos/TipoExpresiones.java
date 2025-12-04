@@ -22,6 +22,9 @@ public class TipoExpresiones {
     public String temp; // Esto es para tener el valor temporal
     public List<Cuad> cuads;
 
+    // Para lo del trabjo con las listas.
+    public String idFuncion; // Para realizar la validacion de los argumentos de las funciones.
+
     public TipoExpresiones(String pTipoDato) {
         this.tipoDato = pTipoDato;
         this.tipos = new ArrayList<>();
@@ -29,6 +32,10 @@ public class TipoExpresiones {
 
         // Prueba para TAC
         this.cuads = new ArrayList<>();
+
+        // Para realizar la validacion de los argumentos de las funciones. vamos a
+        // guardar el id de la funcion.
+        this.idFuncion = "";
     }
 
     public TipoExpresiones(String tipo, Object valor) {
@@ -55,35 +62,40 @@ public class TipoExpresiones {
         this.tipoDato = pTipoDato;
         this.valorI = tamano;
         this.cuads = new ArrayList<>();
-        if (tamano != null) this.temp = tamano.toString();
+        if (tamano != null)
+            this.temp = tamano.toString();
     }
 
     public TipoExpresiones(String pTipoDato, Double tamano) {
         this.tipoDato = pTipoDato;
         this.valorF = tamano;
         this.cuads = new ArrayList<>();
-        if (tamano != null) this.temp = tamano.toString();
+        if (tamano != null)
+            this.temp = tamano.toString();
     }
 
     public TipoExpresiones(String pTipoDato, Character tamano) {
         this.tipoDato = pTipoDato;
         this.valorC = tamano;
         this.cuads = new ArrayList<>();
-        if (tamano != null) this.temp = tamano.toString();
+        if (tamano != null)
+            this.temp = tamano.toString();
     }
 
     public TipoExpresiones(String pTipoDato, String tamano) {
         this.tipoDato = pTipoDato;
         this.valorS = tamano;
         this.cuads = new ArrayList<>();
-        if (tamano != null) this.temp = tamano;
+        if (tamano != null)
+            this.temp = tamano;
     }
 
     public TipoExpresiones(String pTipoDato, Boolean tamano) {
         this.tipoDato = pTipoDato;
         this.valorB = tamano;
         this.cuads = new ArrayList<>();
-        if (tamano != null) this.temp = tamano.toString();
+        if (tamano != null)
+            this.temp = tamano.toString();
     }
 
     public TipoExpresiones(String pTipoDato, int pValor, int pTamano) {
@@ -105,9 +117,18 @@ public class TipoExpresiones {
         this.cuads = new ArrayList<>();
     }
 
-
     public String getTipo() {
         return this.tipoDato;
+    }
+
+    // Estos es para establecer el id de la funcion cuando se le hace una llamada a
+    // funcion.
+    public String GetIdFuncion() {
+        return this.idFuncion;
+    }
+
+    public void SetIdFuncion(String idFuncion) {
+        this.idFuncion = idFuncion;
     }
 
     // Prueba TAC

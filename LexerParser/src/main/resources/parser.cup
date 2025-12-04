@@ -508,7 +508,12 @@ non terminal TipoExpresiones condicion;
 non terminal forInt, loopInicio;
 
 /* >> Funciones y sus llamadas  */
-non terminal funcionLlamada, argumentos, return, break;
+non terminal return, break;
+
+non terminal TipoExpresiones funcionLlamada;
+
+/* >> Este ahora lleva la lista de TipoExpresiones para trabajar con ellos. */
+non terminal List<TipoExpresiones> argumentos;
 
 /* Aqui estoy poniendo los no terminales que estan faltando */
 non terminal listaFunciones;
@@ -817,15 +822,15 @@ funcionLlamada ::= funcionLlamadaInicio argumentos:args PAREN_D {:
                           RESULT = new TipoExpresiones("error");
                       } else {
 
-                        List<String> argumentos = (List<String>) ((Symbol)args).value;
+                        List<TipoExpresiones> argumentos = args;//(List<String>) ((Symbol)args).value;
                         List<String> parametrosEsperados = obtenerTiposParametros(funcionActual);
 
                         if (argumentos.size() != parametrosEsperados.size()) {
                             System.err.println(" -> Error semantico: funcion '" + funcionActual.getNombre() + "' esperaba " + parametrosEsperados.size() + " argumentos, pero recibio " + argumentos.size() + "Fila: " + argsleft + ", Columna: " + argsright);
                         } else {
                             for (int i = 0; i < argumentos.size(); i++) {
-                                if (!argumentos.get(i).equals(parametrosEsperados.get(i))) {
-                                    System.err.println(" -> Error semantico: argumento " + (i+1) + " de funcion '" + funcionActual.getNombre() + "' esperaba tipo '" + parametrosEsperados.get(i) + "', pero recibio '" + argumentos.get(i) + "'" + "Fila: " + argsleft + ", Columna: " + argsright);
+                                if (!argumentos.get(i).getTipo().equals(parametrosEsperados.get(i))) {
+                                    System.err.println(" -> Error semantico: argumento " + (i+1) + " de funcion '" + funcionActual.getNombre() + "' esperaba tipo '" + parametrosEsperados.get(i) + "', pero recibio '" + argumentos.get(i).getTipo() + "' " + "Fila: " + argsleft + ", Columna: " + argsright);
                                 }
                             }
                         }
@@ -840,30 +845,37 @@ funcionLlamada ::= funcionLlamadaInicio argumentos:args PAREN_D {:
                             res.temp = t;
                             RESULT = res;
                         }
-
                       }
                   :}
-                 | funcionLlamadaInicio PAREN_D {:
+                  
+                 | funcionLlamadaInicio:fu PAREN_D {: // Aqui estaba pasando directo y mas bien se ocupa validar si efectivamente no tiene argumentos.
                         if (funcionActual == null) {
+                            System.err.println(" -> Error semantico: No se puede validardar los argumentos de la funcion, debido a que la funcion  buscada no esta declarada." + "Fila: " + fuleft + ", Columna: " + furight);
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
 
-                            // Generacion TAC
-                            if ("void".equals(funcionActual.getTipo())) {
-                                TAC_Generator.generarCall (funcionActual.getNombre(), 0, null);
-                                RESULT = new TipoExpresiones("void");
+                            List<String> parametrosEsperados = obtenerTiposParametros(funcionActual);
+                            if (parametrosEsperados.size() != 0) {
+                                System.err.println(" -> Error semantico: funcion '" + funcionActual.getNombre() + "' esperaba " + parametrosEsperados.size() + " parametros, pero recibio 0 " + "Fila: " + fuleft + ", Columna: " + furight);
+                                aumentarCountErroresSemanticos();
+                                RESULT = new TipoExpresiones("error");
                             } else {
-                                String t = TAC_Generator.newTemp();
-                                TAC_Generator.generarCall (funcionActual.getNombre(), 0, t);
-                                TipoExpresiones res = new TipoExpresiones(funcionActual.getTipo());
-                                res.temp = t;
-                                RESULT = res;
+                            
+                                // Generacion TAC
+                                if ("void".equals(funcionActual.getTipo())) {
+                                    TAC_Generator.generarCall (funcionActual.getNombre(), 0, null);
+                                    RESULT = new TipoExpresiones("void");
+                                } else {
+                                    String t = TAC_Generator.newTemp();
+                                    TAC_Generator.generarCall (funcionActual.getNombre(), 0, t);
+                                    TipoExpresiones res = new TipoExpresiones(funcionActual.getTipo());
+                                    res.temp = t;
+                                    RESULT = res;
+                                }
                             }
                         }
-                    :}
-
-                 ;
+                    :};
 
 
 argumentos ::= expresion:expr {: 
@@ -871,17 +883,21 @@ argumentos ::= expresion:expr {:
                   TAC_Generator.generarParam (valor);
                   contadorArgActual++;
 
-                  List<String> args = new ArrayList<>();
-                  args.add(expr.getTipo()); // suponiendo que expresion devuelve tipo: ((Symbol)expr).value.toString()
-                  RESULT = new Symbol(sym.ARGUMENTOS, args);
+                  List<TipoExpresiones> args = new ArrayList<>();
+                  args.add(expr); // suponiendo que expresion devuelve tipo: ((Symbol)expr).value.toString()
+                  RESULT = args;//new Symbol(sym.ARGUMENTOS, args);
               :}
              | argumentos:prev COMA expresion:expr {:
                   String valor = operandoString (expr);
                   TAC_Generator.generarParam (valor);
                   contadorArgActual++;
 
-                  ((List<String>) ((Symbol)prev).value).add(expr.getTipo()); //((Symbol)expr).value.toString()
-                  RESULT = new Symbol(sym.ARGUMENTOS, ((Symbol)prev).value);
+                  //((List<String>) ((Symbol)prev).value).add(expr.getTipo()); //((Symbol)expr).value.toString()
+                  //RESULT = new Symbol(sym.ARGUMENTOS, ((Symbol)prev).value);
+                
+                  // Esto se cambia ya que ahora va a trabajar con la lista de TipoExpresiones.
+                  prev.add(expr);
+                  RESULT = prev;
               :}
              | error COMA:com expresion  {: System.err.println(" -> Error: Argumento no valido antes de ','" + "Fila: " + comleft + ", Columna: " + comright); :}
              | argumentos COMA:com error {: System.err.println(" -> Error: Se esperaba expresion despues de ','" + "Fila: " + comleft + ", Columna: " + comright); :}
@@ -953,21 +969,37 @@ tipoDatoInput ::= INT {: RESULT = "int"; :}
 output ::= output_inline {: RESULT = "output"; :};
 
 output_inline ::= OUTPUT PAREN_I listaSalida:lst PAREN_D {:
-    for (TipoExpresiones e : lst) {
-        String v = operandoString(e);
-        simbolos.TAC_Generator.generarPrint(v);
+    if (lst == null) {
+        // No se ocupa hacer nada ya que el error se reporta en la produccion de listaSalida.
+    } else {
+        for (TipoExpresiones e : lst) {
+            String v = operandoString(e);
+            simbolos.TAC_Generator.generarPrint(v);
+        }
     }
 :};
 
+// Para la parte del output no de deben de permitir imprimir datos tipo char.
 listaSalida ::= expresion:e {:
-    java.util.ArrayList<TipoExpresiones> l = new java.util.ArrayList<>();
-    l.add(e);
-    RESULT = l;
-:}
-| listaSalida:prev CONCATENACION_OUTPUT expresion:e {:
-    prev.add(e);
-    RESULT = prev;
-:};
+        if (e.getTipo().equals("char")) {
+            System.err.println(" -> Error semantico: 'char' no es un tipo valido para 'output'." + "Fila: " + eleft + ", Columna: " + eright);
+            aumentarCountErroresSemanticos();
+            RESULT = null;
+        } else {        
+            ArrayList<TipoExpresiones> l = new ArrayList<>();
+            l.add(e);
+            RESULT = l;        
+        }
+    :}
+    | listaSalida:prev CONCATENACION_OUTPUT expresion:e {:
+        if (e.getTipo().equals("char")) {
+            System.err.println(" -> Error semantico: 'char' no es un tipo valido para 'output'." + "Fila: " + eleft + ", Columna: " + eright);
+            aumentarCountErroresSemanticos();
+        } else {
+            prev.add(e);
+            RESULT = prev;
+        }
+    :};
 
 /* -------------------- Estructuras de control ----------------------------- */
 estructruraControl ::= decide
@@ -1008,6 +1040,7 @@ decide ::= decideParteIzquierda:deciP condiciones:condi END DECIDE:deci DELIMITA
                 deciP.setAmbitoLocal(entornoActual); // Este de aqui basicamente no se ocupa, puesto que guardamos las estrcuturas de los bloques por aparte.
                 cerrarAmbito(); 
                 insertarNuevoToken(deciP);
+                pilaEstrucControl.pop();
             :}
          | decideParteIzquierda:deciP condiciones:condi ELSE {: TAC_Generator.iniciarBuffer(); :} bloque:blo END DECIDE DELIMITADOR {:
                 List<Cuad> tacElse = TAC_Generator.finalizarBuffer();
@@ -1034,6 +1067,7 @@ decide ::= decideParteIzquierda:deciP condiciones:condi END DECIDE:deci DELIMITA
                 deciP.setAmbitoLocal(entornoActual); // Este de aqui basicamente no se ocupa, puesto que guardamos las estrcuturas de los bloques por aparte.
                 cerrarAmbito(); 
                 insertarNuevoToken(deciP);
+                pilaEstrucControl.pop();
 
             :} // Posiblemente requiramos crear una ambito especifico para el else.
          
@@ -1850,8 +1884,9 @@ expresionNumerica ::= INT_LITERAL:n {:
                         mostrarMensaje("\n Expresion en validacion -> num id \n");
                         // RESULT = te;
                     :}
-                    | funcionLlamada:func {: 
-                        RESULT = obtenerTipoFuncion(funcionActual, funcleft, funcright); 
+                    | funcionLlamada:func {:
+                        //TipoExpresiones funcTION = obtenerTipoFuncion(funcionActual, funcleft, funcright);
+                        RESULT = func;
                         mostrarMensaje("\n Expresion en validacion -> num func\n");
                     :}
                     | obtenerElementoLista:ob {: 
@@ -1886,7 +1921,7 @@ expresionNumerica ::= INT_LITERAL:n {:
                     :}
 
                     | INT_LITERAL:n IDENTIFICADOR error
-                      {: System.err.println(" -> Error: Numero seguido de identificador no es valido (ej: 2f5)." + "Linea: " + nleft + ", Columna: " + nright); RESULT = new TipoExpresiones("erro",n);:}
+                      {: System.err.println(" -> Error: Numero seguido de identificador no es valido (ej: 2f5)." + "Linea: " + nleft + ", Columna: " + nright); RESULT = new TipoExpresiones("error",n);:}
                     | FLOAT_LITERAL:n IDENTIFICADOR error
                       {: System.err.println(" -> Error: Numero flotante seguido de identificador no es valido." + "Linea: " + nleft + ", Columna: " + nright); RESULT = new TipoExpresiones("error", n); :}; 
                     // Fin de la expresion.
