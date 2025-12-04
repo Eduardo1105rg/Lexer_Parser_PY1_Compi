@@ -704,7 +704,7 @@ param ::= tipoDatoParametro:tipo IDENTIFICADOR:ID {:
               System.err.println(" -> Error semantico: parametro '" + ID + "' ya declarado." + "Linea: " + IDleft + ", Columna: " + IDright);
               aumentarCountErroresSemanticos();
           }
-          TAC_Generator.generarPopParam (indiceParametroActual++, ID); // Se luga el parametro al indice
+          TAC_Generator.generarPopParam (indiceParametroActual++, ID, tipo.toString()); // Se luga el parametro al indice
         :}
       | tipoLista:tipo IDENTIFICADOR:ID {: //Despues se tiene que hacer algo para trabajar con lo del tamaño.
           Token parametro = new Token(ID, tipo.tipoBase, "parametro", null, "parametro", IDleft, IDright);
@@ -712,7 +712,7 @@ param ::= tipoDatoParametro:tipo IDENTIFICADOR:ID {:
               System.err.println(" -> Error semantico: parametro '" + ID + "' ya declarado." + "Linea: " + IDleft + ", Columna: " + IDright);
               aumentarCountErroresSemanticos();
           }
-          TAC_Generator.generarPopParam (indiceParametroActual++, ID);
+          TAC_Generator.generarPopParam (indiceParametroActual++, ID, tipo.toString());
         :}
       | error IDENTIFICADOR:ID {: System.err.println(" -> Error: Para los parametros de una funcion se debe de indicar su tipo de dato." + "Linea: " + IDleft + ", Columna: " + IDright); :};
 
@@ -892,6 +892,8 @@ return ::= RETURN:ret DELIMITADOR {:
                 System.err.println(" -> Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar un valor de tipo '" + funcionEnAnalisis.getTipo() + "'." + "Fila: " + retleft + ", Columna: " + retright);
                 aumentarCountErroresSemanticos();
             }
+            // Generación tac -> RET
+            TAC_Generator.generarReturn (null);
         :}
          | RETURN expresion:expr DELIMITADOR {: 
                 String tipoExpr = expr.getTipo(); // suponiendo que expresion devuelve un String con el tipo, pero creo que devolvera una clase con otros datos.
@@ -904,6 +906,9 @@ return ::= RETURN:ret DELIMITADOR {:
                     System.err.println(" -> Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar tipo '" + tipoFuncion + "', pero se retorno tipo '" + tipoExpr + "'." + "Fila: " + exprleft + ", Columna: " + exprright);
                     aumentarCountErroresSemanticos();
                 }   
+                // Generacion TAC
+                String valorRet = operandoString (expr);
+                TAC_Generator.generarReturn (valorRet);
             :}
          | RETURN expresion:expr error {: System.err.println(" -> Error: Se esperaba un delimitador '$' despues de la expresion del return." + "Fila: " + exprleft + ", Columna: " + exprright); :}
          | RETURN:ret error {: System.err.println(" -> Error: Se esperaba un delimitador '$' despues del return." + "Fila: " + retleft + ", Columna: " + retright); :};
@@ -1084,19 +1089,17 @@ loopInicio ::= LOOP {:
                 // para que una vez que finalice el loop, agreguemos al entorno padre el token
 
                 crearAmbito(); // Crear el ambito.
+                String lStart = TAC_Generator.newEtiqueta();
+                String lExit = TAC_Generator.newEtiqueta();
                 pilaEstrucControl.push("loop"); // Registrar el la pila que hay una nueva estructura.
+                pilaLoopStartLabels.push(lStart);
+                pilaLoopExitLabels.push(lExit);
+
+                TAC_Generator.generarLabel(lStart); // L_start
+                TAC_Generator.iniciarBuffer();
             :};
 
-loop ::= loopInicio:loopIni {:
-                    // Se preparan las etiquetas y el buffer para el body
-                    String L_start = TAC_Generator.newEtiqueta();
-                    String L_exit  = TAC_Generator.newEtiqueta();
-                    pilaLoopStartLabels.push(L_start);
-                    pilaLoopExitLabels.push(L_exit);
-
-                    TAC_Generator.generarLabel(L_start);
-                    TAC_Generator.iniciarBuffer();
-                :} sentencias EXIT WHEN condicion:cond DELIMITADOR END LOOP DELIMITADOR {:
+loop ::= loopInicio:loopIni sentencias EXIT WHEN condicion:cond DELIMITADOR END LOOP DELIMITADOR {:
                 // Mantenemos el cuerpo del loop
                 List<Cuad> cuerpo = TAC_Generator.finalizarBuffer();
                 TAC_Generator.unir(cuerpo);
@@ -1113,18 +1116,13 @@ loop ::= loopInicio:loopIni {:
                 }
 
                 // exit when cond  => si cond TRUE, salir; si FALSE, repetir
-                TAC_Generator.generarCuadIf(tCond, pilaLoopExitLabels.peek());      // IF cond GOTO L_exit
-                TAC_Generator.generarCuadSaltoIncondicional(pilaLoopStartLabels.peek()); // GOTO L_start
-                TAC_Generator.generarLabel(pilaLoopExitLabels.peek());              // L_exit:
-                if (!pilaLoopExitLabels.isEmpty()) {
-                    pilaLoopExitLabels.pop();
-                }
-                if (!pilaLoopStartLabels.isEmpty()) {
-                    pilaLoopStartLabels.pop();
-                }
-                if (!pilaEstrucControl.isEmpty()) {
-                    pilaEstrucControl.pop();
-                }
+                simbolos.TAC_Generator.generarCuad("IF", tCond, null, pilaLoopExitLabels.peek());
+                simbolos.TAC_Generator.generarCuadSaltoIncondicional(pilaLoopStartLabels.peek());
+                simbolos.TAC_Generator.generarLabel(pilaLoopExitLabels.peek());
+
+                pilaLoopStartLabels.pop();
+                pilaLoopExitLabels.pop();
+                pilaEstrucControl.pop();
                 Token estructura = new Token("otro_loop_" + (contadorLoop++), "estructura", "local", null, "loop", loopInileft, loopIniright);
                 estructura.setAmbitoLocal(entornoActual);
                 cerrarAmbito();
@@ -1148,9 +1146,13 @@ forInt ::= FOR IDENTIFICADOR:id ASIGNACION expresionAritmetica:exp {:
                     aumentarCountErroresSemanticos();
                 }
                 // TAC inicial
-                String ini = operandoString(exp);
-                if (ini == null || "null".equals(ini)) ini = "0";
-                TAC_Generator.generarCuadAsignacion(ini, id); // id = ini
+                String initVal = operandoString(exp);
+                simbolos.TAC_Generator.generarCuadAsignacion(initVal, id, exp.getTipo());
+
+                String fStart = simbolos.TAC_Generator.newEtiqueta();
+                String fExit  = simbolos.TAC_Generator.newEtiqueta();
+                pilaForStartLabels.push(fStart);
+                pilaForExitLabels.push(fExit);
                 forVarControlNombre = id;
             :};
 
@@ -1167,33 +1169,31 @@ for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
                 System.err.println(" -> Error semantico: limite del for debe ser int, recibido: " + lim.getTipo() + "Fila: " + limleft + ", Columna: " + limright);
                 aumentarCountErroresSemanticos();
             }
-            String L_start = TAC_Generator.newEtiqueta();
-            String L_exit  = TAC_Generator.newEtiqueta();
-            pilaForStartLabels.push(L_start);
-            pilaForExitLabels.push(L_exit);
-            TAC_Generator.generarLabel(L_start);
+            String fStart = pilaForStartLabels.peek();
+            String fExit  = pilaForExitLabels.peek();
+            TAC_Generator.generarLabel(fStart);
+            String limValue = operandoString(lim);
+            String tCond = TAC_Generator.newTemp();
+            simbolos.TAC_Generator.generarCuad("<=", forVarControlNombre, limValue, tCond, "boolean");
+            simbolos.TAC_Generator.generarCuadIfFalse(tCond, fExit);
+
             TAC_Generator.iniciarBuffer();
         :} bloque:blo {:
-            List<Cuad> cuerpo = TAC_Generator.finalizarBuffer();
-            TAC_Generator.unir(cuerpo);
+            List<Cuad> bodyFor = simbolos.TAC_Generator.finalizarBuffer();
+            simbolos.TAC_Generator.unir(bodyFor);
 
-            String var = forVarControlNombre;
-            String endVal = operandoString(lim);
-            if (endVal == null || "null".equals(endVal)) endVal = "0";
+            // step
+            String stepLit = step.toString();
+            String tInc = simbolos.TAC_Generator.newTemp();
+            simbolos.TAC_Generator.generarCuad("+", forVarControlNombre, stepLit, tInc, "int");
+            simbolos.TAC_Generator.generarCuadAsignacion(tInc, forVarControlNombre, "int");
 
-            String tCond = TAC_Generator.newTemp();
-            TAC_Generator.generarCuad("<=", var, endVal, tCond);
-            TAC_Generator.generarCuadIfFalse(tCond, pilaForExitLabels.peek());
+            // Bucle del for
+            simbolos.TAC_Generator.generarCuadSaltoIncondicional(pilaForStartLabels.peek());
+            simbolos.TAC_Generator.generarLabel(pilaForExitLabels.peek());
 
-            String tInc = TAC_Generator.newTemp();
-            TAC_Generator.generarCuad("+", var, step.toString(), tInc);
-            TAC_Generator.generarCuadAsignacion(tInc, var);
-
-            TAC_Generator.generarCuadSaltoIncondicional(pilaForStartLabels.peek());
-            TAC_Generator.generarLabel(pilaForExitLabels.peek());
-
-            pilaForExitLabels.pop();
             pilaForStartLabels.pop();
+            pilaForExitLabels.pop();
             pilaEstrucControl.pop();
             forVarControlNombre = null;
 
@@ -1235,7 +1235,7 @@ for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
 
             String tDec = TAC_Generator.newTemp();
             TAC_Generator.generarCuad("-", var, step.toString(), tDec);
-            TAC_Generator.generarCuadAsignacion(tDec, var);
+            TAC_Generator.generarCuadAsignacion(tDec, var, "int");
 
             TAC_Generator.generarCuadSaltoIncondicional(pilaForStartLabels.peek());
             TAC_Generator.generarLabel(pilaForExitLabels.peek());
@@ -1260,7 +1260,8 @@ var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                 // nombre, tipo, ambito, valor, categoria, linea, columna
                 Token tokenVar = new Token(id, tipo, "local", null, "variable", idleft, idright);
                 insertarNuevoToken(tokenVar);
-                TAC_Generator.generarCuadAsignacion (valorDefault (tipo), id);
+                //TAC_Generator.generarCuadAsignacion (valorDefault (tipo), id, tipo.toString());
+                TAC_Generator.registrarTipo(id, tipo.toString());
                 mostrarMensajeTS("\n >> Definicion var registrada. var \n");
 
             }
@@ -1297,7 +1298,7 @@ varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {:
                         if (fuente == null) {
                             System.err.println ("Error: No se pudo obtener el valor de la expresion para asignar a la variable '" + id + "'. Fila: " + idleft + ", Columna: " + idright);
                         } else {
-                            TAC_Generator.generarCuadAsignacion (fuente, id);
+                            TAC_Generator.generarCuadAsignacion (fuente, id, token.getTipo());
                         }
                         //token.setValor(exp.valor); // actualizar el valor de la variable
                         // token.setValor(null);
@@ -1326,11 +1327,11 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
                                 if (fuente == null || "null".equals(fuente)) {
                                     fuente = valorDefault(tipo);
                                 }
-                                TAC_Generator.generarCuadAsignacion(fuente, id);
+                                TAC_Generator.generarCuadAsignacion(fuente, id, tipo.toString());
                             } else {
                                 System.err.println(" -> Error semantico: El tipo de la variable '" + id + "' no es compatible con el tipo de la expresion. Se esperaba '" + tipo + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
                                 aumentarCountErroresSemanticos();
-                                TAC_Generator.generarCuadAsignacion(valorDefault(tipo), id);
+                                TAC_Generator.generarCuadAsignacion(valorDefault(tipo), id, tipo.toString());
                             }
 
                             mostrarMensajeTS("\n >> Variable local registrada. varCyAsignacion \n");
@@ -1355,7 +1356,8 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
                         if (entornoActual.insertarNuevoToken(tokenGlobal)) {
                             String def = valorDefault(tipo);
-                            TAC_Generator.generarCuadAsignacion(def, id);
+                            TAC_Generator.registrarTipo(id, tipo.toString());
+                            TAC_Generator.generarCuadAsignacion(def, id, tipo.toString());
                         }
                         mostrarMensajeTS("\n >> Var globar registrada. \n");
                     }
@@ -1393,7 +1395,8 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                             if (fuente == null) {
                                 fuente = valorDefault (tipo);
                             }
-                            TAC_Generator.generarCuadAsignacion (fuente, id);
+                            
+                            TAC_Generator.generarCuadAsignacion (fuente, id, tipo.toString());
                         }
                         mostrarMensajeTS("\n >> Var globar con expresion registrada. \n");
 
@@ -1425,7 +1428,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         String a2 = der.temp != null ? der.temp : (der.valorB != null ? der.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
                         izq.append(der);
-                        TAC_Generator.generarCuad("AND", a1, a2, t); // luego veo como representarlo
+                        TAC_Generator.generarCuad("AND", a1, a2, t, "boolean"); // luego veo como representarlo
                         TipoExpresiones res = new TipoExpresiones("boolean");
                         res.cuads = izq.cuads;
                         res.temp = t;
@@ -1443,7 +1446,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         String a2 = der.temp != null ? der.temp : (der.valorB != null ? der.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
                         izq.append(der);
-                        TAC_Generator.generarCuad("OR", a1, a2, t); // igual que arriba luego veo como representarlo
+                        TAC_Generator.generarCuad("OR", a1, a2, t, "boolean"); // igual que arriba luego veo como representarlo
                         TipoExpresiones res = new TipoExpresiones("boolean");
                         res.cuads = izq.cuads;
                         res.temp = t;
@@ -1459,7 +1462,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         mostrarMensaje("\n Expresion en validacion -> expr rela: not  \n");
                         String a1 = exp.temp != null ? exp.temp : (exp.valorB != null ? exp.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
-                        TAC_Generator.generarCuadUnario("NOT", a1, t, null);
+                        TAC_Generator.generarCuadUnario("NOT", a1, t, "boolean");
                         TipoExpresiones res = new TipoExpresiones("boolean");
                         res.cuads = exp.cuads;
                         res.temp = t;
@@ -1485,7 +1488,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString (der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad("==", a1, a2, t);
+                                TAC_Generator.generarCuad("==", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1503,7 +1506,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad("!=", a1, a2, t);
+                                TAC_Generator.generarCuad("!=", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1521,7 +1524,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad ("<", a1, a2, t);
+                                TAC_Generator.generarCuad ("<", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1539,7 +1542,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad (">", a1, a2, t);
+                                TAC_Generator.generarCuad (">", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1557,7 +1560,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad ("<=", a1, a2, t);
+                                TAC_Generator.generarCuad ("<=", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1575,7 +1578,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad (">=", a1, a2, t);
+                                TAC_Generator.generarCuad (">=", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1637,10 +1640,11 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                                 a2 = "null";
                             }
 
+                            String tipoRes = tipoResultado;
+
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad ("+", a1, a2, t);
-
+                            TAC_Generator.generarCuad ("+", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones (tipoResultado);
                             res.temp = t;
                             RESULT = res;
@@ -1675,10 +1679,11 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                                     a2 = "null";
                                 }
 
+                                String tipoRes = tipoResultado;
+
                                 String t = TAC_Generator.newTemp();
                                 izq.append(der);
-                                TAC_Generator.generarCuad ("-", a1, a2, t);
-
+                                TAC_Generator.generarCuad ("-", a1, a2, t, tipoRes);
                                 TipoExpresiones res = new TipoExpresiones (tipoResultado);
                                 res.temp = t;
                                 RESULT = res;
@@ -1716,8 +1721,10 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                                 a2 = "null";
                             }
 
+                            String tipoRes = tipoResultado;
+
                             String t = TAC_Generator.newTemp();
-                            TAC_Generator.generarCuad ("*", a1, a2, t);
+                            TAC_Generator.generarCuad ("*", a1, a2, t, tipoRes);
 
                             TipoExpresiones res = new TipoExpresiones (tipoResultado);
                             res.temp = t;
@@ -1736,9 +1743,10 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
                             if (a2 == null) a2 = "null";
+                            String tipoRes = "float";
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad("/", a1, a2, t);
+                            TAC_Generator.generarCuad("/", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones("float");
                             res.cuads = izq.cuads;
                             res.temp = t;
@@ -1756,9 +1764,10 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
                             if (a2 == null) a2 = "null";
+                            String tipoRes = "int";
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad("//", a1, a2, t);
+                            TAC_Generator.generarCuad("//", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones("int");
                             res.cuads = izq.cuads;
                             res.temp = t;
@@ -1776,9 +1785,10 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
                             if (a2 == null) a2 = "null";
+                            String tipoRes = "int";
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad("%", a1, a2, t);
+                            TAC_Generator.generarCuad("%", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones("int");
                             res.cuads = izq.cuads;
                             res.temp = t;
@@ -1802,8 +1812,8 @@ expresionPotencia ::= expresionFactor:base POTENCIA expresionPotencia:exp {:
                         if (a2 == null) a2 = "null";
                         String t = TAC_Generator.newTemp();
                         base.append(exp);
-                        TAC_Generator.generarCuad("^", a1, a2, t);
                         String tipoFinal = ("float".equals(base.tipoDato) || "float".equals(exp.tipoDato)) ? "float" : "int";
+                        TAC_Generator.generarCuad("^", a1, a2, t, tipoFinal);
                         TipoExpresiones res = new TipoExpresiones(tipoFinal);
                         res.cuads = base.cuads;
                         res.temp = t;
