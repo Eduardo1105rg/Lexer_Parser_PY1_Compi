@@ -1229,7 +1229,7 @@ for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
             TAC_Generator.generarLabel(fStart);
             String limValue = operandoString(lim);
             String tCond = TAC_Generator.newTemp();
-            simbolos.TAC_Generator.generarCuad("<=", forVarControlNombre, limValue, tCond);
+            simbolos.TAC_Generator.generarCuad("<=", forVarControlNombre, limValue, tCond, "boolean");
             simbolos.TAC_Generator.generarCuadIfFalse(tCond, fExit);
 
             TAC_Generator.iniciarBuffer();
@@ -1240,7 +1240,7 @@ for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
             // step
             String stepLit = step.toString();
             String tInc = simbolos.TAC_Generator.newTemp();
-            simbolos.TAC_Generator.generarCuad("+", forVarControlNombre, stepLit, tInc);
+            simbolos.TAC_Generator.generarCuad("+", forVarControlNombre, stepLit, tInc, "int");
             simbolos.TAC_Generator.generarCuadAsignacion(tInc, forVarControlNombre, "int");
 
             // Bucle del for
@@ -1316,6 +1316,7 @@ var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                 Token tokenVar = new Token(id, tipo, "local", null, "variable", idleft, idright);
                 insertarNuevoToken(tokenVar);
                 //TAC_Generator.generarCuadAsignacion (valorDefault (tipo), id, tipo.toString());
+                TAC_Generator.registrarTipo(id, tipo.toString());
                 System.out.println("\n >> Definicion var registrada. var \n");
 
             }
@@ -1352,7 +1353,7 @@ varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {:
                         if (fuente == null) {
                             System.err.println ("Error: No se pudo obtener el valor de la expresion para asignar a la variable '" + id + "'. Fila: " + idleft + ", Columna: " + idright);
                         } else {
-                            TAC_Generator.generarCuadAsignacion (fuente, id, exp.tipoDato.toString());
+                            TAC_Generator.generarCuadAsignacion (fuente, id, token.getTipo());
                         }
                         //token.setValor(exp.valor); // actualizar el valor de la variable
                         // token.setValor(null);
@@ -1410,6 +1411,7 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
                         if (entornoActual.insertarNuevoToken(tokenGlobal)) {
                             String def = valorDefault(tipo);
+                            TAC_Generator.registrarTipo(id, tipo.toString());
                             TAC_Generator.generarCuadAsignacion(def, id, tipo.toString());
                         }
                         System.out.println("\n >> Var globar registrada. \n");
@@ -1448,6 +1450,7 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                             if (fuente == null) {
                                 fuente = valorDefault (tipo);
                             }
+                            
                             TAC_Generator.generarCuadAsignacion (fuente, id, tipo.toString());
                         }
                         System.out.println("\n >> Var globar con expresion registrada. \n");
@@ -1480,7 +1483,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         String a2 = der.temp != null ? der.temp : (der.valorB != null ? der.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
                         izq.append(der);
-                        TAC_Generator.generarCuad("AND", a1, a2, t); // luego veo como representarlo
+                        TAC_Generator.generarCuad("AND", a1, a2, t, "boolean"); // luego veo como representarlo
                         TipoExpresiones res = new TipoExpresiones("boolean");
                         res.cuads = izq.cuads;
                         res.temp = t;
@@ -1498,7 +1501,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         String a2 = der.temp != null ? der.temp : (der.valorB != null ? der.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
                         izq.append(der);
-                        TAC_Generator.generarCuad("OR", a1, a2, t); // igual que arriba luego veo como representarlo
+                        TAC_Generator.generarCuad("OR", a1, a2, t, "boolean"); // igual que arriba luego veo como representarlo
                         TipoExpresiones res = new TipoExpresiones("boolean");
                         res.cuads = izq.cuads;
                         res.temp = t;
@@ -1514,7 +1517,7 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         mostrarMensaje("\n Expresion en validacion -> expr rela: not  \n");
                         String a1 = exp.temp != null ? exp.temp : (exp.valorB != null ? exp.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
-                        TAC_Generator.generarCuadUnario("NOT", a1, t, null);
+                        TAC_Generator.generarCuadUnario("NOT", a1, t, "boolean");
                         TipoExpresiones res = new TipoExpresiones("boolean");
                         res.cuads = exp.cuads;
                         res.temp = t;
@@ -1544,7 +1547,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString (der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad("==", a1, a2, t);
+                                TAC_Generator.generarCuad("==", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1562,7 +1565,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad("!=", a1, a2, t);
+                                TAC_Generator.generarCuad("!=", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1580,7 +1583,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad ("<", a1, a2, t);
+                                TAC_Generator.generarCuad ("<", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1598,7 +1601,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad (">", a1, a2, t);
+                                TAC_Generator.generarCuad (">", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1616,7 +1619,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad ("<=", a1, a2, t);
+                                TAC_Generator.generarCuad ("<=", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1634,7 +1637,7 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad (">=", a1, a2, t);
+                                TAC_Generator.generarCuad (">=", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1695,10 +1698,11 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                                 a2 = "null";
                             }
 
+                            String tipoRes = tipoResultado;
+
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad ("+", a1, a2, t);
-
+                            TAC_Generator.generarCuad ("+", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones (tipoResultado);
                             res.temp = t;
                             RESULT = res;
@@ -1733,10 +1737,11 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                                     a2 = "null";
                                 }
 
+                                String tipoRes = tipoResultado;
+
                                 String t = TAC_Generator.newTemp();
                                 izq.append(der);
-                                TAC_Generator.generarCuad ("-", a1, a2, t);
-
+                                TAC_Generator.generarCuad ("-", a1, a2, t, tipoRes);
                                 TipoExpresiones res = new TipoExpresiones (tipoResultado);
                                 res.temp = t;
                                 RESULT = res;
@@ -1774,8 +1779,10 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                                 a2 = "null";
                             }
 
+                            String tipoRes = tipoResultado;
+
                             String t = TAC_Generator.newTemp();
-                            TAC_Generator.generarCuad ("*", a1, a2, t);
+                            TAC_Generator.generarCuad ("*", a1, a2, t, tipoRes);
 
                             TipoExpresiones res = new TipoExpresiones (tipoResultado);
                             res.temp = t;
@@ -1794,9 +1801,10 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
                             if (a2 == null) a2 = "null";
+                            String tipoRes = "float";
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad("/", a1, a2, t);
+                            TAC_Generator.generarCuad("/", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones("float");
                             res.cuads = izq.cuads;
                             res.temp = t;
@@ -1814,9 +1822,10 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
                             if (a2 == null) a2 = "null";
+                            String tipoRes = "int";
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad("//", a1, a2, t);
+                            TAC_Generator.generarCuad("//", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones("int");
                             res.cuads = izq.cuads;
                             res.temp = t;
@@ -1834,9 +1843,10 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
                             if (a2 == null) a2 = "null";
+                            String tipoRes = "int";
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad("%", a1, a2, t);
+                            TAC_Generator.generarCuad("%", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones("int");
                             res.cuads = izq.cuads;
                             res.temp = t;
@@ -1860,8 +1870,8 @@ expresionPotencia ::= expresionFactor:base POTENCIA expresionPotencia:exp {:
                         if (a2 == null) a2 = "null";
                         String t = TAC_Generator.newTemp();
                         base.append(exp);
-                        TAC_Generator.generarCuad("^", a1, a2, t);
                         String tipoFinal = ("float".equals(base.tipoDato) || "float".equals(exp.tipoDato)) ? "float" : "int";
+                        TAC_Generator.generarCuad("^", a1, a2, t, tipoFinal);
                         TipoExpresiones res = new TipoExpresiones(tipoFinal);
                         res.cuads = base.cuads;
                         res.temp = t;

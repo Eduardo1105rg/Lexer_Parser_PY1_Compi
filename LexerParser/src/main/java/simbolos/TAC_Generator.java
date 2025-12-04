@@ -18,6 +18,7 @@ public class TAC_Generator {
     */
 
     private static Deque<List<Cuad>> pilaBuffers = new ArrayDeque<>();
+    private static java.util.Map<String, String> tiposPorTemp = new java.util.HashMap<>();
 
     private static void add (Cuad cuad) {
         // Si la pila de buffers es vacia se agrega el cuad a la lista global
@@ -64,37 +65,48 @@ public class TAC_Generator {
         return "L" + (contadorEtiquetas++);
     }
 
+    public static void registrarTipo(String nombre, String tipo) {
+        if (nombre != null && tipo != null) tiposPorTemp.put(nombre, tipo);
+    }
+
+    public static String tipoDe(String nombre) {
+        return tiposPorTemp.get(nombre);
+    }
+
+    public static String inferirTipoUnario(String op, String t) {
+        if (op == null) return null;
+        if (op.equals("NEG")) return t; // -x mantiene tipo
+        if (op.equals("++") || op.equals("--")) return t; // int/float
+        return t;
+    }
+
+    public static void generarCuad (String operador, String argumento1, String argumento2, String resultado, String tipoRes) {
+        Cuad cuad = new Cuad (operador, argumento1, argumento2, resultado, tipoRes);
+        add(cuad);
+        registrarTipo(resultado, tipoRes);
+    }
+
     public static void generarCuad (String operador, String argumento1, String argumento2, String resultado) {
         Cuad cuad = new Cuad (operador, argumento1, argumento2, resultado);
         add(cuad);
     }
 
-    public static void generarCuadUnario (String operador, String argumento1, String resultado, String tipo) {
-        // Para Post ++ o Post --
-        // Convertimos ++a o --a en una suma o resta a 1
+    public static void generarCuadUnario (String operador, String argumento1, String resultado, String tipoOperando) {
         String argumento2 = null;
-        if (tipo.equals("int")) {
-            argumento2 = "1";
-        } else if (tipo.equals("float")) {
-            argumento2 = "1.0";
-        }
-        // Luego de normalizar el arg 2:
-        if (operador.equals("++")) {
-            operador = "+";
-        } else if (operador.equals("--")) {
-            operador = "-";
-        } else if (operador.equals("NEG")) { // No se aun como voy a representar la negación
-            // Para el caso de negacion unaria
-            operador = "NEG"; // aqui podria hacer el cambio de signo
-            argumento2 = null; // No se usa en la negación
-        }
-        Cuad cuad = new Cuad (operador, argumento1, argumento2, resultado);
+        String tipoRes = inferirTipoUnario(operador, tipoOperando);
+        if ("int".equals(tipoOperando)) argumento2 = "1";
+        else if ("float".equals(tipoOperando)) argumento2 = "1.0";
+        if (operador.equals("++")) operador = "+";
+        else if (operador.equals("--")) operador = "-";
+        Cuad cuad = new Cuad (operador, argumento1, argumento2, resultado, tipoRes);
         add(cuad);
+        registrarTipo(resultado, tipoRes);
     }
 
-    public static void generarCuadAsignacion (String argumento1, String resultado, String tipo) {
-        Cuad cuad = new Cuad ("=", argumento1, null, resultado, tipo); // t0 = a1 + a2 tipo
+    public static void generarCuadAsignacion (String argumento1, String resultado, String tipoDest) {
+        Cuad cuad = new Cuad ("=", argumento1, null, resultado, tipoDest);
         add(cuad);
+        registrarTipo(resultado, tipoDest);
     }
 
     public static void generarCuadSaltoIncondicional (String etiquetaDestino) {
@@ -118,24 +130,27 @@ public class TAC_Generator {
     }
 
     public static void generarBeginFunc(String nombre) {
-        Cuad cuad = new Cuad("FUNC_BEGIN", nombre, null, null);
+        Cuad cuad = new Cuad("FUNC_BEGIN", null, null, nombre);
         add(cuad);
     }
 
     public static void generarEndFunc(String nombre) {
-        Cuad cuad = new Cuad("FUNC_END", nombre, null, null);
+        Cuad cuad = new Cuad("FUNC_END", null, null, nombre);
         add(cuad);
     }
 
     public static void generarParam(String valor) {
-        Cuad cuad = new Cuad("PARAM", valor, null, null);
+        String t = tipoDe(valor);
+        Cuad cuad = (t != null) ? new Cuad("PARAM", valor, null, null, t)
+                                : new Cuad("PARAM", valor, null, null);
         add(cuad);
     }
 
     // PopParam: Manejo de parámetros para funciones
-    public static void generarPopParam(int index, String id, String tipo) { // meterle tipo
+    public static void generarPopParam(int index, String id, String tipo) {
         Cuad cuad = new Cuad("POP_PARAM", Integer.toString(index), null, id, tipo);
         add(cuad);
+        registrarTipo(id, tipo);
     }
 
     public static void generarCall(String nombre, int nargs, String destino) {
@@ -144,15 +159,19 @@ public class TAC_Generator {
     }
     // Generacion para listas
     public static void generarAlloc(String id, String tipo, int tam) {
-        Cuad c = new Cuad("ALLOC", tipo, Integer.toString(tam), id);
+        Cuad c = new Cuad("ALLOC", tipo, Integer.toString(tam), id, tipo);
         add(c);
+        registrarTipo(id, tipo + "[]");
     }
 
     public static String generarGet(String id, String idxTemp) {
-        // idxtemp es el index temporal
         String t = newTemp();
-        Cuad c = new Cuad("GET", id, idxTemp, t);
+        String base = "int";
+        String reg = tipoDe(id);
+        if (reg != null && reg.endsWith("[]")) base = reg.substring(0, reg.length()-2);
+        Cuad c = new Cuad("GET", id, idxTemp, t, base);
         add(c);
+        registrarTipo(t, base);
         return t;
     }
 
@@ -160,21 +179,22 @@ public class TAC_Generator {
         Cuad c = new Cuad("SET", id, idxTemp, valor);
         add(c);
     }
-    // Fin de listas
 
-    // No sé si realmete se ocupe generar un retorno pero por si acaso lo dejamo
+    public static void generarRead (String tipo, String destino) {
+        Cuad cuad = new Cuad ("READ", tipo, null, destino, tipo);
+        add(cuad);
+        registrarTipo(destino, tipo);
+    }
+
     public static void generarReturn(String valor) {
-        Cuad cuad = new Cuad("RET", valor, null, null);
+        String t = tipoDe(valor);
+        Cuad cuad = (valor == null) ? new Cuad("RET", null, null, null)
+                                    : new Cuad("RET", valor, null, null, t);
         add(cuad);
     }
 
     public static void generarPrint (String valor) {
         Cuad cuad = new Cuad ("PRINT", valor, null, null);
-        add(cuad);
-    }
-
-    public static void generarRead (String tipo, String destino) {
-        Cuad cuad = new Cuad ("READ", tipo, null, destino);
         add(cuad);
     }
 
