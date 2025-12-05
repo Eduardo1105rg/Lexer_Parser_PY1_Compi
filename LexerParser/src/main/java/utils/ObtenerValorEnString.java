@@ -41,8 +41,16 @@ public class ObtenerValorEnString {
             }
             return "'" + cs + "'";
         }
-        if (expr.temp != null) // Esta parte tambien es de la correccion.
+        if (expr.temp != null) {// Esta parte tambien es de la correccion.
+
+            // Esta parte se agrega para la correccion de los char y strings.
+            if ("string".equals(expr.tipoDato))
+                return "\"" + expr.temp + "\"";
+            if ("char".equals(expr.tipoDato))
+                return "'" + expr.temp + "'";
+
             return expr.temp;
+        }
         return "null";
     }
 }

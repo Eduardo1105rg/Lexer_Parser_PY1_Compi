@@ -847,7 +847,7 @@ funcionLlamada ::= funcionLlamadaInicio argumentos:args PAREN_D {:
                         }
                       }
                   :}
-                  
+
                  | funcionLlamadaInicio:fu PAREN_D {: // Aqui estaba pasando directo y mas bien se ocupa validar si efectivamente no tiene argumentos.
                         if (funcionActual == null) {
                             System.err.println(" -> Error semantico: No se puede validardar los argumentos de la funcion, debido a que la funcion  buscada no esta declarada." + "Fila: " + fuleft + ", Columna: " + furight);
@@ -1347,7 +1347,6 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
                             aumentarCountErroresSemanticos();
                         } else {
                             Token tokenLocal = new Token(id, tipo, "local", null, "variable", idleft, idright);
-                            insertarNuevoToken(tokenLocal);
 
                             if (tipo.equals(exp.tipoDato)) {
                                 String fuente = exp.temp;
@@ -1362,6 +1361,8 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
                                     fuente = valorDefault(tipo);
                                 }
                                 TAC_Generator.generarCuadAsignacion(fuente, id, tipo.toString());
+                                insertarNuevoToken(tokenLocal);
+                         
                             } else {
                                 System.err.println(" -> Error semantico: El tipo de la variable '" + id + "' no es compatible con el tipo de la expresion. Se esperaba '" + tipo + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
                                 aumentarCountErroresSemanticos();
@@ -1899,23 +1900,17 @@ expresionNumerica ::= INT_LITERAL:n {:
 
                     // Esta parte es para intentar olucionar los problemas:
                     | expresionChar:charExp {: 
-                        // if (!validarTipoEsperado("int|float", charExp)) {
-                        //     System.err.println("Error semantico: tipo '" + charExp.tipoDato + "' no valido en expresion numerica.");
-                        // }
+                        
                         mostrarMensaje("\n Expresion en validacion -> char \n");
                         RESULT = charExp;
                     :}
                     | expresionString:strExp {: 
-                        // if (!validarTipoEsperado("int|float", strExp)) {
-                        //     System.err.println("Error semantico: tipo '" + strExp.tipoDato + "' no valido en expresion numerica.");
-                        // }
+                        
                         RESULT = strExp;
                         mostrarMensaje("\n Expresion en validacion -> String\n");
                     :}
                     | expresionBooleana:boolExp {: 
-                        // if (!validarTipoEsperado("int|float", boolExp)) {
-                        //     System.err.println("Error semantico: tipo '" + boolExp.tipoDato + "' no valido en expresion numerica.");
-                        // }
+                        
                         RESULT = boolExp;
                         mostrarMensaje("\n Expresion en validacion -> expr booneana\n");
                     :}

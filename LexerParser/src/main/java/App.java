@@ -3,6 +3,7 @@ import parser.*;
 import lexer.Lexer;
 
 import simbolos.*;
+import Codigo_Destino.MIPSGenerator;
 import utils.*;
 import java.io.FileReader;
 import java.io.PrintStream;
@@ -47,7 +48,15 @@ public class App {
                 TAC_Generator.imprimirCuads(consolaOriginal);
                 TAC_Generator.imprimirCuadsToFile("tac_output.txt");
                 // Imprimimos tabla de simbolos final
-                p.mostrarTS();
+                // p.mostrarTS();
+
+                // Generar codigo MIPS
+                MIPSGenerator mipsGenerator = new MIPSGenerator();
+                mipsGenerator.generarCodigoMIPS();
+                mipsGenerator.generar_segmento_data_var_globales();
+                System.out.println(" Mostrando el codigo MIPS.");
+                mipsGenerator.mostrar_codigo_destino_mips();
+
             } else {
                 consolaOriginal.println("El archivo fue analizado con " + (errores + erroresSemanTicos) + " errores.");
             }
