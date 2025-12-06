@@ -88,7 +88,7 @@ public class MIPSGenerator {
 
         // Esta parte de aqui es para definir el main, ir hasta el y despues volver para
         // finalizar el programa.
-        codigo_destino_mips.append("    jal FUNC_principal\n");
+        codigo_destino_mips.append("    jal main\n");
         codigo_destino_mips.append("    li $v0, 10\n");
         codigo_destino_mips.append("    syscall\n");
     }
@@ -96,7 +96,7 @@ public class MIPSGenerator {
     // Esta funcion se encarga de leer las funciones que se registraron en los cuad
     // e irlas traduciendo a codigo MIPS
     public void generar_funciones_segmento_text() {
-        codigo_destino_mips.append("\n.text\n");
+        // codigo_destino_mips.append("\n.text\n");
         Function_Description actual = null;
 
         // for (Cuad c : TAC_Generator.cuadGlobales) {

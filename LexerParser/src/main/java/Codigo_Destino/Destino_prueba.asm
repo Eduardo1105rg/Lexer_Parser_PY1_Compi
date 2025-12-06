@@ -5,11 +5,9 @@
         inicial: .byte 'A'
         mensaje: .asciiz "Hola Mundo"
 .text
-    jal FUNC_principal
+    jal main
     li $v0, 10
     syscall
-
-.text
 suma:
     addi $sp, $sp, -20
     sw $ra, 0($sp)
