@@ -45,7 +45,7 @@ public class App {
             if (errores == 0 && erroresSemanTicos == 0) {
                 consolaOriginal.println("El archivo fue reconocido por la gramatica.");
                 // Pruebas de TAC
-                TAC_Generator.imprimirCuads(consolaOriginal);
+                // TAC_Generator.imprimirCuads(consolaOriginal);
                 TAC_Generator.imprimirCuadsToFile("tac_output.txt");
                 // Imprimimos tabla de simbolos final
                 // p.mostrarTS();
@@ -54,18 +54,20 @@ public class App {
                 MIPSGenerator mipsGenerator = new MIPSGenerator();
                 mipsGenerator.generarCodigoMIPS();
                 mipsGenerator.generar_segmento_data_var_globales();
+                mipsGenerator.generar_inicio_segmento_text();
+                mipsGenerator.generar_funciones_segmento_text();
+
+                // Prueba del calculo de stack de las funciones.
+                // mipsGenerator.analizarFunciones();
+                // System.out.println("\n\n" + "");
+                // mipsGenerator.mostrar_datos_funciones();
+
                 System.out.println(" Mostrando el codigo MIPS.");
                 mipsGenerator.mostrar_codigo_destino_mips();
 
             } else {
                 consolaOriginal.println("El archivo fue analizado con " + (errores + erroresSemanTicos) + " errores.");
             }
-
-            // p.mostrarTablaSimbolos();
-
-            // Esta es la parte para mostrar las tablas de simbolos.
-            // lexer.tablaIdentificadores.imprimirTablaIdentificadores(consolaOriginal);
-            // lexer.tablaLiterales.imprimirTablaLiterales(consolaOriginal);
 
         } catch (Exception e) {
             System.out.println("Error durante el analisis sintactico:"); // Esta parte se deberia de cambiar.

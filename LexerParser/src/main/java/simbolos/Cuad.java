@@ -12,7 +12,8 @@ public class Cuad {
     public String resultado;
     public String tipo; // tipo del resultado (cuando aplica)
 
-    // Constructor sin tipo (para LABEL, GOTO, IF/IF_FALSE sin resultado, PRINT, etc.)
+    // Constructor sin tipo (para LABEL, GOTO, IF/IF_FALSE sin resultado, PRINT,
+    // etc.)
     public Cuad(String operador, String argumento1, String argumento2, String resultado) {
         this.operador = operador;
         this.argumento1 = argumento1;
@@ -54,7 +55,8 @@ public class Cuad {
             return resultado + " = ALLOC " + safe(argumento1) + " " + safe(argumento2);
         }
         if ("GET".equals(operador)) {
-            return safe(resultado) + " = GET " + safe(argumento1) + ", " + safe(argumento2) + (tipo != null ? " -> " + tipo : "");
+            return safe(resultado) + " = GET " + safe(argumento1) + ", " + safe(argumento2)
+                    + (tipo != null ? " -> " + tipo : "");
         }
         if ("SET".equals(operador)) {
             return safe(argumento1) + "[" + safe(argumento2) + "] = " + safe(resultado);
@@ -77,16 +79,39 @@ public class Cuad {
 
         if ("=".equals(operador)) {
             String line = safe(resultado) + " = " + safe(argumento1);
-            if (tipo != null) line += " -> " + tipo;
+            if (tipo != null)
+                line += " -> " + tipo;
             return line;
         }
 
-        String core = safe(resultado) + " = " + safe(argumento1) + " " + operador + (argumento2 != null ? " " + safe(argumento2) : "");
-        if (tipo != null) core += " -> " + tipo;
+        String core = safe(resultado) + " = " + safe(argumento1) + " " + operador
+                + (argumento2 != null ? " " + safe(argumento2) : "");
+        if (tipo != null)
+            core += " -> " + tipo;
         return core;
     }
 
-    private String safe(String s) { 
-        return s == null ? "" : s; 
+    public String getOperador() {
+        return operador;
+    }
+
+    public String getArgumento1() {
+        return argumento1;
+    }
+
+    public String getArgumento2() {
+        return argumento2;
+    }
+
+    public String getResultado() {
+        return resultado;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    private String safe(String s) {
+        return s == null ? "" : s;
     }
 }
