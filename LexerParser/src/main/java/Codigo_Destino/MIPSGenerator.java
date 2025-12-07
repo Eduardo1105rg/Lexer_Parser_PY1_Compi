@@ -184,7 +184,7 @@ public class MIPSGenerator {
 
     // Paso 2: calcular stack
     private void calcularStack(Function_Description actual) {
-        int size = 4; // espacio para $ra
+        int size = 0; // espacio para $ra
         for (Cuad c : actual.instrucciones) {
             String op = c.getOperador();
             System.out.println("Operador actual en el calculo de stack: " + op);
@@ -211,6 +211,13 @@ public class MIPSGenerator {
     public String traduccion_instruccion(Cuad c, Function_Description func, Map<String, String> temporales) {
         StringBuilder cadena = new StringBuilder(); // Cadena para la construccion de
         String op = c.getOperador();
+
+        if ("LABEL".equals(op)) {
+            if (c.getResultado() != null) {
+                cadena.append(c.getResultado()).append(":\n");
+            }
+
+        }
 
         // POP_PARAM → Estos son los primeros que guardamos en el stack en el caso de
         // que sean mas de 3
@@ -330,6 +337,119 @@ public class MIPSGenerator {
             cadena.append("    lw $ra, 0($sp)\n");
             cadena.append("    addi $sp, $sp, ").append(func.tamanoStack).append("\n");
             cadena.append("    jr $ra\n");
+        } else if ("GOTO".equals(op)) {
+            // salto incondicional
+            cadena.append("    j ").append(c.getResultado()).append("\n");
+        } else if ("IF_FALSE".equals(op)) {
+            String cond = c.getArgumento1();
+            String label = c.getResultado();
+
+            // la condicion se carga en $t0
+            if (func.estructura.containsKey(cond)) {
+                cadena.append("    lw $t0, ")
+                      .append(func.estructura.get(cond))
+                      .append("($sp)\n");
+            } else if (temporales.containsKey(cond)) {
+                cadena.append("    move $t0, ")
+                      .append(temporales.get(cond))
+                      .append("\n");
+            } else if (cond.matches("^-?\\d+$")) {
+                cadena.append("    li $t0, ").append(cond).append("\n");
+            }
+
+            cadena.append("    beq $t0, $zero, ")
+                  .append(label)
+                  .append("\n");
+        } else if ("IF".equals(op)) {
+            String cond = c.getArgumento1();
+            String label = c.getResultado();
+
+            if (func.estructura.containsKey(cond)) {
+                cadena.append("    lw $t0, ")
+                      .append(func.estructura.get(cond))
+                      .append("($sp)\n");
+            } else if (temporales.containsKey(cond)) {
+                cadena.append("    move $t0, ")
+                      .append(temporales.get(cond))
+                      .append("\n");
+            } else if (cond.matches("^-?\\d+$")) {
+                cadena.append("    li $t0, ").append(cond).append("\n");
+            }
+
+            // bne $t0, $zero, Lx para IF cond GOTO Lx
+            cadena.append("    bne $t0, $zero, ")
+                  .append(label)
+                  .append("\n");
+        } else if (">".equals(op) || "<".equals(op)
+                || ">=".equals(op) || "<=".equals(op)
+                || "==".equals(op) || "!=".equals(op)) {
+
+            String res = c.getResultado();
+            String arg1 = c.getArgumento1();
+            String arg2 = c.getArgumento2();
+
+            // a1 en $t1
+            if (func.estructura.containsKey(arg1)) {
+                cadena.append("    lw $t1, ")
+                      .append(func.estructura.get(arg1))
+                      .append("($sp)\n");
+            } else if (arg1.matches("^-?\\d+$")) {
+                cadena.append("    li $t1, ").append(arg1).append("\n");
+            } else if (temporales.containsKey(arg1)) {
+                cadena.append("    move $t1, ")
+                      .append(temporales.get(arg1))
+                      .append("\n");
+            }
+
+            // a2 en $t2
+            if (func.estructura.containsKey(arg2)) {
+                cadena.append("    lw $t2, ")
+                      .append(func.estructura.get(arg2))
+                      .append("($sp)\n");
+            } else if (arg2.matches("^-?\\d+$")) {
+                cadena.append("    li $t2, ").append(arg2).append("\n");
+            } else if (temporales.containsKey(arg2)) {
+                cadena.append("    move $t2, ")
+                      .append(temporales.get(arg2))
+                      .append("\n");
+            }
+
+            //ops booleanas
+            switch (op) {
+                case ">":
+                    // t0 = (arg1 > arg2)
+                    cadena.append("    slt $t0, $t2, $t1\n");
+                    break;
+                case "<":
+                    // t0 = (arg1 < arg2)
+                    cadena.append("    slt $t0, $t1, $t2\n");
+                    break;
+                case ">=":
+                    // arg1 >= arg2 
+                    cadena.append("    slt $t0, $t1, $t2\n");
+                    cadena.append("    xori $t0, $t0, 1\n");
+                    break;
+                case "<=":
+                    // arg1 <= arg2
+                    cadena.append("    slt $t0, $t2, $t1\n");
+                    cadena.append("    xori $t0, $t0, 1\n");
+                    break;
+                case "==":
+                    cadena.append("    seq $t0, $t1, $t2\n");
+                    break;
+                case "!=":
+                    cadena.append("    sne $t0, $t1, $t2\n");
+                    break;
+            }
+
+            // guardamos el resultado bool
+            if (res.startsWith("t")) {
+                temporales.put(res, "$t0");
+            } else if (func.estructura.containsKey(res)) {
+                cadena.append("    sw $t0, ")
+                      .append(func.estructura.get(res))
+                      .append("($sp)\n");
+            }
         }
 
         return cadena.toString();
