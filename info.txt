@@ -24,7 +24,7 @@ g. Estatus de la entrega (debe ser CONGRUENTE con la solución entregada):
 h. Enlace al repositorio del proyecto:
 	https://github.com/Eduardo1105rg/Lexer_Parser_PY1_Compi
 
-i. Enlace de video explicativo:
+i. Enlace de video explicativo:https://drive.google.com/file/d/1egQ38tRsunwG2J_PDnUKLdbq5d_gmTVX/view?usp=sharing
 
 	
 
