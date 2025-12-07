@@ -111,43 +111,6 @@ public class MIPSGenerator {
     // Esta funcion se encarga de leer las funciones que se registraron en los cuad
     // e irlas traduciendo a codigo MIPS
     public void generar_funciones_segmento_text() {
-        // codigo_destino_mips.append("\n.text\n");
-        Function_Description actual = null;
-
-        // for (Cuad c : TAC_Generator.cuadGlobales) {
-        // String op = c.operador;
-        // if (op == null || op.contains("FUNC_BEGIN"))
-        // continue;
-
-        // if (op.startsWith("FUNC_") && op.endsWith(":")) {
-        // String fname = op;// .substring(5); // quitar "FUNC_"
-        // actual = new Function_Description(fname);
-        // funciones.put(fname, actual);
-        // codigo_destino_mips.append(fname).append(":\n");
-        // codigo_destino_mips.append(" addi $sp, $sp, -" + actual.tamanoStack + "\n");
-        // // reservar stack
-        // // (ejemplo)
-        // codigo_destino_mips.append(" sw $ra, 0($sp)\n");
-        // } else if (op.equals("POP_PARAM") && actual != null) {
-        // actual.addParam(c.resultado);
-        // // guardamos los parametros en stack
-        // codigo_destino_mips.append(" sw $a").append(c.operador).append(", ")
-        // .append(actual.estructura.get(c.resultado))
-        // .append("($sp)\n");
-
-        // // Aqui deberia de ir las partes para procesar las demas parte, como otras
-        // // funciones
-
-        // } else if (op.equals("FUNC_END") && actual != null) {
-        // // Esto es para cuando se encuentre lo del final de la funcion.
-        // codigo_destino_mips.append(" lw $ra, 0($sp)\n");
-        // codigo_destino_mips.append(" addi $sp, $sp, " + actual.tamanoStack + "\n");
-        // codigo_destino_mips.append(" jr $ra\n");
-        // actual = null;
-        // }
-        // }
-
-        // Analizar las funciones.
         analizarFunciones();
 
         for (Function_Description func : funciones.values()) {
@@ -445,7 +408,7 @@ public class MIPSGenerator {
                     break;
                 case "<":
                     // t0 = (arg1 < arg2)
-                    cadena.append("    slt $t0, $t1, $t2\n");
+                    cadena.append("    slt $t1, $t2, $t0\n");
                     break;
                 case ">=":
                     // arg1 >= arg2 
@@ -454,7 +417,7 @@ public class MIPSGenerator {
                     break;
                 case "<=":
                     // arg1 <= arg2
-                    cadena.append("    slt $t0, $t2, $t1\n");
+                    cadena.append("    slt $t2, $t1, $t0\n");
                     cadena.append("    xori $t0, $t0, 1\n");
                     break;
                 case "==":
@@ -477,13 +440,88 @@ public class MIPSGenerator {
             String valor = c.getArgumento1();
 
             if (valor != null) {
-                String texto = valor.replace("\"", "");
-                String label = registrarStringLiteral(texto);
-
-                cadena.append("    la $a0, ").append(label).append("\n");
-                cadena.append("    li $v0, 4\n");
-                cadena.append("    syscall\n");
+                // En caso de que sea un literal string lo imprimimos directamente
+                if (valor.startsWith("\"") && valor.endsWith("\"")) {
+                    String texto = valor.substring(1, valor.length() - 1); // Quitar comillas
+                    String label = registrarStringLiteral(texto);
+                    cadena.append("    la $a0, ").append(label).append("\n");
+                    cadena.append("    li $v0, 4\n");
+                    cadena.append("    syscall\n");
+                    // NL
+                    cadena.append("    li $a0, 10\n");
+                    cadena.append("    li $v0, 11\n");
+                    cadena.append("    syscall\n");
+                }
+                // En caso de un literal numerico
+                else if (valor.matches("^-?\\d+(\\.\\d+)?$")) {
+                    cadena.append("    li $a0, ").append(valor).append("\n");
+                    cadena.append("    li $v0, 1\n");
+                    cadena.append("    syscall\n");
+                    // NL
+                    cadena.append("    li $a0, 10\n");
+                    cadena.append("    li $v0, 11\n");
+                    cadena.append("    syscall\n");
+                }
+                // En caso de un booleano literal
+                else if ("true".equals(valor) || "false".equals(valor)) {
+                    cadena.append("    li $a0, ").append(valor).append("\n");
+                    cadena.append("    li $v0, 4\n");
+                    cadena.append("    syscall\n");
+                    // NL
+                    cadena.append("    li $a0, 10\n");
+                    cadena.append("    li $v0, 11\n");
+                    cadena.append("    syscall\n");
+                }
+                // En caso de una variable local
+                else if (func.estructura.containsKey(valor)) {
+                    int offset = func.estructura.get(valor);
+                    cadena.append("    lw $a0, ").append(offset).append("($sp)\n");
+                    cadena.append("    li $v0, 1\n");
+                    cadena.append("    syscall\n");
+                    // NL
+                    cadena.append("    li $a0, 10\n");
+                    cadena.append("    li $v0, 11\n");
+                    cadena.append("    syscall\n");
+                }
+                
+                else if (temporales.containsKey(valor)) {
+                    cadena.append("    move $a0, ").append(temporales.get(valor)).append("\n");
+                    cadena.append("    li $v0, 1\n");
+                    cadena.append("    syscall\n");
+                    // NL
+                    cadena.append("    li $a0, 10\n");
+                    cadena.append("    li $v0, 11\n");
+                    cadena.append("    syscall\n");
+                }
             }
+        } else if ("READ".equals(op)) {
+            String tipo = c.getTipo();
+            String res = c.getResultado();
+
+            int codigoSyscall;
+            if ("int".equals(tipo)) {
+               codigoSyscall = 5; 
+            } else if ("float".equals(tipo)) {
+               codigoSyscall = 6; 
+            } else {
+                codigoSyscall = 5; // default a int
+            }
+
+            cadena.append("    li $v0, ").append(codigoSyscall).append("\n");
+            cadena.append("    syscall\n");
+
+            // aqui guardamos el valor leido
+            if (res.startsWith("t")) {
+                // guardamos en un registro temporal
+                cadena.append("    move $t0, $v0\n");
+                temporales.put(res, "$t0");
+            } else if (func.estructura.containsKey(res)) {
+                // guardamos en variable local
+                cadena.append("    sw $v0, ").append(func.estructura.get(res)).append("($sp)\n");
+            } else {
+                cadena.append("    sw $v0, ").append(res).append("\n");
+            }
+
         }
 
         return cadena.toString();

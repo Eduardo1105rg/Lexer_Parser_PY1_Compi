@@ -1,4 +1,11 @@
+int suma є int a, int b э ¿
+    let int resultado = a + b$
+    return resultado$
+?
+
 void principal є э ¿
-    output є "Hola" э$
+    let int suma1 = suma є5, 3э$
+    output є suma1 э$
     return$
+    
 ?
