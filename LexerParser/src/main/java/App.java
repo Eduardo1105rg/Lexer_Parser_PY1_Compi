@@ -56,6 +56,7 @@ public class App {
                 mipsGenerator.generar_funciones_segmento_text();
                 mipsGenerator.generar_segmento_data_var_globales();
                 mipsGenerator.mostrar_codigo_destino_mips();
+                mipsGenerator.guardarCodigoMIPS("output.s");
 
             } else {
                 consolaOriginal.println("El archivo fue analizado con " + (errores + erroresSemanTicos) + " errores.");

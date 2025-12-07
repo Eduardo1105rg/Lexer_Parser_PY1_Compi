@@ -1,11 +1,7 @@
-int suma є int a, int b э ¿
-    let int resultado = a + b$
-    return resultado$
-?
-
 void principal є э ¿
-    let int suma1 = suma є5, 3э$
-    output є suma1 э$
+    let boolean _var2_$
+    output є "Hola" э$
+    _var2_ = є1 == 0э $
+    output є _var2_ э$
     return$
-    
 ?

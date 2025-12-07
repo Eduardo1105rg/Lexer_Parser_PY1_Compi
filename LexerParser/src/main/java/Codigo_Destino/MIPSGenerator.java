@@ -10,6 +10,9 @@ package Codigo_Destino;
 import simbolos.TAC_Generator;
 import simbolos.Cuad;
 import java.util.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class MIPSGenerator {
 
@@ -540,6 +543,16 @@ public class MIPSGenerator {
             // System.out.println("Stack size: " + func.tamanoStack);
             // System.out.println("Parametros: " + func.params);
             func.mostrar_estructura();
+        }
+    }
+
+    public void guardarCodigoMIPS(String nombreArchivo) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(nombreArchivo))) {
+            String codigoFinal = dataSegment.toString() + "\n" + textSegment.toString();
+            writer.write(codigoFinal);
+            System.out.println("Código MIPS guardado en: " + nombreArchivo);
+        } catch (IOException e) {
+            System.err.println("Error al guardar el archivo: " + e.getMessage());
         }
     }
 }
