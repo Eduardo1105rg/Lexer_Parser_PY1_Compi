@@ -19,10 +19,13 @@ f. Fecha de entrega:
 	27-11-2025
 
 g. Estatus de la entrega (debe ser CONGRUENTE con la solución entregada): 
-	[Excelente]
+	[Bueno]
 
 h. Enlace al repositorio del proyecto:
 	https://github.com/Eduardo1105rg/Lexer_Parser_PY1_Compi
 
 i. Enlace de video explicativo:
+
+	
+
 	
