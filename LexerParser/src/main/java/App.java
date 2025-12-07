@@ -1,15 +1,15 @@
-
 import parser.*;
 import lexer.Lexer;
 
 import simbolos.*;
+import Codigo_Destino.MIPSGenerator;
 import utils.*;
 import java.io.FileReader;
 import java.io.PrintStream;
 
 public class App {
     public static void main(String[] args) {
-         if (args.length == 0) {
+        if (args.length == 0) {
             System.err.println("Uso: java parser.App <archivo_fuente>");
             System.exit(1);
         }
@@ -19,11 +19,11 @@ public class App {
             utils.ManejoArchivos.iniciar("tokens.txt");
             // Esto es para registrar los tokens y lexemas en un archivo.
 
-            PrintStream consolaOriginal = System.out; // Esto es para salvar la conosola 
+            PrintStream consolaOriginal = System.out; // Esto es para salvar la conosola
 
-            // PrintStream out = new PrintStream("tokens.txt"); // COn esto redirigimos la salida de toda la consola hacia el archivo, por eso si debemos 
+            // PrintStream out = new PrintStream("tokens.txt"); // COn esto redirigimos la
+            // salida de toda la consola hacia el archivo, por eso si debemos
             // System.setOut(out);
-
 
             FileReader file = new FileReader(args[0]);
             Lexer lexer = new Lexer(file);
@@ -31,7 +31,7 @@ public class App {
 
             p.parse();
 
-            p.mostrarTS();
+            // p.mostrarTS();
 
             // Luego de analisis sintactico:
             consolaOriginal.println("Errores lexicos: " + lexer.getErrorContador());
@@ -44,17 +44,22 @@ public class App {
             if (errores == 0 && erroresSemanTicos == 0) {
                 consolaOriginal.println("El archivo fue reconocido por la gramatica.");
                 // Pruebas de TAC
-                TAC_Generator.imprimirCuads(consolaOriginal);
+                // TAC_Generator.imprimirCuads(consolaOriginal);
                 TAC_Generator.imprimirCuadsToFile("tac_output.txt");
+                // Imprimimos tabla de simbolos final
+                // p.mostrarTS();
+
+                // Generar codigo MIPS
+                MIPSGenerator mipsGenerator = new MIPSGenerator();
+                mipsGenerator.generarCodigoMIPS();
+                mipsGenerator.generar_inicio_segmento_text();
+                mipsGenerator.generar_funciones_segmento_text();
+                mipsGenerator.generar_segmento_data_var_globales();
+                mipsGenerator.mostrar_codigo_destino_mips();
+
             } else {
-                consolaOriginal.println("El archivo fue analizado con " + (errores+erroresSemanTicos) + " errores.");
+                consolaOriginal.println("El archivo fue analizado con " + (errores + erroresSemanTicos) + " errores.");
             }
-
-            // p.mostrarTablaSimbolos();
-
-            // Esta es la parte para mostrar las tablas de simbolos.
-            // lexer.tablaIdentificadores.imprimirTablaIdentificadores(consolaOriginal);
-            // lexer.tablaLiterales.imprimirTablaLiterales(consolaOriginal);
 
         } catch (Exception e) {
             System.out.println("Error durante el analisis sintactico:"); // Esta parte se deberia de cambiar.

@@ -1,0 +1,74 @@
+======== TAC Generado =============
+_s1_ = "" -> string
+FUNC__mi_:
+_mi_ FUNC_BEGIN
+POP_PARAM 0 -> _dif_ -> int
+POP_PARAM 1 -> _otra_ -> int
+_var2_ = 0.0 -> float
+L0:
+t0 = _var_2 - 1.0 -> float
+_var_2 = t0 -> float
+t1 = _var_ - 1 -> int
+_var_ = t1 -> int
+t2 = _var2_ + 1.0 -> float
+_var2_ = t2 -> float
+t3 = _var2_ > 12.2 -> boolean
+IF t3 GOTO L1
+GOTO L0
+L1:
+t4 = _var_ == 0 -> boolean
+IF_FALSE t4 GOTO L3
+PRINT entra al if
+GOTO L2
+L3:
+L2:
+IF_FALSE true GOTO L10
+PRINT _var_
+GOTO L9
+L10:
+t5 = _otra_ == 1 -> boolean
+t6 = _otra_ == 2 -> boolean
+IF_FALSE t5 GOTO L5
+PRINT !|
+GOTO L4
+L5:
+IF_FALSE t6 GOTO L6
+_otra_ = 10 -> int
+GOTO L4
+L6:
+L4:
+t7 = _dif_ == 10 -> boolean
+IF_FALSE t7 GOTO L8
+PRINT un case
+GOTO L7
+L8:
+L7:
+L9:
+RET
+_mi_ FUNC_END
+FUNC__miOtraFun_:
+_miOtraFun_ FUNC_BEGIN
+RET
+_miOtraFun_ FUNC_END
+FUNC_principal:
+principal FUNC_BEGIN
+_arr_ = ALLOC int 3
+_arr_[0] = 1
+_arr_[1] = 2
+_arr_[2] = 3
+_i_ = 20 -> int
+_step_ = 2 -> int
+L11:
+PRINT i = 
+PRINT _i_
+t8 = _i_ - _step_ -> int
+_i_ = t8 -> int
+t9 = _i_ < 0 -> boolean
+IF t9 GOTO L12
+GOTO L11
+L12:
+PRINT _b1_
+PRINT true
+PRINT -6.7
+RET
+principal FUNC_END

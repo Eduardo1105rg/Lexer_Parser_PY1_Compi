@@ -40,3 +40,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Ignorar los archivos salientes.
+output.txt
+tac_output.txt

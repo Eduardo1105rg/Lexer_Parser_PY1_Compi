@@ -7,6 +7,11 @@ global string mensaje = "Hola Mundo"$
 
 | ============ FUNCIONES ============
 
+int suma є int a, int b э ¿
+    let int resultado = a + b$
+    return resultado$
+?
+
 void principal є э ¿
     | Variables locales de diferentes tipos
     let int edad = 25$
@@ -27,5 +32,6 @@ void principal є э ¿
     let int decremento = 5$
     decremento--$
 
+    return$
     
 ?

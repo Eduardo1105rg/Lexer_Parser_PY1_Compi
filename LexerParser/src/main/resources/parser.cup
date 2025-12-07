@@ -28,6 +28,10 @@ import simbolos.Cuad;
 import simbolos.TAC_Generator;
 
 
+// Import utils.
+import utils.ObtenerValorEnString;
+
+
 /* Aqui vamos a definir lo que se va a ejecutar al reducir una produccion o algo asi. (Es diferente del 'parser code')*/
 action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi de momento.
 
@@ -36,7 +40,7 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
 
   {
     entornoActual = new Ambitos(null); // Ambito raiz, este es el inicial, el que contiene a los demas, aqui estan las globales y todas las funciones.
-    System.out.println(" \n>> Ambito inicial global creado \n");
+    mostrarMensajeTS(" \n>> Ambito inicial global creado \n");
   }
 
   Token funcionActual; // Para trabajar lo que es el analisis semantico de la llamada a funciones.
@@ -72,35 +76,12 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
     }
   }
 
+  // Funcion para obtener el valor de un tipo de expresion dependiedo de si es null o no, esta hace una llamada a la clase 
+  // que contiene la logica de la funcion.
   private String operandoString (TipoExpresiones expr) {
-      if (expr == null) 
-        return "null";
-      if (expr.temp != null) 
-        return expr.temp;
-      if (expr.valorI != null) 
-        return expr.valorI.toString();
-      if (expr.valorF != null) 
-        return expr.valorF.toString();
-      if (expr.valorB != null) 
-        return expr.valorB ? "true" : "false";
-      if (expr.valorS != null) {
-          String s = expr.valorS.replace("\\", "\\\\").replace("\"", "\\\"");
-          return "\"" + s + "\""; // Para que sea "string"
-      }
-      if (expr.valorC != null) {
-          char c = expr.valorC;
-          String cs;
-          switch (c) {
-              case '\\': cs = "\\\\"; break;
-              case '\'': cs = "\\'"; break;
-              case '\n': cs = "\\n"; break;
-              case '\t': cs = "\\t"; break;
-              case '\r': cs = "\\r"; break;
-              default: cs = String.valueOf(c);
-          }
-          return "'" + cs + "'";
-      }
-      return "null";
+    
+    // Llamar a la funcion en utils para obtener el valor, la logica es la misma a la que estaba aqui.
+    return ObtenerValorEnString.operandoString(expr);
   }
 
 
@@ -128,7 +109,7 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
   // Volver a lo que seria el ambito de mas arriba, el padre por asi decirlo, en algun punto vuelve al punto general del programa.
   public void cerrarAmbito() {
       entornoActual = entornoActual.getAnterior();
-      System.out.println(" \n>> Ambito cerrado. \n");
+      mostrarMensajeTS(" \n>> Ambito cerrado. \n");
   }
 
   // Ahora se inserta un nuevo simbolo en el ambito en el que estamos.
@@ -194,72 +175,40 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
         return tipos;
     }
 
-    // public void mostrarTodosLosAmbitosV1() {
-    //     System.out.println("╔════════════════════════════════════════════════════════════════════════════╗");
-    //     System.out.println("║                    TABLA DE SÍMBOLOS EN TODOS LOS AMBITOS                  ║");
-    //     System.out.println("╠════════════════════════════════════════════════════════════════════════════╣");
-    //     System.out.printf("║ %-15s │ %-10s │ %-10s │ %-10s │ %-10s │ %-5s │ %-5s ║\n",
-    //                     "Nombre", "Tipo", "Categoria", "Ambito", "Valor", "Linea", "Col");
-    //     System.out.println("╠════════════════════════════════════════════════════════════════════════════╣");
-
-    //     int nivel = 0;
-    //     for (Ambitos ambito = entornoActual; ambito != null; ambito = ambito.getAnterior()) {
-    //         System.out.println("\n>> Ambito con " + ambito.getTablaActual().size() + " tokens. \n");
-    //         String nombreAmbito = "\nNivel_" + nivel;
-    //         for (Token t : ambito.getTablaActual().values()) {
-    //             System.out.printf("║ %-15s │ %-10s │ %-10s │ %-10s │ %-10s │ %-5d │ %-5d ║\n",
-    //                             t.getNombre(), t.getTipo(), t.getCategoria(),
-    //                             nombreAmbito, String.valueOf(t.getValor()),
-    //                             t.getLinea(), t.getColumna());
-    //         }
-    //         nivel++;
-    //     }
-
-    //     System.out.println("╚════════════════════════════════════════════════════════════════════════════╝");
-    // }
-
-
-
-
-
     // Para obtener el tipo de dato de un identificador, principalmente variables.
-    public TipoExpresiones obtenerTipoIdentificador(String nombre) {
+    public TipoExpresiones obtenerTipoIdentificador(String nombre, int fila, int columna) {
         for (Ambitos ambito = entornoActual; ambito != null; ambito = ambito.getAnterior()) {
             Token token = ambito.buscar(nombre);
             if (token != null && ("variable".equals(token.getCategoria()) || "parametro".equals(token.getCategoria()) || "global".equals(token.getCategoria()))
             ) {
                 String tipo = token.getTipo();
-                System.out.println("Identificador '" + nombre + "' encontrado como " + token.getCategoria() + " de tipo '" + token.getTipo() + "'");
+                mostrarMensajeTS("Identificador '" + nombre + "' encontrado como " + token.getCategoria() + " de tipo '" + token.getTipo() + "'");
                 if ("int".equals(tipo)) return new TipoExpresiones("int");
                 if ("float".equals(tipo)) return new TipoExpresiones("float");
                 if ("char".equals(tipo)) return new TipoExpresiones("char");
                 if ("boolean".equals(tipo)) return new TipoExpresiones("boolean");
                 if ("string".equals(tipo)) return new TipoExpresiones("string");
 
-                // Si querés manejar listas en el futuro:
-                // if ("lista".equals(tipo)) {
-                //     String tipoBase = token.getTipoBase();
-                //     Integer tamano = token.getTamano();
-                //     return new TipoExpresiones(tipoBase, tamano);
-                // }
-
-                // Si el tipo es válido pero no reconocido explícitamente:
+                // Si el tipo es valido pero no es reconocido por los anteriores.
                 return new TipoExpresiones(tipo);
             }
         }
-        System.err.println("Error semantico: identificador '" + nombre + "' no encontrado o no es una variable.");
+        aumentarCountErroresSemanticos();
+        System.err.println(" -> Error semantico: identificador '" + nombre + "' no encontrado o no es una variable." + "Fila: " + fila + " Columna: " + columna);
         return new TipoExpresiones("error", 0);
     }
 
     // Para obtener el tipo de dato de una funcion.
-    public TipoExpresiones obtenerTipoFuncion(Token funcionActualA) {
+    public TipoExpresiones obtenerTipoFuncion(Token funcionActualA, int fila, int columna) {
         if (funcionActualA == null || !"funcion".equals(funcionActualA.getCategoria())) {
-            System.err.println("Error semantico: funcion no valida.");
+            aumentarCountErroresSemanticos();
+            System.err.println(" -> Error semantico: funcion no valida." + "Fila: " + fila + " Columna: " + columna);
             return new TipoExpresiones("error", 0);
         }
         String tipo = funcionActualA.getTipo(); // Ej: "int", "float", "void", etc.
         if ("void".equals(tipo)) {
-            System.err.println("Error semantico: la funcion no retorna valor.");
+            aumentarCountErroresSemanticos();
+            System.err.println(" -> Error semantico: la funcion no retorna valor." + "Fila: " + fila + " Columna: " + columna);
             return new TipoExpresiones("error", 0);
         }
         return new TipoExpresiones(tipo);
@@ -306,6 +255,18 @@ action code {: // Esta parte podria ir en un archivo aparte, pero probemoslo asi
     }
 
 
+    // Funcion para mostrar los mensajes de prints, recive el mensaje que se desee mostrar y hace un print. Esto es principalmente
+    // para los mensajes de print que son para hacer debug.
+    public void mostrarMensaje(String mensaje) {
+        //System.out.println(mensaje); // Esta parte es la que se debe de comentar para cuando no se quiere mostrar nada.
+    }
+
+
+    public void mostrarMensajeTS(String mensaje) {
+        //System.out.println(mensaje);
+    }
+
+
 
 :};
 
@@ -329,6 +290,7 @@ parser code {:
         return countErroresSemanticos;
     }
 
+    // Funcion para obtener la informacion de un token, recibe un Symbol y lo procesa usando el archivo SYM.java
     private String obtenerInfoToken(Symbol tok) {
         if (tok == null) return "<EOF>";
         int s = tok.sym;
@@ -402,7 +364,7 @@ parser code {:
     }
 
     public void syntax_error(Symbol cur_token) {
-        System.err.println("Error sintactico en linea " + (cur_token != null ? cur_token.left : -1)
+        System.err.println(" -> Error sintactico en linea " + (cur_token != null ? cur_token.left : -1)
                 + ", columna " + (cur_token != null ? cur_token.right : -1)
                 + ": Token inesperado: " + obtenerInfoToken(cur_token));
         errorContador++;
@@ -412,7 +374,7 @@ parser code {:
     }
 
     public void unrecovered_syntax_error(Symbol cur_token) {
-        System.err.println("Error sintactico no recuperable en linea " + (cur_token != null ? cur_token.left : -1)
+        System.err.println(" -> Error sintactico no recuperable en linea " + (cur_token != null ? cur_token.left : -1)
                 + ", columna " + (cur_token != null ? cur_token.right : -1)
                 + ": " + obtenerInfoToken(cur_token));
     }
@@ -546,7 +508,12 @@ non terminal TipoExpresiones condicion;
 non terminal forInt, loopInicio;
 
 /* >> Funciones y sus llamadas  */
-non terminal funcionLlamada, argumentos, return, break;
+non terminal return, break;
+
+non terminal TipoExpresiones funcionLlamada;
+
+/* >> Este ahora lleva la lista de TipoExpresiones para trabajar con ellos. */
+non terminal List<TipoExpresiones> argumentos;
 
 /* Aqui estoy poniendo los no terminales que estan faltando */
 non terminal listaFunciones;
@@ -622,31 +589,31 @@ start with programa;
 /* FIX: La estructura del principal está como opcional, debe de ser obligatorio y al final (por diseño) */
 /* FIXED: Se arreglo la estructura para que siempre haya un bloque principal */
 programa ::= varGlobal programa
-           | funciones principal {: 
+           | funciones principal:pri {: 
                 if (buscarFuncion("principal") == null) {
-                    System.err.println(" -> Error semantico: no se ha definido la funcion principal.");
+                    System.err.println(" -> Error semantico: no se ha definido la funcion principal." + "Linea: " + prileft + " Columna: " + priright);
                     aumentarCountErroresSemanticos();
                 }
                 // mostrarTS();
             :} 
-           | principal {: 
+           | principal:pri {: 
                 if (buscarFuncion("principal") == null) {
-                    System.err.println(" -> Error semantico: no se ha definido la funcion principal.");
+                    System.err.println(" -> Error semantico: no se ha definido la funcion principal." + "Linea: " + prileft + " Columna: " + priright);
                     aumentarCountErroresSemanticos();
                 }
                 // mostrarTS();
             :};
-        //    | error programa {: System.err.println(" -> Error: Declaracion global o funcion no valida"); :};
+        
 
 principalParteIzquierda ::= VOID PRINCIPAL:pri PAREN_I PAREN_D {: 
                             Token principal = new Token("principal", "void", "global", null, "funcion", prileft, priright);
                             if (!insertarNuevoToken(principal)) {
-                                System.err.println(" -> Error semantico: funcion 'principal' ya declarada.");
+                                System.err.println(" -> Error semantico: funcion 'principal' ya declarada." + "Linea: " + prileft + " Columna: " + priright);
                                 aumentarCountErroresSemanticos();
                             }
 
 
-                            System.out.println("\n >> Reconociendo una funcion 1. \n");
+                            mostrarMensajeTS("\n >> Reconociendo una funcion 1. \n");
                             crearAmbito(); // entorno local para principal
                             principal.setAmbitoLocal(entornoActual);
                             funcionEnAnalisis = principal; // Para trabajar con lo datos de la funcion.
@@ -664,7 +631,7 @@ principal ::= principalParteIzquierda bloque:blo {:
               cerrarAmbito(); // cerramos entorno de principal
 
               TAC_Generator.generarEndFunc("principal");
-              System.out.println("\n >> Cerando el reconociendo una funcion 1. \n");
+              mostrarMensajeTS("\n >> Cerando el reconociendo una funcion 1. \n");
           :};
 
 // Se le agrega el result para que las producciones sepan mejor el valor semantico que van a tener.
@@ -678,8 +645,6 @@ tipoDatoVariable ::= INT {: RESULT = "int"; :}
                   | BOOLEAN {: RESULT = "boolean"; :}
                   | CHAR {: RESULT = "char"; :}
                   | STRING {: RESULT = "string"; :};
-                //    | error {: System.err.println("Error: tipo de variable debe ser int, float, boolean, char o string"); :};
-
 
 
 /* Esta modificacion es para intentar resolver el conflicto de funcion */
@@ -693,18 +658,19 @@ listaFunciones ::= funcion
 funcionParteIzquierda ::= tipoDatoFuncion:tipo IDENTIFICADOR:ID PAREN_I  {: 
                         Token funcion = new Token(ID, tipo, "global", null, "funcion", IDleft, IDright);
                         if (!insertarNuevoToken(funcion)) {
-                            System.err.println(" -> Error semantico: funcion '" + ID + "' ya declarada.");
+                            System.err.println(" -> Error semantico: funcion '" + ID + "' ya declarada." + "Linea: " + IDleft + " Columna: " + IDright);
                             aumentarCountErroresSemanticos();
                         }
 
-                        System.out.println("\n >> Reconociendo una funcion 1. \n");
+                        mostrarMensajeTS("\n >> Reconociendo una funcion 1. \n");
                         crearAmbito(); // Crear el ambito local de una funcion, esto antes de que se cree el bloque.
                         funcion.setAmbitoLocal(entornoActual); // Me parece que este deberia de 
                         funcionEnAnalisis = funcion; // Guardamos la funcion que acabamos de crear para que sea mas facil trabajarla despues.
                         TAC_Generator.generarLabel ("FUNC_" + ID);
                         TAC_Generator.generarBeginFunc (ID);
                         indiceParametroActual = 0;
-                      :}; // Fin de produccion.
+                      :}; 
+// Fin de produccion.
   
 
 
@@ -713,22 +679,22 @@ funcion ::= funcionParteIzquierda params PAREN_D bloque:blo {:
             insertarNuevoToken(blo);
             cerrarAmbito(); // Cerramos el ambito local de una funcion.
             TAC_Generator.generarEndFunc (funcionEnAnalisis.getNombre());
-            System.out.println("\n >> Creando el reconociendo una funcion 1. \n");
+            mostrarMensajeTS("\n >> Creando el reconociendo una funcion 1. \n");
         :}
         | funcionParteIzquierda PAREN_D bloque:blo {: 
             insertarNuevoToken(blo);
             cerrarAmbito(); 
             TAC_Generator.generarEndFunc (funcionEnAnalisis.getNombre());
-            System.out.println("\n >> Creando el reconociendo una funcion 1. \n");
+            mostrarMensajeTS("\n >> Creando el reconociendo una funcion 1. \n");
         :}
-        | funcionParteIzquierda params PAREN_D bloque:blo error {: System.err.println(" -> Error sintectico, se encontro un elemento inesperado despues del la funcion."); insertarNuevoToken(blo); cerrarAmbito(); :}
-        | funcionParteIzquierda PAREN_D bloque:blo error {: System.err.println(" -> Error sintectico, se encontro un elemento inesperado despues del la funcion."); insertarNuevoToken(blo); cerrarAmbito(); :}; // Fin de produccion.
+        | funcionParteIzquierda params PAREN_D bloque:blo error {: System.err.println(" -> Error sintectico, se encontro un elemento inesperado despues del la funcion." + "Linea: " + bloleft + ", Columna: " + bloright); insertarNuevoToken(blo); cerrarAmbito(); :}
+        | funcionParteIzquierda PAREN_D bloque:blo error {: System.err.println(" -> Error sintectico, se encontro un elemento inesperado despues del la funcion." + "Linea: " + bloleft + ", Columna: " + bloright); insertarNuevoToken(blo); cerrarAmbito(); :}; // Fin de produccion.
 
 
 // >>>>>>>>>>Parte de los parametros de una funcion
 params ::= param
          | params COMA param
-         | error COMA param{: System.err.println(" -> Error: No puede haber una (,) sola al inicio de los parametros."); :};
+         | error COMA param:pa {: System.err.println(" -> Error: No puede haber una (,) sola al inicio de los parametros." + "Linea: " + paleft + ", Columna: " + paright); :};
 
 // Definirle el valos de formas mas explicita para que puedan ser leidos.
 tipoDatoParametro ::= INT {: RESULT = "int"; :}
@@ -736,25 +702,24 @@ tipoDatoParametro ::= INT {: RESULT = "int"; :}
                     | BOOLEAN {: RESULT = "boolean"; :}
                     | CHAR {: RESULT = "char"; :}
                     | STRING {: RESULT = "string"; :};
-                    // | tipoLista {: RESULT = new Symbol(sym.LISTA, "lista"); :}; // Este se tiene que mover ya que no dejara trabajar con lo del semantico
-
+                 
 param ::= tipoDatoParametro:tipo IDENTIFICADOR:ID {: 
           Token parametro = new Token(ID, tipo, "parametro", null, "parametro", IDleft, IDright);
           if (!insertarNuevoToken(parametro)) {
-              System.err.println(" -> Error semantico: parametro '" + ID + "' ya declarado.");
+              System.err.println(" -> Error semantico: parametro '" + ID + "' ya declarado." + "Linea: " + IDleft + ", Columna: " + IDright);
               aumentarCountErroresSemanticos();
           }
-          TAC_Generator.generarPopParam (indiceParametroActual++, ID); // Se luga el parametro al indice
+          TAC_Generator.generarPopParam (indiceParametroActual++, ID, tipo.toString()); // Se luga el parametro al indice
         :}
       | tipoLista:tipo IDENTIFICADOR:ID {: //Despues se tiene que hacer algo para trabajar con lo del tamaño.
           Token parametro = new Token(ID, tipo.tipoBase, "parametro", null, "parametro", IDleft, IDright);
           if (!insertarNuevoToken(parametro)) {
-              System.err.println(" -> Error semantico: parametro '" + ID + "' ya declarado.");
+              System.err.println(" -> Error semantico: parametro '" + ID + "' ya declarado." + "Linea: " + IDleft + ", Columna: " + IDright);
               aumentarCountErroresSemanticos();
           }
-          TAC_Generator.generarPopParam (indiceParametroActual++, ID);
+          TAC_Generator.generarPopParam (indiceParametroActual++, ID, tipo.toString());
         :}
-      | error IDENTIFICADOR {: System.err.println(" -> Error: Para los parametros de una funcion se debe de indicar su tipo de dato."); :};
+      | error IDENTIFICADOR:ID {: System.err.println(" -> Error: Para los parametros de una funcion se debe de indicar su tipo de dato." + "Linea: " + IDleft + ", Columna: " + IDright); :};
 
 
 // -------------------------- Seccion del bloque primario de lo que son las funciones.
@@ -767,7 +732,7 @@ bloqueError ::= error sentencias LLAVE_D:ld {:
                 // Ambitos ambitoBloque = entornoActual;
                 // cerrarAmbito();
                 
-                System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿)."); 
+                System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿)." + "Linea: " + ldleft + ", Columna: " + ldright); 
                 // RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
                 // RESULT.setAmbitoLocal(entornoActual);
             :}
@@ -775,7 +740,7 @@ bloqueError ::= error sentencias LLAVE_D:ld {:
                 // Ambitos ambitoBloque = entornoActual;
                 // cerrarAmbito();
 
-                System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿). "); 
+                System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿). " + "Linea: " + ldleft + ", Columna: " + ldright); 
                 // RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
                 // RESULT.setAmbitoLocal(ambitoBloque);
             :}
@@ -783,7 +748,7 @@ bloqueError ::= error sentencias LLAVE_D:ld {:
                 // Ambitos ambitoBloque = entornoActual;
                 // cerrarAmbito();
 
-                System.err.println(" -> Error: Los bloques deben de tener una llave de cierre (?). "); 
+                System.err.println(" -> Error: Los bloques deben de tener una llave de cierre (?). " + "Linea: " + lileft + ", Columna: " + liright); 
                 // RESULT = new Token("bloqueError", null, "local", null, "bloqueError", lileft, liright);
                 // RESULT.setAmbitoLocal(ambitoBloque);
             :};
@@ -791,7 +756,7 @@ bloqueError ::= error sentencias LLAVE_D:ld {:
 
 /* Producciones de sentencias y bloques */
 bloque ::= bloqueInicio sentencias LLAVE_D:ld {: 
-              // Guardar el entorno antes de cerrarlo
+            // Guardar el entorno antes de cerrarlo
             //   mostrarTablaActual();
               Ambitos ambitoBloque = entornoActual;
               cerrarAmbito();
@@ -800,10 +765,6 @@ bloque ::= bloqueInicio sentencias LLAVE_D:ld {:
               RESULT = new Token("bloque", null, "local", null, "bloque", ldleft, ldright);
               RESULT.setAmbitoLocal(ambitoBloque);
 
-              // Si estamos dentro de una función en análisis, enlazarlo
-            //   if (funcionEnAnalisis != null) {
-            //       funcionEnAnalisis.setAmbitoLocal(ambitoBloque);
-            //   }
           :}
         | bloqueError:Id {:
                 Ambitos ambitoBloque = entornoActual;
@@ -813,59 +774,13 @@ bloque ::= bloqueInicio sentencias LLAVE_D:ld {:
                 RESULT.setAmbitoLocal(ambitoBloque);
 
         :};
-        // | bloqueInicio LLAVE_D:ld {: 
-                // mostrarTablaActual();
-            //   Ambitos ambitoBloque = entornoActual;
-            //   cerrarAmbito();
-
-            //   RESULT = new Token("bloque", null, "local", null, "bloque", ldleft, ldright);
-            //   RESULT.setAmbitoLocal(entornoActual);
-
-            //   if (funcionEnAnalisis != null) {
-            //       funcionEnAnalisis.setAmbitoLocal(ambitoBloque);
-            //   }
-        //   :}
-
-        //  | error sentencias LLAVE_D:ld {: 
-        //         Ambitos ambitoBloque = entornoActual;
-        //         cerrarAmbito();
-                
-        //         System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿)."); 
-        //         RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
-        //         RESULT.setAmbitoLocal(entornoActual);
-        //     :}
-        //  | error LLAVE_D:ld {: 
-        //         Ambitos ambitoBloque = entornoActual;
-        //         cerrarAmbito();
-
-        //         System.err.println(" -> Error: Los bloques deben de tener una llave de apertura (¿). "); 
-        //         RESULT = new Token("bloqueError", null, "local", null, "bloqueError", ldleft, ldright);
-        //         RESULT.setAmbitoLocal(ambitoBloque);
-        //     :}
-        //  | LLAVE_I:li sentencias error {: 
-        //         Ambitos ambitoBloque = entornoActual;
-        //         cerrarAmbito();
-
-        //         System.err.println(" -> Error: Los bloques deben de tener una llave de cierre (?). "); 
-        //         RESULT = new Token("bloqueError", null, "local", null, "bloqueError", lileft, liright);
-        //         RESULT.setAmbitoLocal(ambitoBloque);
-        //     :};
-
-// bloqueError ::= error sentencias LLAVE_D
-//               | error LLAVE_D
-//               | LLAVE_I sentencias error ;
-// bloque ::= bloqueCorrecto
-//          | bloqueError ;
-
 
 
 // No tocar esta parte, por alguna razon si funciona y no dio el error de tokens inesperados, esto es brujeria.
 sentencias ::= /* vacío */
              | sentencias sentencia ;
 
-// Esta es para el trabajo con la parte de error:
-// sentenciasOpc ::= /* vacío */
-//                 | sentencias ;
+
 
 sentencia ::= var
             | varAsignacion  
@@ -888,15 +803,15 @@ seExprAritUni ::= expresionAritmeticaUnaria DELIMITADOR;
 funcionLlamadaInicio ::= IDENTIFICADOR:ID PAREN_I {: 
                       Token funcion = buscarFuncion(ID);
                       if (funcion == null) {
-                          System.err.println(" -> Error semantico: funcion '" + ID + "' no declarada.");
+                          System.err.println(" -> Error semantico: funcion '" + ID + "' no declarada." + "Linea: " + IDleft + ", Columna: " + IDright);
                           funcionActual = null;
                           aumentarCountErroresSemanticos();
                       } else {
-                          System.out.println("Llamada a funcion '" + ID + "' valida.");
+                          mostrarMensajeTS("Llamada a funcion '" + ID + "' valida.");
                           funcionActual = funcion;
                           // Se podria hacer algo para guardar el token y validar sus argumentos luego.
                       }
-                      contadorArgActual = 0; // Reiniciamos el conteo de argumentos cuando leeos llamada
+                      contadorArgActual = 0; // Reiniciamos el conteo de argumentos cuando lee los llamada
                   :};
 // Para la llamada a una funcion.
 funcionLlamada ::= funcionLlamadaInicio argumentos:args PAREN_D {: 
@@ -907,15 +822,15 @@ funcionLlamada ::= funcionLlamadaInicio argumentos:args PAREN_D {:
                           RESULT = new TipoExpresiones("error");
                       } else {
 
-                        List<String> argumentos = (List<String>) ((Symbol)args).value;
+                        List<TipoExpresiones> argumentos = args;//(List<String>) ((Symbol)args).value;
                         List<String> parametrosEsperados = obtenerTiposParametros(funcionActual);
 
                         if (argumentos.size() != parametrosEsperados.size()) {
                             System.err.println(" -> Error semantico: funcion '" + funcionActual.getNombre() + "' esperaba " + parametrosEsperados.size() + " argumentos, pero recibio " + argumentos.size() + "Fila: " + argsleft + ", Columna: " + argsright);
                         } else {
                             for (int i = 0; i < argumentos.size(); i++) {
-                                if (!argumentos.get(i).equals(parametrosEsperados.get(i))) {
-                                    System.err.println(" -> Error semantico: argumento " + (i+1) + " de funcion '" + funcionActual.getNombre() + "' esperaba tipo '" + parametrosEsperados.get(i) + "', pero recibio '" + argumentos.get(i) + "'" + "Fila: " + argsleft + ", Columna: " + argsright);
+                                if (!argumentos.get(i).getTipo().equals(parametrosEsperados.get(i))) {
+                                    System.err.println(" -> Error semantico: argumento " + (i+1) + " de funcion '" + funcionActual.getNombre() + "' esperaba tipo '" + parametrosEsperados.get(i) + "', pero recibio '" + argumentos.get(i).getTipo() + "' " + "Fila: " + argsleft + ", Columna: " + argsright);
                                 }
                             }
                         }
@@ -930,30 +845,37 @@ funcionLlamada ::= funcionLlamadaInicio argumentos:args PAREN_D {:
                             res.temp = t;
                             RESULT = res;
                         }
-
                       }
                   :}
-                 | funcionLlamadaInicio PAREN_D {:
+
+                 | funcionLlamadaInicio:fu PAREN_D {: // Aqui estaba pasando directo y mas bien se ocupa validar si efectivamente no tiene argumentos.
                         if (funcionActual == null) {
+                            System.err.println(" -> Error semantico: No se puede validardar los argumentos de la funcion, debido a que la funcion  buscada no esta declarada." + "Fila: " + fuleft + ", Columna: " + furight);
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
 
-                            // Generacion TAC
-                            if ("void".equals(funcionActual.getTipo())) {
-                                TAC_Generator.generarCall (funcionActual.getNombre(), 0, null);
-                                RESULT = new TipoExpresiones("void");
+                            List<String> parametrosEsperados = obtenerTiposParametros(funcionActual);
+                            if (parametrosEsperados.size() != 0) {
+                                System.err.println(" -> Error semantico: funcion '" + funcionActual.getNombre() + "' esperaba " + parametrosEsperados.size() + " parametros, pero recibio 0 " + "Fila: " + fuleft + ", Columna: " + furight);
+                                aumentarCountErroresSemanticos();
+                                RESULT = new TipoExpresiones("error");
                             } else {
-                                String t = TAC_Generator.newTemp();
-                                TAC_Generator.generarCall (funcionActual.getNombre(), 0, t);
-                                TipoExpresiones res = new TipoExpresiones(funcionActual.getTipo());
-                                res.temp = t;
-                                RESULT = res;
+                            
+                                // Generacion TAC
+                                if ("void".equals(funcionActual.getTipo())) {
+                                    TAC_Generator.generarCall (funcionActual.getNombre(), 0, null);
+                                    RESULT = new TipoExpresiones("void");
+                                } else {
+                                    String t = TAC_Generator.newTemp();
+                                    TAC_Generator.generarCall (funcionActual.getNombre(), 0, t);
+                                    TipoExpresiones res = new TipoExpresiones(funcionActual.getTipo());
+                                    res.temp = t;
+                                    RESULT = res;
+                                }
                             }
                         }
-                    :}
-
-                 ;
+                    :};
 
 
 argumentos ::= expresion:expr {: 
@@ -961,27 +883,33 @@ argumentos ::= expresion:expr {:
                   TAC_Generator.generarParam (valor);
                   contadorArgActual++;
 
-                  List<String> args = new ArrayList<>();
-                  args.add(expr.getTipo()); // suponiendo que expresion devuelve tipo: ((Symbol)expr).value.toString()
-                  RESULT = new Symbol(sym.ARGUMENTOS, args);
+                  List<TipoExpresiones> args = new ArrayList<>();
+                  args.add(expr); // suponiendo que expresion devuelve tipo: ((Symbol)expr).value.toString()
+                  RESULT = args;//new Symbol(sym.ARGUMENTOS, args);
               :}
              | argumentos:prev COMA expresion:expr {:
                   String valor = operandoString (expr);
                   TAC_Generator.generarParam (valor);
                   contadorArgActual++;
 
-                  ((List<String>) ((Symbol)prev).value).add(expr.getTipo()); //((Symbol)expr).value.toString()
-                  RESULT = new Symbol(sym.ARGUMENTOS, ((Symbol)prev).value);
+                  //((List<String>) ((Symbol)prev).value).add(expr.getTipo()); //((Symbol)expr).value.toString()
+                  //RESULT = new Symbol(sym.ARGUMENTOS, ((Symbol)prev).value);
+                
+                  // Esto se cambia ya que ahora va a trabajar con la lista de TipoExpresiones.
+                  prev.add(expr);
+                  RESULT = prev;
               :}
-             | error COMA expresion  {: System.err.println(" -> Error: Argumento no valido antes de ','"); :}
-             | argumentos COMA error {: System.err.println(" -> Error: Se esperaba expresion despues de ','"); :}
-             | argumentos error expresion {: System.err.println(" -> Error: Se esperaba ',' entre argumentos"); :};
+             | error COMA:com expresion  {: System.err.println(" -> Error: Argumento no valido antes de ','" + "Fila: " + comleft + ", Columna: " + comright); :}
+             | argumentos COMA:com error {: System.err.println(" -> Error: Se esperaba expresion despues de ','" + "Fila: " + comleft + ", Columna: " + comright); :}
+             | argumentos error expresion:expr {: System.err.println(" -> Error: Se esperaba ',' entre argumentos" + "Fila: " + exprleft + ", Columna: " + exprright); :};
              
 return ::= RETURN:ret DELIMITADOR {: 
             if (!"void".equals(funcionEnAnalisis.getTipo())) {
                 System.err.println(" -> Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar un valor de tipo '" + funcionEnAnalisis.getTipo() + "'." + "Fila: " + retleft + ", Columna: " + retright);
                 aumentarCountErroresSemanticos();
             }
+            // Generación tac -> RET
+            TAC_Generator.generarReturn (null);
         :}
          | RETURN expresion:expr DELIMITADOR {: 
                 String tipoExpr = expr.getTipo(); // suponiendo que expresion devuelve un String con el tipo, pero creo que devolvera una clase con otros datos.
@@ -994,30 +922,33 @@ return ::= RETURN:ret DELIMITADOR {:
                     System.err.println(" -> Error semantico: la funcion '" + funcionEnAnalisis.getNombre() + "' debe retornar tipo '" + tipoFuncion + "', pero se retorno tipo '" + tipoExpr + "'." + "Fila: " + exprleft + ", Columna: " + exprright);
                     aumentarCountErroresSemanticos();
                 }   
+                // Generacion TAC
+                String valorRet = operandoString (expr);
+                TAC_Generator.generarReturn (valorRet);
             :}
-         | RETURN expresion error {: System.err.println(" -> Error: Se esperaba un delimitador '$'"); :}
-         | RETURN error {: System.err.println(" -> Error: Se esperaba un delimitador '$'"); :};
+         | RETURN expresion:expr error {: System.err.println(" -> Error: Se esperaba un delimitador '$' despues de la expresion del return." + "Fila: " + exprleft + ", Columna: " + exprright); :}
+         | RETURN:ret error {: System.err.println(" -> Error: Se esperaba un delimitador '$' despues del return." + "Fila: " + retleft + ", Columna: " + retright); :};
 
 break ::= BREAK:bre DELIMITADOR {: 
             if (pilaEstrucControl.isEmpty()) {
-                System.err.println(" -> Error semantico: 'break' fuera de estructura de control.");
+                System.err.println(" -> Error semantico: 'break' fuera de estructura de control." + "Fila: " + breleft + ", Columna: " + breright);
                 aumentarCountErroresSemanticos();
             } else {
                 String topo = pilaEstrucControl.peek();
                 if ("loop".equals(topo)) {
                     if (pilaLoopExitLabels.isEmpty()) {
-                        System.err.println(" -> Error interno: no hay etiqueta de salida de loop.");
+                        System.err.println(" -> Error interno: no hay etiqueta de salida de loop." + "Fila: " + breleft + ", Columna: " + breright);
                     } else {
                         TAC_Generator.generarCuadSaltoIncondicional(pilaLoopExitLabels.peek());
                     }
                 } else if ("for".equals(topo)) {
                     if (pilaForExitLabels.isEmpty()) {
-                        System.err.println(" -> Error interno: no hay etiqueta de salida de for.");
+                        System.err.println(" -> Error interno: no hay etiqueta de salida de for." + "Fila: " + breleft + ", Columna: " + breright);
                     } else {
                         TAC_Generator.generarCuadSaltoIncondicional(pilaForExitLabels.peek());
                     }
                 } else {
-                    System.err.println(" -> Error semantico: 'break' solo permitido en loop o for.");
+                    System.err.println(" -> Error semantico: 'break' solo permitido en loop o for." + "Fila: " + breleft + ", Columna: " + breright);
                     aumentarCountErroresSemanticos();
                 }
             }
@@ -1038,21 +969,37 @@ tipoDatoInput ::= INT {: RESULT = "int"; :}
 output ::= output_inline {: RESULT = "output"; :};
 
 output_inline ::= OUTPUT PAREN_I listaSalida:lst PAREN_D {:
-    for (TipoExpresiones e : lst) {
-        String v = operandoString(e);
-        simbolos.TAC_Generator.generarPrint(v);
+    if (lst == null) {
+        // No se ocupa hacer nada ya que el error se reporta en la produccion de listaSalida.
+    } else {
+        for (TipoExpresiones e : lst) {
+            String v = operandoString(e);
+            simbolos.TAC_Generator.generarPrint(v);
+        }
     }
 :};
 
+// Para la parte del output no de deben de permitir imprimir datos tipo char.
 listaSalida ::= expresion:e {:
-    java.util.ArrayList<TipoExpresiones> l = new java.util.ArrayList<>();
-    l.add(e);
-    RESULT = l;
-:}
-| listaSalida:prev CONCATENACION_OUTPUT expresion:e {:
-    prev.add(e);
-    RESULT = prev;
-:};
+        if (e.getTipo().equals("char")) {
+            System.err.println(" -> Error semantico: 'char' no es un tipo valido para 'output'." + "Fila: " + eleft + ", Columna: " + eright);
+            aumentarCountErroresSemanticos();
+            RESULT = null;
+        } else {        
+            ArrayList<TipoExpresiones> l = new ArrayList<>();
+            l.add(e);
+            RESULT = l;        
+        }
+    :}
+    | listaSalida:prev CONCATENACION_OUTPUT expresion:e {:
+        if (e.getTipo().equals("char")) {
+            System.err.println(" -> Error semantico: 'char' no es un tipo valido para 'output'." + "Fila: " + eleft + ", Columna: " + eright);
+            aumentarCountErroresSemanticos();
+        } else {
+            prev.add(e);
+            RESULT = prev;
+        }
+    :};
 
 /* -------------------- Estructuras de control ----------------------------- */
 estructruraControl ::= decide
@@ -1093,6 +1040,7 @@ decide ::= decideParteIzquierda:deciP condiciones:condi END DECIDE:deci DELIMITA
                 deciP.setAmbitoLocal(entornoActual); // Este de aqui basicamente no se ocupa, puesto que guardamos las estrcuturas de los bloques por aparte.
                 cerrarAmbito(); 
                 insertarNuevoToken(deciP);
+                pilaEstrucControl.pop();
             :}
          | decideParteIzquierda:deciP condiciones:condi ELSE {: TAC_Generator.iniciarBuffer(); :} bloque:blo END DECIDE DELIMITADOR {:
                 List<Cuad> tacElse = TAC_Generator.finalizarBuffer();
@@ -1119,13 +1067,14 @@ decide ::= decideParteIzquierda:deciP condiciones:condi END DECIDE:deci DELIMITA
                 deciP.setAmbitoLocal(entornoActual); // Este de aqui basicamente no se ocupa, puesto que guardamos las estrcuturas de los bloques por aparte.
                 cerrarAmbito(); 
                 insertarNuevoToken(deciP);
+                pilaEstrucControl.pop();
 
             :} // Posiblemente requiramos crear una ambito especifico para el else.
          
-         | decideParteIzquierda error condiciones END DECIDE DELIMITADOR {: System.err.println(" -> Error: Se esperaba 'of' despues de 'decide'"); cerrarAmbito(); :}
-         | decideParteIzquierda error END DECIDE DELIMITADOR {: System.err.println(" -> Error: Condiciones no validas en estructura decide"); cerrarAmbito(); :}
-         | decideParteIzquierda condiciones error DECIDE DELIMITADOR  {: System.err.println(" -> Error: Se esperaba 'end' antes de 'decide'"); cerrarAmbito();  :}
-         | decideParteIzquierda condiciones END error DELIMITADOR {: System.err.println(" -> Error: Se esperaba 'decide' despues de 'end'"); cerrarAmbito(); :};
+         | decideParteIzquierda:izq error condiciones END DECIDE DELIMITADOR {: System.err.println(" -> Error: Se esperaba 'of' despues de 'decide'." + "Fila: " + izqleft + ", Columna: " + izqright); cerrarAmbito(); :}
+         | decideParteIzquierda:izq error END DECIDE DELIMITADOR {: System.err.println(" -> Error: Condiciones no validas en estructura decide." + "Fila: " + izqleft + ", Columna: " + izqright); cerrarAmbito(); :}
+         | decideParteIzquierda:izq condiciones error DECIDE DELIMITADOR  {: System.err.println(" -> Error: Se esperaba 'end' antes de 'decide'." + "Fila: " + izqleft + ", Columna: " + izqright); cerrarAmbito();  :}
+         | decideParteIzquierda:izq condiciones END error DELIMITADOR {: System.err.println(" -> Error: Se esperaba 'decide' despues de 'end'." + "Fila: " + izqleft + ", Columna: " + izqright); cerrarAmbito(); :};
 
 // Esta es la que se usa para DECIDE OF
 condiciones ::= condicion:cond FLECHA {: TAC_Generator.iniciarBuffer(); :} bloque:blo {:
@@ -1163,9 +1112,9 @@ condicion ::= PAREN_I expresion:expr PAREN_D {: // Esto probablemente tenga una 
                         RESULT = expr;
                     }
                 :}
-            | error expresion PAREN_D {: System.err.println(" -> Error: Se esperaba parentesis de apertura 'є' en condicion"); RESULT = new TipoExpresiones("error"); :}
-            | PAREN_I expresion error {: System.err.println(" -> Error: Se esperaba parentesis de cierre 'э' en condicion"); RESULT = new TipoExpresiones("error"); :}
-            | PAREN_I error PAREN_D {: System.err.println(" -> Error: Expresion no valida en condicion"); RESULT = new TipoExpresiones("error"); :};
+            | error expresion:expr PAREN_D {: System.err.println(" -> Error: Se esperaba parentesis de apertura 'є' en condicion." + "Fila: " + exprleft + ", Columna: " + exprright); RESULT = new TipoExpresiones("error"); :}
+            | PAREN_I expresion:expr error {: System.err.println(" -> Error: Se esperaba parentesis de cierre 'э' en condicion." + "Fila: " + exprleft + ", Columna: " + exprright); RESULT = new TipoExpresiones("error"); :}
+            | PAREN_I:pare error PAREN_D {: System.err.println(" -> Error: Expresion no valida en condicion." + "Fila: " + pareleft + ", Columna: " + pareright); RESULT = new TipoExpresiones("error"); :};
 
 
 loopInicio ::= LOOP {: 
@@ -1174,19 +1123,17 @@ loopInicio ::= LOOP {:
                 // para que una vez que finalice el loop, agreguemos al entorno padre el token
 
                 crearAmbito(); // Crear el ambito.
+                String lStart = TAC_Generator.newEtiqueta();
+                String lExit = TAC_Generator.newEtiqueta();
                 pilaEstrucControl.push("loop"); // Registrar el la pila que hay una nueva estructura.
+                pilaLoopStartLabels.push(lStart);
+                pilaLoopExitLabels.push(lExit);
+
+                TAC_Generator.generarLabel(lStart); // L_start
+                TAC_Generator.iniciarBuffer();
             :};
 
-loop ::= loopInicio:loopIni {:
-                    // Se preparan las etiquetas y el buffer para el body
-                    String L_start = TAC_Generator.newEtiqueta();
-                    String L_exit  = TAC_Generator.newEtiqueta();
-                    pilaLoopStartLabels.push(L_start);
-                    pilaLoopExitLabels.push(L_exit);
-
-                    TAC_Generator.generarLabel(L_start);
-                    TAC_Generator.iniciarBuffer();
-                :} sentencias EXIT WHEN condicion:cond DELIMITADOR END LOOP DELIMITADOR {:
+loop ::= loopInicio:loopIni sentencias EXIT WHEN condicion:cond DELIMITADOR END LOOP DELIMITADOR {:
                 // Mantenemos el cuerpo del loop
                 List<Cuad> cuerpo = TAC_Generator.finalizarBuffer();
                 TAC_Generator.unir(cuerpo);
@@ -1194,8 +1141,7 @@ loop ::= loopInicio:loopIni {:
                 // Se valida que la expresion sea booleana sino se fuerza un false
                 String tCond = operandoString(cond);
                 if (!"boolean".equals(cond.getTipo())) {
-                    System.err.println(" -> Error semantico: condicion de loop debe ser booleana, se recibio '" 
-                                        + cond.getTipo() + "'.");
+                    System.err.println(" -> Error semantico: condicion de loop debe ser booleana, se recibio '" + cond.getTipo() + "'." + "Fila: " + condleft + ", Columna: " + condright);
                     aumentarCountErroresSemanticos();
                     if ("null".equals(tCond)) {
                         tCond = TAC_Generator.newTemp();
@@ -1204,18 +1150,13 @@ loop ::= loopInicio:loopIni {:
                 }
 
                 // exit when cond  => si cond TRUE, salir; si FALSE, repetir
-                TAC_Generator.generarCuadIf(tCond, pilaLoopExitLabels.peek());      // IF cond GOTO L_exit
-                TAC_Generator.generarCuadSaltoIncondicional(pilaLoopStartLabels.peek()); // GOTO L_start
-                TAC_Generator.generarLabel(pilaLoopExitLabels.peek());              // L_exit:
-                if (!pilaLoopExitLabels.isEmpty()) {
-                    pilaLoopExitLabels.pop();
-                }
-                if (!pilaLoopStartLabels.isEmpty()) {
-                    pilaLoopStartLabels.pop();
-                }
-                if (!pilaEstrucControl.isEmpty()) {
-                    pilaEstrucControl.pop();
-                }
+                simbolos.TAC_Generator.generarCuad("IF", tCond, null, pilaLoopExitLabels.peek());
+                simbolos.TAC_Generator.generarCuadSaltoIncondicional(pilaLoopStartLabels.peek());
+                simbolos.TAC_Generator.generarLabel(pilaLoopExitLabels.peek());
+
+                pilaLoopStartLabels.pop();
+                pilaLoopExitLabels.pop();
+                pilaEstrucControl.pop();
                 Token estructura = new Token("otro_loop_" + (contadorLoop++), "estructura", "local", null, "loop", loopInileft, loopIniright);
                 estructura.setAmbitoLocal(entornoActual);
                 cerrarAmbito();
@@ -1228,67 +1169,65 @@ forInt ::= FOR IDENTIFICADOR:id ASIGNACION expresionAritmetica:exp {:
                 pilaEstrucControl.push("for");
                 Token varTok = entornoActual.buscar(id);
                 if (varTok == null) {
-                    System.err.println(" -> Error semantico: La variable '" + id + "' no ha sido declarada para el for.");
+                    System.err.println(" -> Error semantico: La variable '" + id + "' no ha sido declarada para el for." + "Fila: " + idleft + ", Columna: " + idright);
                     aumentarCountErroresSemanticos();
                 } else if (!"int".equals(varTok.getTipo())) {
-                    System.err.println(" -> Error semantico: La variable de control '" + id + "' debe ser int, tipo real: " + varTok.getTipo());
+                    System.err.println(" -> Error semantico: La variable de control '" + id + "' debe ser int, tipo real: " + varTok.getTipo() + "Fila: " + idleft + ", Columna: " + idright);
                     aumentarCountErroresSemanticos();
                 }
                 if (!"int".equals(exp.getTipo())) {
-                    System.err.println(" -> Error semantico: La expresion inicial del for debe ser int, tipo real: " + exp.getTipo());
+                    System.err.println(" -> Error semantico: La expresion inicial del for debe ser int, tipo real: " + exp.getTipo() + "Fila: " + expleft + ", Columna: " + expright);
                     aumentarCountErroresSemanticos();
                 }
                 // TAC inicial
-                String ini = operandoString(exp);
-                if (ini == null || "null".equals(ini)) ini = "0";
-                TAC_Generator.generarCuadAsignacion(ini, id); // id = ini
+                String initVal = operandoString(exp);
+                simbolos.TAC_Generator.generarCuadAsignacion(initVal, id, exp.getTipo());
+
+                String fStart = simbolos.TAC_Generator.newEtiqueta();
+                String fExit  = simbolos.TAC_Generator.newEtiqueta();
+                pilaForStartLabels.push(fStart);
+                pilaForExitLabels.push(fExit);
                 forVarControlNombre = id;
             :};
-        // | FOR   error ASIGNACION expresionAritmetica {:
-        //     System.err.println("Error: Se esperaba identificador despues de 'for'");
-        //     crearAmbito(); // Crear el ambito.
-        //     pilaEstrucControl.push("for");
-        // :};
+
 
 for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
             if (forVarControlNombre == null) {
-                System.err.println(" -> Error interno: variable de control del for no registrada.");
+                System.err.println(" -> Error semantico: variable de control del for no registrada." + "Fila: " + initleft + ", Columna: " + initright);
             }
             if (step.intValue() <= 0) {
-                System.err.println(" -> Error semantico: STEP debe ser entero positivo, recibido: " + step);
+                System.err.println(" -> Error semantico: STEP debe ser entero positivo, recibido: " + step + "Fila: " + stepleft + ", Columna: " + stepright);
                 aumentarCountErroresSemanticos();
             }
             if (!"int".equals(lim.getTipo())) {
-                System.err.println(" -> Error semantico: limite del for debe ser int, recibido: " + lim.getTipo());
+                System.err.println(" -> Error semantico: limite del for debe ser int, recibido: " + lim.getTipo() + "Fila: " + limleft + ", Columna: " + limright);
                 aumentarCountErroresSemanticos();
             }
-            String L_start = TAC_Generator.newEtiqueta();
-            String L_exit  = TAC_Generator.newEtiqueta();
-            pilaForStartLabels.push(L_start);
-            pilaForExitLabels.push(L_exit);
-            TAC_Generator.generarLabel(L_start);
+            String fStart = pilaForStartLabels.peek();
+            String fExit  = pilaForExitLabels.peek();
+            TAC_Generator.generarLabel(fStart);
+            String limValue = operandoString(lim);
+            String tCond = TAC_Generator.newTemp();
+            simbolos.TAC_Generator.generarCuad("<=", forVarControlNombre, limValue, tCond, "boolean");
+            simbolos.TAC_Generator.generarCuadIfFalse(tCond, fExit);
+
             TAC_Generator.iniciarBuffer();
         :} bloque:blo {:
-            List<Cuad> cuerpo = TAC_Generator.finalizarBuffer();
-            TAC_Generator.unir(cuerpo);
+            List<Cuad> bodyFor = simbolos.TAC_Generator.finalizarBuffer();
+            simbolos.TAC_Generator.unir(bodyFor);
 
-            String var = forVarControlNombre;
-            String endVal = operandoString(lim);
-            if (endVal == null || "null".equals(endVal)) endVal = "0";
+            // step
+            String stepLit = step.toString();
+            String tInc = simbolos.TAC_Generator.newTemp();
+            simbolos.TAC_Generator.generarCuad("+", forVarControlNombre, stepLit, tInc, "int");
+            simbolos.TAC_Generator.generarCuadAsignacion(tInc, forVarControlNombre, "int");
 
-            String tCond = TAC_Generator.newTemp();
-            TAC_Generator.generarCuad("<=", var, endVal, tCond);
-            TAC_Generator.generarCuadIfFalse(tCond, pilaForExitLabels.peek());
+            // Bucle del for
+            simbolos.TAC_Generator.generarCuadSaltoIncondicional(pilaForStartLabels.peek());
+            simbolos.TAC_Generator.generarLabel(pilaForExitLabels.peek());
 
-            String tInc = TAC_Generator.newTemp();
-            TAC_Generator.generarCuad("+", var, step.toString(), tInc);
-            TAC_Generator.generarCuadAsignacion(tInc, var);
-
-            TAC_Generator.generarCuadSaltoIncondicional(pilaForStartLabels.peek());
-            TAC_Generator.generarLabel(pilaForExitLabels.peek());
-
-            pilaForExitLabels.pop();
             pilaForStartLabels.pop();
+            pilaForExitLabels.pop();
             pilaEstrucControl.pop();
             forVarControlNombre = null;
 
@@ -1300,14 +1239,14 @@ for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
         :}
      | forInt:init STEP INT_LITERAL:step DOWNTO expresionAritmetica:lim DO {:
             if (forVarControlNombre == null) {
-                System.err.println(" -> Error interno: variable de control del for no registrada.");
+                System.err.println(" -> Error semantico: variable de control del for no registrada." + "Fila: " + initleft + ", Columna: " + initright);
             }
             if (step.intValue() <= 0) {
-                System.err.println(" -> Error semantico: STEP debe ser entero positivo, recibido: " + step);
+                System.err.println(" -> Error semantico: STEP debe ser entero positivo, recibido: " + step + "Fila: " + stepleft + ", Columna: " + stepright);
                 aumentarCountErroresSemanticos();
             }
             if (!"int".equals(lim.getTipo())) {
-                System.err.println(" -> Error semantico: limite del for debe ser int, recibido: " + lim.getTipo());
+                System.err.println(" -> Error semantico: limite del for debe ser int, recibido: " + lim.getTipo() + "Fila: " + limleft + ", Columna: " + limright);
                 aumentarCountErroresSemanticos();
             }
             String L_start = TAC_Generator.newEtiqueta();
@@ -1330,7 +1269,7 @@ for ::= forInt:init STEP INT_LITERAL:step TO expresionAritmetica:lim DO {:
 
             String tDec = TAC_Generator.newTemp();
             TAC_Generator.generarCuad("-", var, step.toString(), tDec);
-            TAC_Generator.generarCuadAsignacion(tDec, var);
+            TAC_Generator.generarCuadAsignacion(tDec, var, "int");
 
             TAC_Generator.generarCuadSaltoIncondicional(pilaForStartLabels.peek());
             TAC_Generator.generarLabel(pilaForExitLabels.peek());
@@ -1355,8 +1294,9 @@ var ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                 // nombre, tipo, ambito, valor, categoria, linea, columna
                 Token tokenVar = new Token(id, tipo, "local", null, "variable", idleft, idright);
                 insertarNuevoToken(tokenVar);
-                TAC_Generator.generarCuadAsignacion (valorDefault (tipo), id);
-                System.out.println("\n >> Definicion var registrada. var \n");
+                //TAC_Generator.generarCuadAsignacion (valorDefault (tipo), id, tipo.toString());
+                TAC_Generator.registrarTipo(id, tipo.toString());
+                mostrarMensajeTS("\n >> Definicion var registrada. var \n");
 
             }
         :}
@@ -1392,11 +1332,11 @@ varAsignacion ::= IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {:
                         if (fuente == null) {
                             System.err.println ("Error: No se pudo obtener el valor de la expresion para asignar a la variable '" + id + "'. Fila: " + idleft + ", Columna: " + idright);
                         } else {
-                            TAC_Generator.generarCuadAsignacion (fuente, id);
+                            TAC_Generator.generarCuadAsignacion (fuente, id, token.getTipo());
                         }
                         //token.setValor(exp.valor); // actualizar el valor de la variable
                         // token.setValor(null);
-                        System.out.println("\n >> Var globar registrada. varAsignacion\n");
+                        mostrarMensajeTS("\n >> Var globar registrada. varAsignacion\n");
                         
                     }
                 :};
@@ -1407,7 +1347,6 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
                             aumentarCountErroresSemanticos();
                         } else {
                             Token tokenLocal = new Token(id, tipo, "local", null, "variable", idleft, idright);
-                            insertarNuevoToken(tokenLocal);
 
                             if (tipo.equals(exp.tipoDato)) {
                                 String fuente = exp.temp;
@@ -1421,20 +1360,22 @@ varCyAsignacion ::= LET tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expres
                                 if (fuente == null || "null".equals(fuente)) {
                                     fuente = valorDefault(tipo);
                                 }
-                                TAC_Generator.generarCuadAsignacion(fuente, id);
+                                TAC_Generator.generarCuadAsignacion(fuente, id, tipo.toString());
+                                insertarNuevoToken(tokenLocal);
+                         
                             } else {
                                 System.err.println(" -> Error semantico: El tipo de la variable '" + id + "' no es compatible con el tipo de la expresion. Se esperaba '" + tipo + "', pero se recibio '" + exp.tipoDato + "'. Fila: " + idleft + ", Columna: " + idright);
                                 aumentarCountErroresSemanticos();
-                                TAC_Generator.generarCuadAsignacion(valorDefault(tipo), id);
+                                TAC_Generator.generarCuadAsignacion(valorDefault(tipo), id, tipo.toString());
                             }
 
-                            System.out.println("\n >> Variable local registrada. varCyAsignacion \n");
+                            mostrarMensajeTS("\n >> Variable local registrada. varCyAsignacion \n");
                         }
                     :}
-                  | LET tipoDatoVariable IDENTIFICADOR ASIGNACION error DELIMITADOR {: System.err.println("Error: Expresion no valida despues de '='"); :}
-                  | LET tipoDatoVariable IDENTIFICADOR error  {: System.err.println("Error: Se esperaba '=' despues del identificador"); :}
-                  | LET tipoDatoVariable error ASIGNACION expresion DELIMITADOR {: System.err.println("Error: Identificador no valido"); :}
-                  | LET error IDENTIFICADOR ASIGNACION expresion DELIMITADOR {: System.err.println("Error: Tipo de dato no valido"); :};
+                  | LET:le tipoDatoVariable IDENTIFICADOR ASIGNACION error DELIMITADOR {: System.err.println(" -> Error: Expresion no valida despues de '='." + "Fila: " + leleft + ", Columna: " + leright); :}
+                  | LET:le tipoDatoVariable IDENTIFICADOR error  {: System.err.println(" -> Error: Se esperaba '=' despues del identificador." + "Fila: " + leleft + ", Columna: " + leright); :}
+                  | LET:le tipoDatoVariable error ASIGNACION expresion DELIMITADOR {: System.err.println(" -> Error: Identificador no valido." + "Fila: " + leleft + ", Columna: " + leright); :}
+                  | LET:le error IDENTIFICADOR ASIGNACION expresion DELIMITADOR {: System.err.println(" -> Error: Tipo de dato no valido." + "Fila: " + leleft + ", Columna: " + leright); :};
 
 /* FIX: ERROR en global para que detecte 'global tipo identificador...' */
 /* FIXED: Se agrega produ de error en falta de global */
@@ -1450,11 +1391,12 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                         Token tokenGlobal = new Token (id, tipo, "global", null, "global", idleft, idright );
                         if (entornoActual.insertarNuevoToken(tokenGlobal)) {
                             String def = valorDefault(tipo);
-                            TAC_Generator.generarCuadAsignacion(def, id);
+                            TAC_Generator.registrarTipo(id, tipo.toString());
+                            TAC_Generator.generarCuadAsignacion(def, id, tipo.toString());
                         }
-                        System.out.println("\n >> Var globar registrada. \n");
+                        mostrarMensajeTS("\n >> Var globar registrada. \n");
                     }
-                    System.out.println(">> Reconocida variable global simple");
+                    mostrarMensajeTS(">> Reconocida variable global simple");
                 :}
             | GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id ASIGNACION expresion:exp DELIMITADOR {: 
                     if (entornoActual == null) {
@@ -1488,24 +1430,25 @@ varGlobal ::= GLOBAL tipoDatoVariable:tipo IDENTIFICADOR:id DELIMITADOR {:
                             if (fuente == null) {
                                 fuente = valorDefault (tipo);
                             }
-                            TAC_Generator.generarCuadAsignacion (fuente, id);
+                            
+                            TAC_Generator.generarCuadAsignacion (fuente, id, tipo.toString());
                         }
-                        System.out.println("\n >> Var globar con expresion registrada. \n");
+                        mostrarMensajeTS("\n >> Var globar con expresion registrada. \n");
 
                     }
                 :}
                 // Estos errores estan dando shift reduce, probablemente hay alguna otra expresion que tambien los tenga.
-            // | error tipoDatoVariable IDENTIFICADOR DELIMITADOR {: System.err.println("Error: Se esperaba la palabra 'global' al inicio de la declaracion"); :};
-            | GLOBAL error IDENTIFICADOR DELIMITADOR {: System.err.println(" -> Error sintactico: se debe de definir el tipo de dato para la variable global."); :}
-            | GLOBAL tipoDatoVariable error DELIMITADOR {: System.err.println(" -> Error sintactico: Se debe de definir una identificador para la variable global."); :}
-            | GLOBAL tipoDatoVariable IDENTIFICADOR error {: System.err.println(" -> Error sintactico: Se debe de colocar un delimitador al definir una variable global."); :};
+            // | error tipoDatoVariable IDENTIFICADOR DELIMITADOR {: System.err.println(" -> Error: Se esperaba la palabra 'global' al inicio de la declaracion." + "Fila: " + gloleft + ", Columna: " + gloright); :};
+            | GLOBAL:glo error IDENTIFICADOR DELIMITADOR {: System.err.println(" -> Error sintactico: se debe de definir el tipo de dato para la variable global." + "Fila: " + gloleft + ", Columna: " + gloright); :}
+            | GLOBAL:glo tipoDatoVariable error DELIMITADOR {: System.err.println(" -> Error sintactico: Se debe de definir una identificador para la variable global." + "Fila: " + gloleft + ", Columna: " + gloright); :}
+            | GLOBAL:glo tipoDatoVariable IDENTIFICADOR error {: System.err.println(" -> Error sintactico: Se debe de colocar un delimitador al definir una variable global." + "Fila: " + gloleft + ", Columna: " + gloright); :};
 
 
 
 
 
 // /* ##### Seccion para las expresiones ######*/
-expresion ::= expresionLogica:exp {: RESULT = exp; System.out.println("\n Expresion en validacion -> expresion completa: inicio de la derivacion" + "Tipo final:" + exp.getTipo() + "\n"); :};
+expresion ::= expresionLogica:exp {: RESULT = exp; mostrarMensaje("\n Expresion en validacion -> expresion completa: inicio de la derivacion" + "Tipo final:" + exp.getTipo() + "\n"); :};
 
 
 /* Modificar las derivacion para expresion logica con el fin de que pueda volver a arriba:  expresionLogica AND expresionLogica| expresionLogica OR expresionLogica*/
@@ -1515,12 +1458,12 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        System.out.println("\n Expresion en validacion -> expr rela: and \n");
+                        mostrarMensaje("\n Expresion en validacion -> expr rela: and \n");
                         String a1 = izq.temp != null ? izq.temp : (izq.valorB != null ? izq.valorB.toString() : "null");
                         String a2 = der.temp != null ? der.temp : (der.valorB != null ? der.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
                         izq.append(der);
-                        TAC_Generator.generarCuad("AND", a1, a2, t); // luego veo como representarlo
+                        TAC_Generator.generarCuad("AND", a1, a2, t, "boolean"); // luego veo como representarlo
                         TipoExpresiones res = new TipoExpresiones("boolean");
                         res.cuads = izq.cuads;
                         res.temp = t;
@@ -1533,12 +1476,12 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        System.out.println("\n Expresion en validacion -> expr rela: or \n");
+                        mostrarMensaje("\n Expresion en validacion -> expr rela: or \n");
                         String a1 = izq.temp != null ? izq.temp : (izq.valorB != null ? izq.valorB.toString() : "null");
                         String a2 = der.temp != null ? der.temp : (der.valorB != null ? der.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
                         izq.append(der);
-                        TAC_Generator.generarCuad("OR", a1, a2, t); // igual que arriba luego veo como representarlo
+                        TAC_Generator.generarCuad("OR", a1, a2, t, "boolean"); // igual que arriba luego veo como representarlo
                         TipoExpresiones res = new TipoExpresiones("boolean");
                         res.cuads = izq.cuads;
                         res.temp = t;
@@ -1551,10 +1494,10 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                         aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        System.out.println("\n Expresion en validacion -> expr rela: not  \n");
+                        mostrarMensaje("\n Expresion en validacion -> expr rela: not  \n");
                         String a1 = exp.temp != null ? exp.temp : (exp.valorB != null ? exp.valorB.toString() : "null");
                         String t = TAC_Generator.newTemp();
-                        TAC_Generator.generarCuadUnario("NOT", a1, t, null);
+                        TAC_Generator.generarCuadUnario("NOT", a1, t, "boolean");
                         TipoExpresiones res = new TipoExpresiones("boolean");
                         res.cuads = exp.cuads;
                         res.temp = t;
@@ -1562,28 +1505,12 @@ expresionLogica ::= expresionLogica:izq AND expresionRelacional:der {:
                     }
                 :}
                 | expresionRelacional:exp {: // En teoria esta deveria de dejar pasar el valor directo
-                    // if (!"boolean".equals(exp.tipoDato)) {
-                    //     System.err.println("Error semántico: expresion relacional no válida como lógica.");
-                    //     RESULT = new TipoExpresiones("error", null);
-                    // } else {
-                        RESULT = exp;
-                        System.out.println("\n Expresion en validacion -> expr logi: expr rela\n");
-                    // }
+                    RESULT = exp;
+                    mostrarMensaje("\n Expresion en validacion -> expr logi: expr rela\n");
+                    
                 :};
 
                   
-
-/* Los de expresionAritmetica no se pueden cambiar ya que los operadores de mayores y menore solo funcionan con estos. Asi */
-// expresionRelacional ::= expresionRelacional operadorRelacional expresionAritmetica
-//                       | expresionAritmetica
-//                       | PAREN_I expresion PAREN_D;
-
-// operadorRelacional ::= IGUAL {: RESULT = "=="; :}
-//                      | DIFERENTE {: RESULT = "!="; :}
-//                      | MENOR {: RESULT = "<"; :}
-//                      | MAYOR {: RESULT = ">"; :}
-//                      | MENOR_IGUAL {: RESULT = "<="; :}
-//                      | MAYOR_IGUAL {: RESULT = ">="; :};
 
 expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:  // En esto podriamos separar las validaciones para que den errores mas explicitos.
                             if (!tiposIguales(izq, der) || !tipoPermitidoComparacion(izq.tipoDato, "==")) {
@@ -1591,12 +1518,12 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: igual\n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: igual\n");
                                 String a1 = operandoString (izq);
                                 String a2 = operandoString (der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad("==", a1, a2, t);
+                                TAC_Generator.generarCuad("==", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1609,12 +1536,12 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: diferente \n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: diferente \n");
                                 String a1 = operandoString(izq);
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad("!=", a1, a2, t);
+                                TAC_Generator.generarCuad("!=", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1627,12 +1554,12 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: menor\n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: menor\n");
                                 String a1 = operandoString(izq);
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad ("<", a1, a2, t);
+                                TAC_Generator.generarCuad ("<", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1645,12 +1572,12 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: mayor\n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: mayor\n");
                                 String a1 = operandoString(izq);
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad (">", a1, a2, t);
+                                TAC_Generator.generarCuad (">", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1663,12 +1590,12 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: menor igual\n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: menor igual\n");
                                 String a1 = operandoString(izq);
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad ("<=", a1, a2, t);
+                                TAC_Generator.generarCuad ("<=", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
@@ -1681,20 +1608,20 @@ expresionRelacional ::= expresionAritmetica:izq IGUAL expresionAritmetica:der {:
                                 aumentarCountErroresSemanticos();
                                 RESULT = new TipoExpresiones("error");
                             } else {
-                                System.out.println("\n Expresion en validacion -> expr rela: mayor igual\n");
+                                mostrarMensaje("\n Expresion en validacion -> expr rela: mayor igual\n");
                                 String a1 = operandoString(izq);
                                 String a2 = operandoString(der);
                                 String t = TAC_Generator.newTemp();
                                 // izq.append(der);
-                                TAC_Generator.generarCuad (">=", a1, a2, t);
+                                TAC_Generator.generarCuad (">=", a1, a2, t, "boolean");
                                 TipoExpresiones res = new TipoExpresiones("boolean");
                                 // res.cuads = izq.cuads;
                                 res.temp = t;
                                 RESULT = res;
                             }
                         :}
-                      | expresionAritmetica:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: expr arit" + "Tipo final:" + expr.getTipo() + "\n"); :};
-                      //| PAREN_I expresion:expr PAREN_D {: RESULT = expr; System.out.println("\n Expresion en validacion -> expre rela: parentesis" + "Tipo final:" + expr.getTipo() + "\n"); :}; /* Con esta en teoria deberia de volver a arriba. */
+                      | expresionAritmetica:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> expre rela: expr arit" + "Tipo final:" + expr.getTipo() + "\n"); :};
+                      //| PAREN_I expresion:expr PAREN_D {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> expre rela: parentesis" + "Tipo final:" + expr.getTipo() + "\n"); :}; /* Con esta en teoria deberia de volver a arriba. */
 
 
 
@@ -1716,15 +1643,16 @@ expresionBooleana ::= TRUE{:
 
 /* >> Expresiones aritmeticas */
 
-expresionAritmetica ::= expresionSuma:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr arit: inicip expr arit " + "Tipo final:" + expr.getTipo() + "\n");  :};
+expresionAritmetica ::= expresionSuma:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> expr arit: inicip expr arit " + "Tipo final:" + expr.getTipo() + "\n");  :};
 
 
 expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                     if (!tiposIgualesNumericos(izq, der)) {
-                        System.err.println("Error semantico: La suma requiere tipos numericos iguales (int o float) valor. Fila: " + izqleft + ", Columna: " + izqright);
+                        System.err.println(" -> Error semantico: La suma requiere tipos numericos iguales (int o float) valor. Fila: " + izqleft + ", Columna: " + izqright);
+                        aumentarCountErroresSemanticos();
                         RESULT = new TipoExpresiones("error");
                     } else {
-                        System.out.println("\n Expresion en validacion -> expr suma: suma\n");
+                        mostrarMensaje("\n Expresion en validacion -> expr suma: suma\n");
                         if (izq == null || der == null) {
                             RESULT = new TipoExpresiones("error");
                             aumentarCountErroresSemanticos();
@@ -1747,10 +1675,11 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                                 a2 = "null";
                             }
 
+                            String tipoRes = tipoResultado;
+
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad ("+", a1, a2, t);
-
+                            TAC_Generator.generarCuad ("+", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones (tipoResultado);
                             res.temp = t;
                             RESULT = res;
@@ -1763,7 +1692,7 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            System.out.println("\n Expresion en validacion -> expr suma: resta\n");
+                            mostrarMensaje("\n Expresion en validacion -> expr suma: resta\n");
                             if (izq == null || der == null) {
                                 RESULT = new TipoExpresiones("error");
                             } else if ("error".equals(izq.getTipo()) || "error".equals(der.getTipo())) {
@@ -1785,19 +1714,20 @@ expresionSuma ::= expresionSuma:izq MAS expresionProducto:der {:
                                     a2 = "null";
                                 }
 
+                                String tipoRes = tipoResultado;
+
                                 String t = TAC_Generator.newTemp();
                                 izq.append(der);
-                                TAC_Generator.generarCuad ("-", a1, a2, t);
-
+                                TAC_Generator.generarCuad ("-", a1, a2, t, tipoRes);
                                 TipoExpresiones res = new TipoExpresiones (tipoResultado);
                                 res.temp = t;
                                 RESULT = res;
                             }
                         }
                     :}
-                | expresionProducto:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr suma: expr prod \n"); :}
-                | expresionSuma MAS error {: System.err.println(" -> Error: Expresion no valida despues de '+'"); RESULT = new TipoExpresiones("error"); :}
-                | expresionSuma MENOS error {: System.err.println(" -> Error: Expresion no valida despues de '-'"); RESULT = new TipoExpresiones("error"); :};
+                | expresionProducto:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> expr suma: expr prod \n"); :}
+                | expresionSuma:expr MAS error {: System.err.println(" -> Error: Expresion no valida despues de '+'." + "Linea: " + exprleft + ", Columna: " + exprright); RESULT = new TipoExpresiones("error"); :}
+                | expresionSuma:expr MENOS error {: System.err.println(" -> Error: Expresion no valida despues de '-'." + "Linea: " + exprleft + ", Columna: " + exprright); RESULT = new TipoExpresiones("error"); :};
 
 expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der {:
                     if (!tiposIgualesNumericos(izq, der)) {
@@ -1826,8 +1756,10 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                                 a2 = "null";
                             }
 
+                            String tipoRes = tipoResultado;
+
                             String t = TAC_Generator.newTemp();
-                            TAC_Generator.generarCuad ("*", a1, a2, t);
+                            TAC_Generator.generarCuad ("*", a1, a2, t, tipoRes);
 
                             TipoExpresiones res = new TipoExpresiones (tipoResultado);
                             res.temp = t;
@@ -1841,14 +1773,15 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            System.out.println("\n Expresion en validacion -> expr prod div entera \n");
+                            mostrarMensaje("\n Expresion en validacion -> expr prod div entera \n");
                             String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
                             if (a2 == null) a2 = "null";
+                            String tipoRes = "float";
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad("/", a1, a2, t);
+                            TAC_Generator.generarCuad("/", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones("float");
                             res.cuads = izq.cuads;
                             res.temp = t;
@@ -1861,14 +1794,15 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            System.out.println("\n Expresion en validacion -> expr prod div entera \n");
+                            mostrarMensaje("\n Expresion en validacion -> expr prod div entera \n");
                             String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
                             if (a2 == null) a2 = "null";
+                            String tipoRes = "int";
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad("//", a1, a2, t);
+                            TAC_Generator.generarCuad("//", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones("int");
                             res.cuads = izq.cuads;
                             res.temp = t;
@@ -1881,78 +1815,80 @@ expresionProducto ::= expresionProducto:izq MULTIPLICACION expresionPotencia:der
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
-                            System.out.println("\n Expresion en validacion -> expr prod modulo \n");
+                            mostrarMensaje("\n Expresion en validacion -> expr prod modulo \n");
                             String a1 = izq.temp != null ? izq.temp : (izq.valorI != null ? izq.valorI.toString() : (izq.valorF != null ? izq.valorF.toString() : izq.valorS));
                             String a2 = der.temp != null ? der.temp : (der.valorI != null ? der.valorI.toString() : (der.valorF != null ? der.valorF.toString() : der.valorS));
                             if (a1 == null) a1 = "null";
                             if (a2 == null) a2 = "null";
+                            String tipoRes = "int";
                             String t = TAC_Generator.newTemp();
                             izq.append(der);
-                            TAC_Generator.generarCuad("%", a1, a2, t);
+                            TAC_Generator.generarCuad("%", a1, a2, t, tipoRes);
                             TipoExpresiones res = new TipoExpresiones("int");
                             res.cuads = izq.cuads;
                             res.temp = t;
                             RESULT = res;
                         }
                     :}
-                    | expresionPotencia:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> expr prod exp poten\n"); :};
+                    | expresionPotencia:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> expr prod exp poten\n"); :};
 
 
-// Para este hay que validar si el exponente y la base son enteros y solo enteros.
+// Para este hay que validar si el exponente y la base son enteros y solo enteros. // "error".equals(base.getTipo()) || "error".equals(exp.getTipo()) ||
 expresionPotencia ::= expresionFactor:base POTENCIA expresionPotencia:exp {: 
-                    if (base == null || exp == null || "error".equals(base.getTipo()) || "error".equals(exp.getTipo())) {
+                    if (base == null || exp == null || !validarTipoEsperado("int|float", base) || !validarTipoEsperado("int", exp)) {
                         RESULT = new TipoExpresiones("error");
                         System.err.println(" -> Error semantico: Las potentencia debe de ser base int o float y el exponente debe ser int. Tipos definidos: Base -> '" + base.tipoDato + "' y Exponente -> '" + exp.tipoDato + "'." + "Linea: " + baseleft + ", Columna: " + baseright);
                         aumentarCountErroresSemanticos();
                     } else {
-                        System.out.println("\n Expresion en validacion -> expr prod potencia \n");
+                        mostrarMensaje("\n Expresion en validacion -> expr prod potencia \n");
                         String a1 = base.temp != null ? base.temp : (base.valorI != null ? base.valorI.toString() : (base.valorF != null ? base.valorF.toString() : base.valorS));
                         String a2 = exp.temp != null ? exp.temp : (exp.valorI != null ? exp.valorI.toString() : (exp.valorF != null ? exp.valorF.toString() : exp.valorS));
                         if (a1 == null) a1 = "null";
                         if (a2 == null) a2 = "null";
                         String t = TAC_Generator.newTemp();
                         base.append(exp);
-                        TAC_Generator.generarCuad("^", a1, a2, t);
                         String tipoFinal = ("float".equals(base.tipoDato) || "float".equals(exp.tipoDato)) ? "float" : "int";
+                        TAC_Generator.generarCuad("^", a1, a2, t, tipoFinal);
                         TipoExpresiones res = new TipoExpresiones(tipoFinal);
                         res.cuads = base.cuads;
                         res.temp = t;
                         RESULT = res;
                     }
                     :}
-                    | expresionFactor:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> po expr fac\n"); :};
+                    | expresionFactor:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> po expr fac\n"); :};
 
 
-expresionFactor ::= PAREN_I expresion:expr PAREN_D {: RESULT = expr; System.out.println("\n Expresion en validacion -> expresionFactor: paren expr \n"); :}
-                  | expresionNumerica:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> fac exp num \n"); :}
-                  | expresionAritmeticaUnaria:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> fac uni \n"); :}
-                  | expresionAritmeticaUnariaNegativa:expr {: RESULT = expr; System.out.println("\n Expresion en validacion -> facuni nega \n"); :};
+expresionFactor ::= PAREN_I expresion:expr PAREN_D {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> expresionFactor: paren expr \n"); :}
+                  | expresionNumerica:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> fac exp num \n"); :}
+                  | expresionAritmeticaUnaria:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> fac uni \n"); :}
+                  | expresionAritmeticaUnariaNegativa:expr {: RESULT = expr; mostrarMensaje("\n Expresion en validacion -> facuni nega \n"); :};
                 //   | error {: System.err.println("Error: Expresion aritmetica no valida"); :};
 
 expresionNumerica ::= INT_LITERAL:n {: 
                         RESULT = new TipoExpresiones("int", n); 
-                        System.out.println("\n Expresion en validacion -> num int \n"); 
+                        mostrarMensaje("\n Expresion en validacion -> num int \n"); 
                         
                         :}
-                    | FLOAT_LITERAL:f  {: RESULT = new TipoExpresiones("float", f); System.out.println("\n Expresion en validacion -> num flo \n"); :}
+                    | FLOAT_LITERAL:f  {: RESULT = new TipoExpresiones("float", f); mostrarMensaje("\n Expresion en validacion -> num flo \n"); :}
                     | IDENTIFICADOR:id {: 
                         // Pruebas TAC:
                         Token t = entornoActual != null ? entornoActual.buscar (id) : null;
                         if (t == null) {
-                            System.err.println("Error semantico: El identificador '" + id + "' no ha sido declarado. Fila: " + idleft + ", Columna: " + idright);
+                            System.err.println(" -> Error semantico: El identificador '" + id + "' no ha sido declarado. Fila: " + idleft + ", Columna: " + idright);
                             RESULT = new TipoExpresiones("error");
                         } else {
                             TipoExpresiones te = new TipoExpresiones (t.getTipo());
                             te.temp = id;
                             RESULT = te;
                         }
-                        // RESULT = obtenerTipoIdentificador(id); 
-                        System.out.println("\n Expresion en validacion -> num id \n");
+                        // RESULT = obtenerTipoIdentificador(id, idleft, idright); 
+                        mostrarMensaje("\n Expresion en validacion -> num id \n");
                         // RESULT = te;
                     :}
-                    | funcionLlamada:func {: 
-                        RESULT = obtenerTipoFuncion(funcionActual); 
-                        System.out.println("\n Expresion en validacion -> num func\n");
+                    | funcionLlamada:func {:
+                        //TipoExpresiones funcTION = obtenerTipoFuncion(funcionActual, funcleft, funcright);
+                        RESULT = func;
+                        mostrarMensaje("\n Expresion en validacion -> num func\n");
                     :}
                     | obtenerElementoLista:ob {: 
                         // RESULT = obtenerTipoElementoLista(ob); 
@@ -1964,38 +1900,32 @@ expresionNumerica ::= INT_LITERAL:n {:
 
                     // Esta parte es para intentar olucionar los problemas:
                     | expresionChar:charExp {: 
-                        // if (!validarTipoEsperado("int|float", charExp)) {
-                        //     System.err.println("Error semantico: tipo '" + charExp.tipoDato + "' no valido en expresion numerica.");
-                        // }
-                        System.out.println("\n Expresion en validacion -> char \n");
+                        
+                        mostrarMensaje("\n Expresion en validacion -> char \n");
                         RESULT = charExp;
                     :}
                     | expresionString:strExp {: 
-                        // if (!validarTipoEsperado("int|float", strExp)) {
-                        //     System.err.println("Error semantico: tipo '" + strExp.tipoDato + "' no valido en expresion numerica.");
-                        // }
+                        
                         RESULT = strExp;
-                        System.out.println("\n Expresion en validacion -> String\n");
+                        mostrarMensaje("\n Expresion en validacion -> String\n");
                     :}
                     | expresionBooleana:boolExp {: 
-                        // if (!validarTipoEsperado("int|float", boolExp)) {
-                        //     System.err.println("Error semantico: tipo '" + boolExp.tipoDato + "' no valido en expresion numerica.");
-                        // }
+                        
                         RESULT = boolExp;
-                        System.out.println("\n Expresion en validacion -> expr booneana\n");
+                        mostrarMensaje("\n Expresion en validacion -> expr booneana\n");
                     :}
 
                     | INT_LITERAL:n IDENTIFICADOR error
-                      {: System.err.println(" -> Error: Numero seguido de identificador no es valido (ej: 2f5)"); RESULT = new TipoExpresiones("erro",n);:}
+                      {: System.err.println(" -> Error: Numero seguido de identificador no es valido (ej: 2f5)." + "Linea: " + nleft + ", Columna: " + nright); RESULT = new TipoExpresiones("error",n);:}
                     | FLOAT_LITERAL:n IDENTIFICADOR error
-                      {: System.err.println(" -> Error: Numero flotante seguido de identificador no es valido"); RESULT = new TipoExpresiones("error", n); :}; 
+                      {: System.err.println(" -> Error: Numero flotante seguido de identificador no es valido." + "Linea: " + nleft + ", Columna: " + nright); RESULT = new TipoExpresiones("error", n); :}; 
                     // Fin de la expresion.
 
 
 
 // Faltan trabajar estas para que se validen semanticamente.
 expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
-                                TipoExpresiones tipo = obtenerTipoIdentificador(id);
+                                TipoExpresiones tipo = obtenerTipoIdentificador(id, idleft, idright);
                                 System.out.println("Tipo obtenido para id '" + id + "': " + tipo.tipoDato);
                                 if (!validarTipoEsperado("int|float", tipo)) {
                                     System.err.println(" -> Error semantico: El operador '++' no es valido para tipo '" + tipo.tipoDato + "'." + "Linea: " + idleft + ", Columna: " + idright);
@@ -2003,7 +1933,7 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                     RESULT = new TipoExpresiones("error");
                                 } else {
                                     // Depende del tipo int o float se genera cuad diferente
-                                    System.out.println("\n Expresion en validacion -> Unaria incremento.\n");
+                                    mostrarMensaje("\n Expresion en validacion -> Unaria incremento.\n");
                                     TipoExpresiones res = new TipoExpresiones(tipo.tipoDato); 
                                     String a1 = id; // el identificador como operando
                                     String t = TAC_Generator.newTemp();
@@ -2013,14 +1943,15 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                 }
                             :}
                             | IDENTIFICADOR:id DECREMENTO {:
-                                TipoExpresiones tipo = obtenerTipoIdentificador(id);
+                                TipoExpresiones tipo = obtenerTipoIdentificador(id, idleft, idright);
                                 if (!validarTipoEsperado("int|float", tipo)) {
                                     System.err.println(" -> Error semantico: El operador '--' no es valido para tipo '" + tipo.tipoDato + "'." + "Linea: " + idleft + ", Columna: " + idright);
                                     aumentarCountErroresSemanticos();
                                     RESULT = new TipoExpresiones("error");
                                 } else {
                                     RESULT = tipo;
-                                    System.out.println("\n Expresion en validacion -> Unaria decremento. \n");
+                                    mostrarMensaje("\n Expresion en validacion -> Unaria decremento. \n");
+
                                     TipoExpresiones res = new TipoExpresiones(tipo.tipoDato); 
                                     String a1 = id; // el identificador como operando
                                     String t = TAC_Generator.newTemp();
@@ -2029,6 +1960,8 @@ expresionAritmeticaUnaria ::= IDENTIFICADOR:id INCREMENTO {:
                                     RESULT = res;
                                 }
                             :};
+// Fin de la expresion unaria.
+
 
 expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica:expr {: 
                                         if (!validarTipoEsperado("int|float", expr) || expr == null || "error".equals(expr.getTipo())) {
@@ -2036,8 +1969,11 @@ expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica:expr {:
                                             aumentarCountErroresSemanticos();
                                             RESULT = new TipoExpresiones("error");
                                         } else {
-                                            System.out.println("\n Expresion en validacion -> Unaria negativa.\n");
-                                            // El argumento es número (int o float)
+                                            //System.out.println("\n Expresion en validacion -> Unaria negativa.\n");
+                                            mostrarMensaje("\n Expresion en validacion -> Unaria negativa.\n");
+
+
+                                            // El argumento es numero (int o float)
                                             String a1 = expr.temp != null ? expr.temp : (expr.valorI != null ? expr.valorI.toString() : (expr.valorF != null ? expr.valorF.toString() : expr.valorS));
                                             if (a1 == null) {
                                                 a1 = "null";
@@ -2050,6 +1986,9 @@ expresionAritmeticaUnariaNegativa ::= MENOS expresionNumerica:expr {:
                                             RESULT = res;
                                         }
                                     :};
+// Fin de la expresion aritmetica unaria negativa.
+
+
 
 
 /* ##### Seccion para el manejo de listas ######*/
@@ -2124,7 +2063,7 @@ elementos ::= elementoLista:elem {:
             | elementos:prev COMA elementoLista:elem {:
                 elementosBuffer.add(elem);
                 if (!prev.getTipo().equals(elem.getTipo())) {
-                    System.err.println(" -> Error semantico: lista heterogenea. Se esperaba '" + prev.getTipo() + "', recibio '" + elem.getTipo() + "'");
+                    System.err.println(" -> Error semantico: lista heterogenea. Se esperaba '" + prev.getTipo() + "', recibio '" + elem.getTipo() + "'." + "Linea: " + prevleft + ", Columna: " + prevright);
                     aumentarCountErroresSemanticos();
                     prev.tipoDato = "error";
                 }
@@ -2141,16 +2080,16 @@ elementoLista ::= expresionAritmetica:op {:
 modificarElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:indice CORCHETE_D ASIGNACION elementoLista:elem DELIMITADOR {:
                             Token tk = entornoActual.buscar(id);
                             if (tk == null || !"lista".equals(tk.getCategoria())) {
-                                System.err.println(" -> Error semantico: '" + id + "' no es una lista declarada.");
+                                System.err.println(" -> Error semantico: '" + id + "' no es una lista declarada." + "Linea: " + idleft + ", Columna: " + idright);
                                 aumentarCountErroresSemanticos();
                             } else {
                                 if (!"int".equals(indice.getTipo())) {
-                                    System.err.println(" -> Error semantico: el indice para lista '" + id + "' debe ser int, recibido '" + indice.getTipo() + "'");
+                                    System.err.println(" -> Error semantico: el indice para lista '" + id + "' debe ser int, recibido '" + indice.getTipo() + "'." + "Linea: " + idleft + ", Columna: " + idright);
                                     aumentarCountErroresSemanticos();
                                 }
                                 TipoLista tl = tk.getTipoLista();
                                 if (tl != null && tl.tipoBase != null && !tl.tipoBase.equals(elem.getTipo())) {
-                                    System.err.println(" -> Error semantico: asignacion incompatible en lista '" + id + "'. Se esperaba '" + tl.tipoBase + "', recibio '" + elem.getTipo() + "'");
+                                    System.err.println(" -> Error semantico: asignacion incompatible en lista '" + id + "'. Se esperaba '" + tl.tipoBase + "', recibio '" + elem.getTipo() + "'." + "Linea: " + idleft + ", Columna: " + idright);
                                     aumentarCountErroresSemanticos();
                                 }
                                 // Generacion de TAC set
@@ -2166,17 +2105,17 @@ modificarElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:indic
 obtenerElementoLista ::= IDENTIFICADOR:id CORCHETE_I expresionAritmetica:op CORCHETE_D {:
                         Token tk = entornoActual.buscar(id);
                         if (tk == null || !"lista".equals(tk.getCategoria())) {
-                            System.err.println(" -> Error semantico: '" + id + "' no es una lista declarada.");
+                            System.err.println(" -> Error semantico: '" + id + "' no es una lista declarada." + "Linea: " + idleft + ", Columna: " + idright);
                             aumentarCountErroresSemanticos();
                             RESULT = new TipoExpresiones("error");
                         } else {
                             if (!"int".equals(op.getTipo())) {
-                                System.err.println(" -> Error semantico: el indice para lista '" + id + "' debe ser int, recibido '" + op.getTipo() + "'");
+                                System.err.println(" -> Error semantico: el indice para lista '" + id + "' debe ser int, recibido '" + op.getTipo() + "'" + "Linea: " + idleft + ", Columna: " + idright);
                                 aumentarCountErroresSemanticos();
                             } else if (tk.getTipoLista() != null && tk.getTipoLista().tamano != null && op.valorI != null) {
                                 int max = tk.getTipoLista().tamano;
                                 if (op.valorI < 0 || op.valorI >= max) {
-                                    System.err.println(" -> Advertencia: posible acceso fuera de rango en '" + id + "' indice " + op.valorI);
+                                    System.err.println(" -> Advertencia: posible acceso fuera de rango en '" + id + "' indice " + op.valorI + ".Linea: " + idleft + ", Columna: " + idright);
                                 }
                             }
                             // Generacin de TAC get 

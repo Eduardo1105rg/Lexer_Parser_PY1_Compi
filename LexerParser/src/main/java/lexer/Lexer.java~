@@ -474,7 +474,7 @@ public class Lexer implements java_cup.runtime.Scanner {
     // Errores lexicos
     public void reportError(String message) {
         incrementarErrorContador();
-        System.err.println("Error lexico en linea " + (yyline + 1) + ", columna " + (yycolumn + 1) + ": " + message);
+        System.err.println(" -> Error lexico en linea " + (yyline + 1) + ", columna " + (yycolumn + 1) + ": " + message);
     }
 
     // Para reportes especificos de errores
@@ -1004,7 +1004,7 @@ public class Lexer implements java_cup.runtime.Scanner {
           // fall through
           case 94: break;
           case 16:
-            { utils.ManejoArchivos.registrarMensaje("Token: LLAVE_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.LLAVE_D);
+            { utils.ManejoArchivos.registrarMensaje("Token: LLAVE_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.LLAVE_D);
             }
           // fall through
           case 95: break;
@@ -1039,7 +1039,7 @@ public class Lexer implements java_cup.runtime.Scanner {
           // fall through
           case 101: break;
           case 23:
-            { utils.ManejoArchivos.registrarMensaje("Token: LLAVE_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.LLAVE_I);
+            { utils.ManejoArchivos.registrarMensaje("Token: LLAVE_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.LLAVE_I);
             }
           // fall through
           case 102: break;
@@ -1049,12 +1049,12 @@ public class Lexer implements java_cup.runtime.Scanner {
           // fall through
           case 103: break;
           case 25:
-            { utils.ManejoArchivos.registrarMensaje("Token: PAREN_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.PAREN_D);
+            { utils.ManejoArchivos.registrarMensaje("Token: PAREN_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.PAREN_D);
             }
           // fall through
           case 104: break;
           case 26:
-            { utils.ManejoArchivos.registrarMensaje("Token: PAREN_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.PAREN_I);
+            { utils.ManejoArchivos.registrarMensaje("Token: PAREN_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.PAREN_I);
             }
           // fall through
           case 105: break;

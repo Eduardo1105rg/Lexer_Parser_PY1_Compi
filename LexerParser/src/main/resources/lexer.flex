@@ -55,7 +55,7 @@ import simbolos.TablaLiterales;
     // Errores lexicos
     public void reportError(String message) {
         incrementarErrorContador();
-        System.err.println("Error lexico en linea " + (yyline + 1) + ", columna " + (yycolumn + 1) + ": " + message);
+        System.err.println(" -> Error lexico en linea " + (yyline + 1) + ", columna " + (yycolumn + 1) + ": " + message);
     }
 
     // Para reportes especificos de errores
@@ -187,16 +187,16 @@ StringSimple = [^\n\r\"\\]+
     /* ";"                          { return symbol(sym.SEMICOLON); } Me parece que no esta definido en la gramatica original.*/
     
     /* Parentesis especiales para operaciones () */
-    "є"                          { utils.ManejoArchivos.registrarMensaje("Token: PAREN_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.PAREN_I); }
-    "э"                          { utils.ManejoArchivos.registrarMensaje("Token: PAREN_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.PAREN_D);  }
+    "є"                          { utils.ManejoArchivos.registrarMensaje("Token: PAREN_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.PAREN_I); }
+    "э"                          { utils.ManejoArchivos.registrarMensaje("Token: PAREN_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.PAREN_D);  }
     
     /* Estos son los que se usan para el manejo de listas */
     "["                          { utils.ManejoArchivos.registrarMensaje("Token: CORCHETE_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  return symbol(sym.CORCHETE_I); } 
     "]"                          { utils.ManejoArchivos.registrarMensaje("Token: CORCHETE_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  return symbol(sym.CORCHETE_D); } 
 
     /* Los que seria para abrir y cerrar bloques o sentencias. */
-    "¿"                          { utils.ManejoArchivos.registrarMensaje("Token: LLAVE_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.LLAVE_I); }
-    "?"                          { utils.ManejoArchivos.registrarMensaje("Token: LLAVE_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  System.out.println("\nLexema: " + yytext() + " code: " + (int)yytext().charAt(0)); return symbol(sym.LLAVE_D); }
+    "¿"                          { utils.ManejoArchivos.registrarMensaje("Token: LLAVE_I, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.LLAVE_I); }
+    "?"                          { utils.ManejoArchivos.registrarMensaje("Token: LLAVE_D, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1)); return symbol(sym.LLAVE_D); }
     
     /* Flecha para condiciones */
     "->"                         { utils.ManejoArchivos.registrarMensaje("Token: FLECHA, Lexema: " + yytext() + ", Linea: " + (yyline + 1) + ", Columna: " + (yycolumn + 1));  return symbol(sym.FLECHA); }
