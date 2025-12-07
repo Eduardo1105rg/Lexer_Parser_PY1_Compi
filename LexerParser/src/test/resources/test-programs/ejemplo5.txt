@@ -1,12 +1,4 @@
 void principal є э ¿
-    let int i = 0$
-    loop
-        loop
-            i--$
-        exit when є 0 == 0 э$
-        end loop$
-     i++$
-    exit when є 0 == 0 э$
-    end loop$
+    output є "Hola" э$
     return$
 ?

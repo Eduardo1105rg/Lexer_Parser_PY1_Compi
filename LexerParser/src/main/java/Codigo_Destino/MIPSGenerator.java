@@ -20,6 +20,12 @@ public class MIPSGenerator {
     // rapido a ellos. por ejemplo una lista de las globales.
     // O una lista de las locales con su tipo y esas cosas.
 
+    private Map<String, String> stringLiterals = new HashMap<>();
+    private int stringLiteralCounter = 0;
+
+    private StringBuilder dataSegment = new StringBuilder();
+    private StringBuilder textSegment = new StringBuilder();
+
     // Constructor
     public MIPSGenerator() {
         codigo_destino_mips = new StringBuilder();
@@ -32,7 +38,7 @@ public class MIPSGenerator {
     // Esya funcion sera la encargada de leer por primera vez el codigo y encontrar
     // lo que va en el .data
     public void generar_segmento_data_var_globales() {
-        codigo_destino_mips.append(".data\n"); // agregamos lo del segmento.
+        dataSegment.append(".data\n"); // agregamos lo del segmento.
 
         // leemos la lista global de cuads
         for (Cuad cuad : TAC_Generator.cuadGlobales) {
@@ -47,50 +53,59 @@ public class MIPSGenerator {
 
                     switch (tipo) {
                         case "int":
-                            codigo_destino_mips.append("\t" + nombre).append(": .word ").append(valor)
+                            dataSegment.append("\t" + nombre).append(": .word ").append(valor)
                                     .append("\n");
                             break;
                         case "boolean":
                             String valo = ("true".equals(valor)) ? "1" : "0";
-                            codigo_destino_mips.append("\t" + nombre).append(": .word ").append(valo)
+                            dataSegment.append("\t" + nombre).append(": .word ").append(valo)
                                     .append("\n");
                             break;
                         case "float":
-                            codigo_destino_mips.append("\t" + nombre).append(": .float ").append(valor)
+                            dataSegment.append("\t" + nombre).append(": .float ").append(valor)
                                     .append("\n");
                             break;
                         case "char":
                             String volatil1 = valor;
                             volatil1 = "'" + volatil1 + "'";
-                            codigo_destino_mips.append("\t" + nombre).append(": .byte ").append(volatil1).append("\n");
+                            dataSegment.append("\t" + nombre).append(": .byte ").append(volatil1).append("\n");
                             break;
                         case "string":
                             String volatil2 = valor;
                             volatil2 = "\"" + volatil2 + "\"";
-                            codigo_destino_mips.append("\t" + nombre).append(": .asciiz ").append(volatil2)
+                            dataSegment.append("\t" + nombre).append(": .asciiz ").append(volatil2)
                                     .append("\n");
                             break;
                         default:
-                            codigo_destino_mips.append("# Tipo no reconocido para ").append(nombre).append("\n");
+                            dataSegment.append("# Tipo no reconocido para ").append(nombre).append("\n");
                     }
                 }
             }
         }
         // codigo_destino_mips.append(".text\n"); // Para empezar con la seccion del
         // .text
+        for (Map.Entry<String, String> entry : stringLiterals.entrySet()) {
+            String texto = entry.getKey();
+            String label = entry.getValue();
+            dataSegment.append("\t")
+                            .append(label)
+                            .append(": .asciiz \"")
+                            .append(texto.replace("\"", ""))
+                            .append("\"\n");
+        }
 
     }
 
     // Esta funcion sera la encargada de generar la parte inciar de el segmento
     // .text. La funcion genera la llamada a main la salida del programa
     public void generar_inicio_segmento_text() {
-        codigo_destino_mips.append(".text\n"); // Para empezar con la seccion del .text
+        textSegment.append(".text\n"); // Para empezar con la seccion del .text
 
         // Esta parte de aqui es para definir el main, ir hasta el y despues volver para
         // finalizar el programa.
-        codigo_destino_mips.append("    jal main\n");
-        codigo_destino_mips.append("    li $v0, 10\n");
-        codigo_destino_mips.append("    syscall\n");
+        textSegment.append("    jal main\n");
+        textSegment.append("    li $v0, 10\n");
+        textSegment.append("    syscall\n");
     }
 
     // Esta funcion se encarga de leer las funciones que se registraron en los cuad
@@ -136,13 +151,13 @@ public class MIPSGenerator {
         analizarFunciones();
 
         for (Function_Description func : funciones.values()) {
-            codigo_destino_mips.append(func.nombre).append(":\n");
-            codigo_destino_mips.append("    addi $sp, $sp, -").append(func.tamanoStack).append("\n");
-            codigo_destino_mips.append("    sw $ra, 0($sp)\n");
+            textSegment.append(func.nombre).append(":\n");
+            textSegment.append("    addi $sp, $sp, -").append(func.tamanoStack).append("\n");
+            textSegment.append("    sw $ra, 0($sp)\n");
 
             Map<String, String> temporales = new HashMap<>();
             for (Cuad c : func.instrucciones) {
-                codigo_destino_mips.append(traduccion_instruccion(c, func, temporales));
+                textSegment.append(traduccion_instruccion(c, func, temporales));
             }
         }
 
@@ -206,6 +221,14 @@ public class MIPSGenerator {
             }
         }
         actual.tamanoStack = size + actual.tamanoStack;
+    }
+
+    private String registrarStringLiteral(String valor) {
+        String existente = stringLiterals.get(valor);
+        if (existente != null) return existente;
+        String label = "str" + (stringLiteralCounter++);
+        stringLiterals.put(valor, label);
+        return label;
     }
 
     public String traduccion_instruccion(Cuad c, Function_Description func, Map<String, String> temporales) {
@@ -450,13 +473,27 @@ public class MIPSGenerator {
                       .append(func.estructura.get(res))
                       .append("($sp)\n");
             }
+        } else if ("PRINT".equals(op)) {
+            String valor = c.getArgumento1();
+
+            if (valor != null) {
+                String texto = valor.replace("\"", "");
+                String label = registrarStringLiteral(texto);
+
+                cadena.append("    la $a0, ").append(label).append("\n");
+                cadena.append("    li $v0, 4\n");
+                cadena.append("    syscall\n");
+            }
         }
 
         return cadena.toString();
     }
 
     public void mostrar_codigo_destino_mips() {
-        System.out.println(codigo_destino_mips.toString());
+        StringBuilder out = new StringBuilder();
+        out.append(dataSegment);
+        out.append(textSegment);
+        System.out.println(out.toString());
     }
 
     public void mostrar_datos_funciones() {
@@ -467,5 +504,4 @@ public class MIPSGenerator {
             func.mostrar_estructura();
         }
     }
-
 }

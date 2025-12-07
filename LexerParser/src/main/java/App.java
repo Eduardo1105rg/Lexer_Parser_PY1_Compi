@@ -1,4 +1,3 @@
-
 import parser.*;
 import lexer.Lexer;
 
@@ -53,16 +52,9 @@ public class App {
                 // Generar codigo MIPS
                 MIPSGenerator mipsGenerator = new MIPSGenerator();
                 mipsGenerator.generarCodigoMIPS();
-                mipsGenerator.generar_segmento_data_var_globales();
                 mipsGenerator.generar_inicio_segmento_text();
                 mipsGenerator.generar_funciones_segmento_text();
-
-                // Prueba del calculo de stack de las funciones.
-                // mipsGenerator.analizarFunciones();
-                // System.out.println("\n\n" + "");
-                // mipsGenerator.mostrar_datos_funciones();
-
-                System.out.println(" Mostrando el codigo MIPS.");
+                mipsGenerator.generar_segmento_data_var_globales();
                 mipsGenerator.mostrar_codigo_destino_mips();
 
             } else {
